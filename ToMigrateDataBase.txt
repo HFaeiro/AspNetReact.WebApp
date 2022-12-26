@@ -1,0 +1,8 @@
+dotnet tool install --global dotnet-ef
+%USERPROFILE%\.dotnet\tools
+
+
+open terminal in data
+cd..
+dotnet ef migrations add InitialCreate --project TeamManiacs.Data --startup-project ASP.Back
+dotnet ef database update --project TeamManiacs.Data --startup-project ASP.Back

@@ -1,0 +1,33 @@
+.then(res => res.json())
+            .then((result) => {
+                alert(result);
+            },
+                (error) => {
+                    alert('Failed');
+                })
+
+
+
+ fetch(process.env.REACT_APP_API + 'Users/Admin', {
+            method: 'GET',
+            headers:
+            {
+                'Authorization': 'Bearer ' + this.props.token,
+            'Connection': 'keep-alive'
+            }
+           })
+
+
+
+
+
+
+
+
+
+{
+
+        "Username": "123455",
+        "Password": "123"
+
+}

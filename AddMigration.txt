@@ -1,0 +1,11 @@
+Add-Migration -Name ManiacsMigration -OutputDir ../TeamManiacs.Data -Namespace TeamManiacs.Data
+
+dotnet ef migrations add Item
+
+   public virtual DbSet<Item> Items { get; set; }
+        modelBuilder.Entity<Item>(entity =>
+        {
+            entity.Property(e => e.Id).ValueGeneratedOnAdd();
+        });
+
+

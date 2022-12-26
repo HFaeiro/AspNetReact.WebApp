@@ -1,0 +1,1 @@
+Scaffold-dbContext -Connection "Server=tmaniacs.database.windows.net;Database=TeamManiacs;User Id=TManiacs-Yeet;Password=Ye1Wizard;" -Provider Microsoft.EntityFrameworkCore.SqlServer -OutputDir "../TeamManiacs.Core" -namespace TeamManiacs.Data -ContextDir "../TeamManiacs.Data/DBContext" -DataAnnotations  -Context TeamManiacsDbContext
