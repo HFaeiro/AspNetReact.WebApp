@@ -15,7 +15,7 @@ export class AddUsersModal extends Component {
     closeModal = () => this.setState({ showModal: false });
     handleSubmit = async (event) => {
          const ret = await new Promise(resolve => {
-            event.preventDefault();
+            //event.preventDefault();
             fetch(process.env.REACT_APP_API + 'users', {
                 method: 'POST',
                 headers: {
