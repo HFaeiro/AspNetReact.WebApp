@@ -1,8 +1,25 @@
+prerequisists...
+ VS 2022 IDE ...
+ .net 6
+nodejs
+
+
+
+
+First navigate to line 5 in appsettings.json in the project asp.back
+notice the period for  server. that is for local sql hosting mydatabasename is the name of your database you set up. 
+
+"ASPBackContext": "Server=.;Database=mydatabasename;Trusted_Connection=True;TrustServerCertificate=True;"
+
+
+
 dotnet tool install --global dotnet-ef
+add path to env PATH's
 %USERPROFILE%\.dotnet\tools
 
 
-open terminal in data
+
+open terminal in data project
 cd..
 dotnet ef migrations add InitialCreate --project TeamManiacs.Data --startup-project ASP.Back
 dotnet ef database update --project TeamManiacs.Data --startup-project ASP.Back

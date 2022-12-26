@@ -113,16 +113,16 @@ export class Users extends Component {
 
 
     render() {
-        let contents = this.state.loggedIn
-            ? 
-             Users.renderTable(this.state.profile, this)
-            :
+        let contents = (this.state.loggedIn === 'false')
+            ?
             <Navigate to={"/login"} props={
                 {
                     token: '',
                     loggedIn: false
                 }} />
-
+            :
+            Users.renderTable(this.state.profile, this);
+  
         return (
             <div>
                 <h3>Users</h3>

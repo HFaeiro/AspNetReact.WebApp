@@ -33,7 +33,7 @@ export default class App extends Component {
                 </h3>
 
                     <Navigation
-                        ifLoggedIn={loggedIn}
+                        ifLoggedIn={this.state.loggedIn}
                         logout={ this.logout }
 
                     />

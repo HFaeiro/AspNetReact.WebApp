@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { Modal, Button, Row, Col, Form } from 'react-bootstrap'
+import { createPath } from 'react-router-dom';
 
 export class AddUsersModal extends Component {
     state = {
@@ -32,6 +33,8 @@ export class AddUsersModal extends Component {
 
             }).then(res => res.json())
                 .then((result) => {
+                     
+                   //console.log(result.status)
                     resolve(result);
                     
                 },
