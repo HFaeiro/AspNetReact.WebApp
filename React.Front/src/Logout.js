@@ -10,7 +10,7 @@ export class Logout extends Component {
 
 
         localStorage.setItem('token', '');
-        localStorage.setItem('loggedIn', false);
+        localStorage.setItem('loggedIn', 'false');
         alert("You have been Logged out!");
 
 
