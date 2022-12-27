@@ -21,7 +21,9 @@ internal class Program
             IConfiguration config = new ConfigurationBuilder()
                                         .AddJsonFile("appsettings.json", optional: false)
                                         .Build();
-            options.UseSqlServer(config.GetConnectionString("ASPBackContext"));
+            //options.UseSqlServer(config.GetConnectionString("ASPBackContext"));
+            var connectString = config.GetConnectionString("CleverCloudSQL");
+            options.UseMySql(connectString, ServerVersion.AutoDetect(connectString));
 
         });
         builder.Services.AddControllers();
