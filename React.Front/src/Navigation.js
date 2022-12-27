@@ -7,15 +7,13 @@ export class Navigation extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            
+            isLoggedIn: localStorage.getItem('loggedIn')
         }
     }
 
-
-
-
     render() {
-        const { isLoggedIn } = this.state;
+        console.log("Logged In Navigation: " + this.state.isLoggedIn);
+       
         return (
  
                 <Navbar bg="dark" expand="lg">
@@ -25,10 +23,10 @@ export class Navigation extends Component {
                          <NavLink className="d-inline p-2 bg-dark text-white" to="/">
                             Home
                         </NavLink>
-                        {isLoggedIn && ( <NavLink className="d-inline p-2 bg-dark text-white" to="/Logout">
+                        {this.state.isLoggedIn == 'true' && ( <NavLink className="d-inline p-2 bg-dark text-white" to="/Logout">
                            Logout
                         </NavLink>)}
-                        {!isLoggedIn && (<NavLink className="d-inline p-2 bg-dark text-white" to="/login">
+                        {this.state.isLoggedIn == 'false'  && (<NavLink className="d-inline p-2 bg-dark text-white" to="/login">
                             Login
                         </NavLink>)}
                         <NavLink className="d-inline p-2 bg-dark text-white" to="/users">

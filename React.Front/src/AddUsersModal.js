@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { Modal, Button, Row, Col, Form } from 'react-bootstrap'
+import { createPath } from 'react-router-dom';
 
 export class AddUsersModal extends Component {
     state = {
@@ -13,36 +14,51 @@ export class AddUsersModal extends Component {
     }
     openModal = () => this.setState({ showModal: true });
     closeModal = () => this.setState({ showModal: false });
-    handleSubmit(event) {
-        
-        fetch(process.env.REACT_APP_API + 'users', {
-            method: 'POST',
-            headers: {
-                'Accept': 'application/json',
-                'Authorization': 'Bearer ' + this.state.token,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                Username: event.target.Username.value,
-                Password: event.target.Password.value,
-                Privileges: event.target.Privileges.value
-            })
-
-
-        }).then(res => res.json())
-            .then((result) => {
-                alert(result);
-            },
-                (error) => {
-                    alert('Failed error = ' + error);
+    handleSubmit = async (event) => {
+         const ret = await new Promise(resolve => {
+            //event.preventDefault();
+            fetch(process.env.REACT_APP_API + 'users', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': 'Bearer ' + this.state.token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    Username: event.target.Username.value,
+                    Password: event.target.Password.value,
+                    Privileges: event.target.Privileges.value
                 })
 
+
+            }).then(res => res.json())
+                .then((result) => {
+                     
+                   //console.log(result.status)
+                    resolve(result);
+                    
+                },
+                    (error) => {
+                        //alert('Failed error = ' + error);
+                        resolve(error);
+                    })
+        })
+        return ret;
     }
 
+    loader = async (event) => {
+        const res = await this.handleSubmit(event);
+        if (res) {
 
+            alert(res);
+        }
+        else {
+            alert('no resolve');
+        }
+    }
 
     render() {
-        var enumPriv = ['None', 'Team', 'Mod', 'Admin'];
+       
         return (
             <>
                 <div className="d-flex align-items-center justify-content-center">
@@ -66,7 +82,7 @@ export class AddUsersModal extends Component {
                     <Modal.Body>
                         <Row>
                             <Col sm={6}>
-                                <Form onSubmit={this.handleSubmit}>
+                                <Form onSubmit={this.loader}>
                                     <Form.Group controlId="Username">
                                         <Form.Label>Username</Form.Label>
                                         <Form.Control type="text" name="Username" required
