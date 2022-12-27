@@ -1,4 +1,4 @@
-import React, { Component, Profiler } from 'react';
+import React, {Component, Profiler } from 'react';
 
 import { Navbar, Nav} from 'react-bootstrap';
 import {NavLink } from 'react-router-dom'
@@ -7,13 +7,13 @@ export class Navigation extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            isLoggedIn: localStorage.getItem('loggedIn')
+            isLoggedIn: localStorage.getItem('loggedIn'),
         }
     }
 
     render() {
         console.log("Logged In Navigation: " + this.state.isLoggedIn);
-       
+
         return (
  
                 <Navbar bg="dark" expand="lg">
