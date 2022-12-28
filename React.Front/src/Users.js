@@ -8,8 +8,8 @@ export class Users extends Component {
     constructor(props) {
         super(props);
         this.state = {
-            token: localStorage.getItem('token'),
-            loggedIn: localStorage.getItem('loggedIn'),
+            token: '',
+            loggedIn: '',
             profile: [],
             loading: true
 
@@ -25,7 +25,7 @@ export class Users extends Component {
                 headers:
                 {
                     'Accept': 'application/json',
-                    'Authorization': 'Bearer ' + this.state.token,
+                    'Authorization': 'Bearer ' + this.props.token,
                     'Content-Type': 'application/json'
                     
                 }
@@ -52,7 +52,7 @@ export class Users extends Component {
 
 
     componentDidMount() {
-        if (this.state.loggedIn == 'true') {
+        if (this.props.isLoggedIn == 'true') {
             this.loader();
         }
     }
@@ -86,14 +86,14 @@ export class Users extends Component {
                                         uName={p.username}
                                         uPass={p.password}
                                         uPriv={p.privileges}
-                                        token={klass.state.token}
+                                        token={klass.props.token}
                                     />
                                     <DeleteUsersModal
                                         uId={p.userId}
                                         uName={p.username}
                                         uPass={p.password}
                                         uPriv={p.privileges}
-                                        token={klass.state.token}
+                                        token={klass.props.token}
                                     />
                                 </td>
                             </tr>)}
@@ -113,13 +113,13 @@ export class Users extends Component {
 
 
     render() {
-        let contents = (this.state.loggedIn === 'false')
-            ?
-            <Navigate to={"/login"} props={
-                {
-                    token: '',
-                    loggedIn: false
-                }} />
+        let contents = (this.props.isLoggedIn === 'false')
+            ?<></>
+            //<Navigate to={"/login"} props={
+            //    {
+            //        token: '',
+            //        isLoggedIn: false
+            //    }} />
             :
             Users.renderTable(this.state.profile, this);
   

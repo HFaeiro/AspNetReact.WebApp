@@ -1,29 +1,41 @@
-import React, { Component } from 'react';
+import React, { Component,useEffect } from 'react';
 import { Modal, Button, Row, Col, Form } from 'react-bootstrap';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate, useNavigate , useLocation} from 'react-router-dom';
 
-export class Logout extends Component {
-
-
-
-    render() {
+export default function Logout(props) {
 
 
-        localStorage.setItem('token', '');
-        localStorage.setItem('loggedIn', 'false');
-        alert("You have been Logged out!");
+    const location = useLocation();
+        const { state } = location;
+
+
+
+
+
+    useEffect(() => {
+        console.log(location);
+        console.log(props);
+    }
+       )
+    const logout = () => {
+        props.logout();
+    }
+        //localStorage.setItem('token', '');
+        //localStorage.setItem('loggedIn', 'false');
+
 
 
         return (
-            
-            <Navigate to={"/login"} state={{ token: '', loggedin: false }} />
-                );
+            <div>
+                {props.logout()}
+               
+                <Navigate to={"/login"} />
 
 
-
+            </div>
+        );
     }
 
 
 
 
-}

@@ -1,16 +1,14 @@
 import React, { Component } from 'react';
 import { Modal, Button, Row, Col, Form } from 'react-bootstrap';
-import { Navigate,useNavigate } from 'react-router-dom';
+import { Navigate,useNavigate} from 'react-router-dom';
 import { Users } from './Users';
 import {AddUsersModal} from './AddUsersModal';
 
 export class Login extends Component {
     constructor(props) {
         super(props);
-        this.state = {
-            token: '',
-            loggedIn: false
-        }
+       
+
         this.getPostResponse = this.getPostResponse.bind(this);
 
     }
@@ -33,7 +31,7 @@ export class Login extends Component {
                     if (data.status == 400)
                         resolve(null);
                     else {
-                        this.setState({ token: data, loggedIn: true });
+                        this.props.login(data);
                         resolve(data);
                     }
                 }
@@ -44,27 +42,30 @@ export class Login extends Component {
     
     loader = async (event) => {
         event.preventDefault();
-        if (!this.state.loggedIn) {
+        const loggedIn = this.props.isLoggedIn;
+        if (loggedIn === 'false' || loggedIn === undefined) {
             const res = await this.getPostResponse(event);
-            const loggedIn = localStorage.getItem('loggedIn');
-            if (loggedIn === 'true' && res === null) {
-                localStorage.setItem('token', '');
-                localStorage.setItem('loggedIn', false);
-                alert("Local Token Reset: " + res);
+            if (res != null) {
+                //this.props.login(res);
+                //localStorage.setItem('token', res);
+                //localStorage.setItem('loggedIn', 'true');
+                
+                
             }
             else {
-                localStorage.setItem('token', res);
-                localStorage.setItem('loggedIn', 'true');
-                <Navigate to={"/users"} state={{ token: this.state.token }} />
+                this.props.logout();
+                localStorage.setItem('token', '');
+                //localStorage.setItem('loggedIn', 'false');
+                alert("Local Token Reset: " + res);
+
             }
+
         }
         else {
-            localStorage.setItem('token', this.state.token);
-            localStorage.setItem('loggedIn', this.state.loggedIn);
+            //localStorage.setItem('token', this.state.token);
+            localStorage.setItem('loggedIn', this.state.isLoggedIn);
             <Navigate to={"/users"} state={{token : this.state.token}}/>
-            
-            //alert("Token?!: " + localStorage.getItem('loggedIn'));
-
+           
         }
 }
 
@@ -74,12 +75,12 @@ export class Login extends Component {
 
     }
     componentDidUpdate() {
-
+        
     }
     render() {
-        const tokMatch = this.state.token === localStorage.getItem('token');
 
-       if(this.state.loggedIn === false){
+        const loggedIn = this.props.isLoggedIn;
+        if (loggedIn === 'false' || loggedIn === undefined){
         return (
 
 
@@ -115,19 +116,19 @@ export class Login extends Component {
         else
            return (
             <div>
-                {tokMatch ?(
+               {/* {loggedIn ?(*/}
                        <Navigate to={"/users"} props={
                            {
-                               token: this.state.token,
-                               loggedIn: this.state.loggedIn
+                               token: this.props.token,
+                               loggedIn: this.props.loggedIn
                            }} />
-                   )
-                       : (
-                        localStorage.setItem('token', this.state.token),
-                        localStorage.setItem('loggedIn', this.state.loggedIn)
+                {/*   )*/}
+                {/*       : (*/}
+                {/*        localStorage.setItem('token', this.state.token),*/}
+                {/*        localStorage.setItem('loggedIn', this.state.loggedIn)*/}
                         
-                    )
-                }
+                {/*    )*/}
+                {/*}*/}
 
                 
                 </div>
