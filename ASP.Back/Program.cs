@@ -66,17 +66,8 @@ internal class Program
                                     Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
                             };
                         });
-        //builder.Services.AddSpaStaticFiles(configuration =>
-        //{
-        //    configuration.RootPath = "../React.Front/build";
-
-
-
-        //});
-
 
         var app = builder.Build();
-      //  app.UseSpaStaticFiles(new StaticFileOptions { RequestPath = "/build" });
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {

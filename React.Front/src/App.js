@@ -23,7 +23,7 @@ export default class App extends Component {
 
     componentDidMount() {
         const l = localStorage.getItem('loggedIn');
-        if (l != 'undefined') {
+        if (l != 'undefined' && l) {
             this.setState(
                 {
                     loggedIn: l,
@@ -43,7 +43,7 @@ export default class App extends Component {
             localStorage.setItem('token', '');
             localStorage.setItem('loggedIn', 'false');
             this.setState({ loggedIn: 'false', token: '' });
-            alert("You have been Logged out!");
+           // alert("You have been Logged out!");
         }
     }
 
