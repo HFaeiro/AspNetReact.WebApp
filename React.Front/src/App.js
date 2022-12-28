@@ -21,22 +21,45 @@ export default class App extends Component {
         }
     }
 
+    componentDidMount() {
+        const l = localStorage.getItem('loggedIn');
+        if (l != 'undefined') {
+            this.setState(
+                {
+                    loggedIn: l,
+                    token: localStorage.getItem('token')
+                }
+            )
+
+
+        }
+
+    }
+
+
     logout = () => {
         console.log(this.state);
-        if (this.state.loggedIn === 'true') {
+        if (this.state.loggedIn === 'true' || this.state.token) {
+            localStorage.setItem('token', '');
+            localStorage.setItem('loggedIn', 'false');
             this.setState({ loggedIn: 'false', token: '' });
             alert("You have been Logged out!");
         }
     }
 
     login = (token) => {
-        this.setState({ loggedIn: 'true', token: token }); //Need to figure out how to get token stored here....
-        <Navigate to={"/users"} />
-        //alert("You have been Logged In!");
+        if (this.state.loggedIn === 'false' || !this.state.token) {
+            localStorage.setItem('token', token);
+            localStorage.setItem('loggedIn', 'true');
+            this.setState({ loggedIn: 'true', token: token });
+            <Navigate to={"/users"} />
+            //alert("You have been Logged In!");
+        }
     }
 
     render() {
-        const { loggedIn } = this.state;
+        const { loggedIn} = this.state;
+
         return (
             <section className="App">
                 <div className="container">

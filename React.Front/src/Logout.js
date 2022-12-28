@@ -12,14 +12,12 @@ export default function Logout(props) {
 
 
 
-    useEffect(() => {
-        console.log(location);
-        console.log(props);
-    }
-       )
-    const logout = () => {
-        props.logout();
-    }
+    //useEffect(() => {
+    //    console.log(location);
+    //    console.log(props);
+    //}
+    //   )
+
         //localStorage.setItem('token', '');
         //localStorage.setItem('loggedIn', 'false');
 
