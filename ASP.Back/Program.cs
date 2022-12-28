@@ -13,7 +13,18 @@ internal class Program
 {
     private static void Main(string[] args)
     {
+        var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
+
         var builder = WebApplication.CreateBuilder(args);
+
+        builder.Services.AddCors(options =>
+        {
+            options.AddPolicy(name: MyAllowSpecificOrigins,
+                              policy =>
+                              {
+                                  policy.WithOrigins("localhost").AllowAnyHeader().AllowAnyMethod(); 
+                              });
+        });
 
         //Add services to the container.
         builder.Services.AddDbContext<TeamManiacsDbContext>(options =>
@@ -77,8 +88,8 @@ internal class Program
         app.UseStaticFiles();
         app.UseRouting();
         app.UseDefaultFiles();
+        app.UseCors(MyAllowSpecificOrigins);
 
-        
         app.UseAuthentication();
         app.UseAuthorization();
 

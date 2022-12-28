@@ -100,7 +100,11 @@ export class Users extends Component {
                     </tbody>
                 </table>
 
-                <AddUsersModal />
+                <AddUsersModal
+                    token={klass.props.token}
+
+
+                />
 
 
 
@@ -114,12 +118,12 @@ export class Users extends Component {
 
     render() {
         let contents = (this.props.isLoggedIn === 'false')
-            ?<></>
-            //<Navigate to={"/login"} props={
-            //    {
-            //        token: '',
-            //        isLoggedIn: false
-            //    }} />
+            ?
+            <Navigate to={"/login"} props={
+                {
+                    token: '',
+                    isLoggedIn: false
+                }} />
             :
             Users.renderTable(this.state.profile, this);
   

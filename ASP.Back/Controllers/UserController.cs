@@ -102,10 +102,10 @@ namespace ASP.Back.Controllers
                 _context.UserModels.Add(UserModel);
                 await _context.SaveChangesAsync();
 
-                return Ok($"Created User Successfully");
+                return Ok(UserModel);
             }
             else
-                return BadRequest($"Username Already Taken");
+                return BadRequest();
         }
 
         // DELETE: api/Users/5

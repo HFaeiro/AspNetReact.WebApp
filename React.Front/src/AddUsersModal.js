@@ -3,25 +3,24 @@ import { Modal, Button, Row, Col, Form } from 'react-bootstrap'
 import { createPath } from 'react-router-dom';
 
 export class AddUsersModal extends Component {
-    state = {
-        showModal: false,
-        token : this.props.token
-    };
     constructor(props) {
         super(props);
         this.handleSubmit = this.handleSubmit.bind(this);
+        this.state = {
+            showModal: false,
+            token: this.props.token
+        };
 
     }
     openModal = () => this.setState({ showModal: true });
     closeModal = () => this.setState({ showModal: false });
     handleSubmit = async (event) => {
          const ret = await new Promise(resolve => {
-            //event.preventDefault();
+            event.preventDefault();
             fetch(process.env.REACT_APP_API + 'users', {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
-                    'Authorization': 'Bearer ' + this.state.token,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -32,16 +31,15 @@ export class AddUsersModal extends Component {
 
 
             }).then(res => res.json())
-                .then((result) => {
+                //.then((result) => {
                      
-                   //console.log(result.status)
-                    resolve(result);
-                    
-                },
-                    (error) => {
-                        //alert('Failed error = ' + error);
-                        resolve(error);
-                    })
+                //   console.log(result)
+                //    resolve(result);
+                .then(data => {
+                    console.log(data)
+                    resolve(data);
+
+                })
         })
         return ret;
     }
@@ -49,11 +47,16 @@ export class AddUsersModal extends Component {
     loader = async (event) => {
         const res = await this.handleSubmit(event);
         if (res) {
+            if (res.status === 400)
+                alert('Please Pick a Different Username!');
+            else {
 
-            alert(res);
+                alert('Username Created Successfully');
+                this.closeModal();
+            }
         }
         else {
-            alert('no resolve');
+            alert('Undefined Behavior');
         }
     }
 

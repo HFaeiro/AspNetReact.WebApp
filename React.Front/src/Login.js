@@ -28,12 +28,12 @@ export class Login extends Component {
             })
                 .then(res => res.json())
                 .then(data => {
-                    if (data.status == 400)
-                        resolve(null);
-                    else {
-                        this.props.login(data);
+                    //if (data.status == 400)
+                    //    resolve(null);
+                    //else {
+                      //  this.props.login(data);
                         resolve(data);
-                    }
+                    //}
                 }
           )
        })
@@ -46,7 +46,14 @@ export class Login extends Component {
         if (loggedIn === 'false' || loggedIn === undefined) {
             const res = await this.getPostResponse(event);
             if (res != null) {
-                //this.props.login(res);
+                if (res.status != 400)
+                    this.props.login(res);
+                else {
+                    alert('Sorry Invalid Username & Password. Please Try Again!');
+                    if (this.props.isLoggedIn === 'true')
+                        this.props.logout();
+                }
+                //
                 //localStorage.setItem('token', res);
                 //localStorage.setItem('loggedIn', 'true');
                 
@@ -54,9 +61,9 @@ export class Login extends Component {
             }
             else {
                 this.props.logout();
-                localStorage.setItem('token', '');
+                //localStorage.setItem('token', '');
                 //localStorage.setItem('loggedIn', 'false');
-                alert("Local Token Reset: " + res);
+                //alert("Local Token Reset: " + res);
 
             }
 
@@ -108,7 +115,11 @@ export class Login extends Component {
                     </Button>
                 </Form.Group>
             </Form>
-            <AddUsersModal />
+                <AddUsersModal
+                    token={this.props.token}
+
+
+                />
             </div>
 
         );
