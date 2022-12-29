@@ -13,7 +13,7 @@ public partial class TeamManiacsDbContext : DbContext
     {
     }
 
-    public virtual DbSet<Login> Logins { get; set; }
+    //public virtual DbSet<Login> Logins { get; set; }
     public virtual DbSet<Users> UserModels { get; set; }
     public virtual DbSet<Item> Items { get; set; }
 
@@ -24,13 +24,13 @@ public partial class TeamManiacsDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Login>(
-            x =>
-            {
-                x.HasNoKey();
-                x.Property(v => v.Username).HasColumnName("Username");
-            }
-            );
+        //modelBuilder.Entity<Login>(
+        //    x =>
+        //    {
+        //        x.HasNoKey();
+        //        x.Property(v => v.Username).HasColumnName("Username");
+        //    }
+        //    );
         modelBuilder.Entity<Users>(entity =>
         {
             entity.Property(e => e.UserId).ValueGeneratedOnAdd();

@@ -1,6 +1,6 @@
 import React/*, { Component,useEffect }*/ from 'react';
 
-import { Navigate} from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 
 export default function Logout(props) {
 
@@ -14,18 +14,18 @@ export default function Logout(props) {
     //}
     //   )
 
-        //localStorage.setItem('token', '');
-        //localStorage.setItem('loggedIn', 'false');
-        return (
-            <div>
-                {props.logout()}
-               
-                <Navigate to={"/login"} />
+    //localStorage.setItem('token', '');
+    //localStorage.setItem('loggedIn', 'false');
+    return (
+        <div>
+            {props.logout()}
+
+            <Navigate to={"/"} />
 
 
-            </div>
-        );
-    }
+        </div>
+    );
+}
 
 
 

@@ -44,7 +44,11 @@ namespace ASP.Back.Controllers
             if(user != null)
             {
                 var token = GenToken(user);
-                return Ok(token);
+                Profile profile = new Profile(user.UserId, user.Username, token, user.Privileges);
+                if (profile != null)
+                {
+                    return Ok(profile);
+                }
             }    
 
             return BadRequest();

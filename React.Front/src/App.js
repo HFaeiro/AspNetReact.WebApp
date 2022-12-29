@@ -2,11 +2,11 @@ import React, { Component } from 'react';
 import { Home } from './Home';
 import { Users } from './Users';
 import { Login } from './Login';
-import  Navigation  from './Navigation';
+import Navigation from './Navigation';
 import { Routes, Route } from 'react-router';
 import { Navigate } from 'react-router-dom'
 import ErrorPage from './ErrorPage';
-import  Logout  from './Logout';
+import Logout from './Logout';
 
 
 
@@ -15,51 +15,67 @@ export default class App extends Component {
         super(props);
         this.login = this.login.bind(this);
         this.logout = this.logout.bind(this);
-        this.state = {
-            loggedIn: 'false',
-            token: ''
-        }
+
     }
 
+
+
+
     componentDidMount() {
-        const l = localStorage.getItem('loggedIn');
-        if (l != 'undefined' && l) {
+        const l = JSON.parse(localStorage.profile);
+
+        if (l.token || l.userId || l.username || l.privileges) {
             this.setState(
                 {
-                    loggedIn: l,
-                    token: localStorage.getItem('token')
+                    profile: {
+                        userId: l.userId,
+                        token: l.token,
+                        username: l.username,
+                        privileges: l.privileges,
+
+                    }
                 }
             )
-
-
         }
-
     }
 
 
     logout = () => {
-        console.log(this.state);
-        if (this.state.loggedIn === 'true' || this.state.token) {
-            localStorage.setItem('token', '');
-            localStorage.setItem('loggedIn', 'false');
-            this.setState({ loggedIn: 'false', token: '' });
-           // alert("You have been Logged out!");
+        const l = JSON.parse(localStorage.profile);
+        if (l.token || l.userId || l.username || l.privileges) {
+            localStorage.setItem('profile', JSON.stringify({
+                profile: {
+                    userId: '',
+                    token: '',
+                    username: '',
+                    privileges: '',
+
+                }
+            }));
         }
     }
 
-    login = (token) => {
-        if (this.state.loggedIn === 'false' || !this.state.token) {
-            localStorage.setItem('token', token);
-            localStorage.setItem('loggedIn', 'true');
-            this.setState({ loggedIn: 'true', token: token });
-            <Navigate to={"/users"} />
-            //alert("You have been Logged In!");
+    login = (loginData) => {
+        const profile = JSON.parse(localStorage.profile);
+
+        if (!profile.token) {
+            localStorage.setItem('profile', JSON.stringify(loginData));
         }
     }
 
     render() {
-        const { loggedIn} = this.state;
+        var profile = JSON.parse(localStorage.profile);
+        const loggedIn = profile ? 'true' : 'false';
+        if (!profile) {
 
+            profile = {
+                userId: '',
+                token: '',
+                username: '',
+                privileges: '',
+            }
+        }
+        //setup routes and send props
         return (
             <section className="App">
                 <div className="container">
@@ -70,22 +86,24 @@ export default class App extends Component {
                     <Navigation
 
                         isLoggedIn={loggedIn}
-                        login={this.login }
+                        login={this.login}
                         logout={this.logout}
 
                     />
                     <Routes>
 
-                        <Route path="/" element={<Home />} />
+                        <Route path="/" element={<Home
+                            profile={profile}
+                        />} />
                         <Route path="/login" element={<Login
                             isLoggedIn={loggedIn}
                             login={this.login}
                             logout={this.logout}
-                            token={this.state.token}
+                            token={profile.token}
                         />} />
                         <Route path="/users" element={<Users
                             isLoggedIn={loggedIn}
-                            token={this.state.token }
+                            token={profile.token}
 
                         />} />
                         <Route path="/logout" element={<Logout
