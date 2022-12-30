@@ -20,7 +20,7 @@
 
     - >select **multiple startup projects** and set **ASP.Back to start** and **react.front to start**.
 
-    - >Make sure **ASP.Back is topmost project** and hit ok
+    - >Make sure **ASP.Back is top-most project** and hit ok
 
 3. >****Start debugging****! 
 
