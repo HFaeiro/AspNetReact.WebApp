@@ -41,19 +41,40 @@ namespace ASP.Back.Controllers
             return await _context.UserModels.ToListAsync();
         }
 
+        //// GET: api/Users/5
+        //[HttpGet("{id}")]
+        //[Authorize(Roles = "Admin")]
+        //public async Task<ActionResult<Users>> GetUserModel(int id)
+        //{
+        //    var UserModel = await _context.UserModels.FindAsync(id);
+
+        //    if (UserModel == null)
+        //    {
+        //        return NotFound();
+        //    }
+
+        //    return UserModel;
+        //}
         // GET: api/Users/5
         [HttpGet("{id}")]
-        [Authorize(Roles = "Admin")]
+  
         public async Task<ActionResult<Users>> GetUserModel(int id)
         {
-            var UserModel = await _context.UserModels.FindAsync(id);
+            if (id == 1)
+            {
+                var UserModel = await _context.UserModels.FindAsync(id);
 
-            if (UserModel == null)
+                if (UserModel == null)
+                {
+                    return NotFound();
+                }
+
+                return UserModel;
+            }
+            else
             {
                 return NotFound();
             }
-
-            return UserModel;
         }
 
         // PUT: api/Users/5
@@ -114,7 +135,8 @@ namespace ASP.Back.Controllers
         public async Task<IActionResult> DeleteUserModel(int id)
         {
             
-           
+           if(id == 1)
+                return BadRequest();
             var tmpUserModel = await _context.UserModels.FindAsync(id);
             if (tmpUserModel == null)
             {
