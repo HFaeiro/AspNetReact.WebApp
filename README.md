@@ -1,5 +1,5 @@
  # AspNetReact.WebApp
-`hsl(212, 92%, 45%)`
+
 ### Currently working just as a login portal.
 
 ## Dependancies:
