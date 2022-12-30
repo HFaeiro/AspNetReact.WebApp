@@ -15,52 +15,55 @@ export default class App extends Component {
         super(props);
         this.login = this.login.bind(this);
         this.logout = this.logout.bind(this);
-       
+        this.state = { loggedIn: 'false'};
     }
 
 
+    //lets logout now....
     logout = () => {
 
+
         const l = JSON.parse(localStorage.profile);
-        if (l.token || l.userId || l.username || l.privileges) {
+        if (l.token || l.userId || l.username || l.privileges) { //check profile data if any exists we wipe 
             localStorage.setItem('profile', JSON.stringify({
-                profile: {
-                    userId: '',
-                    token: '',
-                    username: '',
-                    privileges: '',
-
-                }
+                userId: '',
+                token: '',
+                username: '',
+                privileges: '',
             }));
+            this.setState(
+                { loggedIn: 'false' }); //this is where I get warning "cannot update during an existing state transition" wasn't getting this before.. tracing steps back now...
         }
+
+            <Navigate to={"/"} />
+
     }
 
+
+    //lets store login data... 
     login = (loginData) => {
-        var localProfile = localStorage.profile;
-        if (localProfile) {
-            const profile = JSON.parse(localStorage.profile);
-            if (!profile.token) {
-                localStorage.setItem('profile', JSON.stringify(loginData));
-            }
-        }
-        else localStorage.setItem('profile', JSON.stringify(loginData));
+        localStorage.setItem('profile', JSON.stringify(loginData));
     }
 
+    
     render() {
+        //get our profile data
         var localProfile = localStorage.profile;
         var loggedIn = 'false';
-        if (localProfile) {
+        var profile;
+        if (localProfile) { //if the profile exists we will try to use it 
 
-            var profile = JSON.parse(localProfile);
-            loggedIn = profile.token || profile.userId || profile.username || profile.privileges ? 'true' : 'false';
+             profile = JSON.parse(localProfile); //lets parse the data now that we know it exists.
+            loggedIn = profile.token && profile.userId && profile.username && profile.privileges ? 'true' : 'false'; //lets determine if we're logged in. 
         }
-        else {
+        else { //no data existed.. Usually meant data was null or undefined. we'll create it now. 
             profile = {
                 userId: '',
                 token: '',
                 username: '',
                 privileges: '',
             }
+            localStorage.setItem('profile', JSON.stringify(profile)); //setup blank tables in the Local item. 
            
         }
         //setup routes and send props
@@ -71,12 +74,8 @@ export default class App extends Component {
                         Login Portal
                     </h3>
 
-                    <Navigation
-
+                    <Navigation 
                         isLoggedIn={loggedIn}
-                        login={this.login }
-                        logout={this.logout}
-
                     />
                     <Routes>
 
@@ -95,6 +94,7 @@ export default class App extends Component {
 
                         />} />
                         <Route path="/logout" element={<Logout
+                            isLoggedIn={loggedIn }
                             logout={this.logout}
 
 

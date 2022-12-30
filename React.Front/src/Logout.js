@@ -3,24 +3,19 @@ import React/*, { Component,useEffect }*/ from 'react';
 import { Navigate } from 'react-router-dom';
 
 export default function Logout(props) {
+    //call logout from app.js
+
+    let content = props.isLoggedIn ?
+        props.logout()
+        : <Navigate to={"/"} />
 
 
-    //const location = useLocation();
-    //    const { state } = location;
-
-    //useEffect(() => {
-    //    console.log(location);
-    //    console.log(props);
-    //}
-    //   )
-
-    //localStorage.setItem('token', '');
-    //localStorage.setItem('loggedIn', 'false');
     return (
-        <div>
-            {props.logout()}
 
-            <Navigate to={"/"} />
+        <div>
+           
+            {/*navigate to the index page.*/}
+            {content}
 
 
         </div>

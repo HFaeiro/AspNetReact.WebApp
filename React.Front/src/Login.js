@@ -7,12 +7,10 @@ import { AddUsersModal } from './AddUsersModal';
 export class Login extends Component {
     constructor(props) {
         super(props);
-
-
         this.getPostResponse = this.getPostResponse.bind(this);
 
     }
-
+    //attempt to get profile data back from server with login data
     getPostResponse = async (event) => {
         return await new Promise(resolve => {
             fetch(process.env.REACT_APP_API + 'login', {
@@ -28,14 +26,8 @@ export class Login extends Component {
             })
                 .then(res => res.json())
                 .then(data => {
-                    //if (data.status == 400)
-                    //    resolve(null);
-                    //else {
-                    //  this.props.login(data);
-                    resolve(data);
-                    //}
-                }
-                )
+                    resolve(data); //got the data now lets see what it is! this goes back to loader()
+                })
         })
 
     }
@@ -43,14 +35,11 @@ export class Login extends Component {
     //send login data to server
     loader = async (event) => {
         const loggedIn = this.props.isLoggedIn;
-        //if not logged in yet
-        if (loggedIn === 'false' || loggedIn === undefined) {
+        if (loggedIn === 'false' || loggedIn === undefined) {//if not logged in yet
             event.preventDefault();
-            //await login response from server
-            const res = await this.getPostResponse(event);
+            const res = await this.getPostResponse(event);//await login response from server
             if (res != null) {
-                //if response status is not a bad request send data to login func
-                if (res.status != 400) {
+                if (res.status != 400) { //if response status is not a bad request send data to login func
                     this.props.login(res);
                     document.getElementById('login').submit();
                 }
@@ -59,44 +48,25 @@ export class Login extends Component {
                     if (this.props.isLoggedIn === 'true')
                         this.props.logout();
                 }
-
             }
             else { //if invalid return value from login we will just send to logout to make sure no lingering logged in vals
                 this.props.logout();
             }
-
         }
         else {//really shouldn't ever hit this....'
-            // localStorage.setItem('loggedIn', this.state.isLoggedIn);
             console.log('should never hit this!?')
-            // <Navigate to={"/users"} state={{token : this.state.token}}/>
-
         }
     }
 
-
-
-
-
-    componentDidMount() {
-
-    }
-    componentDidUpdate() {
-
-    }
     render() {
         //if !loggedin show login form 
-        //else redirect to users page
         const loggedIn = this.props.isLoggedIn;
         if (loggedIn === 'false' || loggedIn === undefined) {
 
             console.log(this.props);
             return (
-
-
                 <div>
                     <h3>Login</h3>
-
 
                     <Form id="login" onSubmit={this.loader}>
 
@@ -127,6 +97,7 @@ export class Login extends Component {
 
             );
         }
+        //else redirect to users page
         else
             return (
                 <div>
