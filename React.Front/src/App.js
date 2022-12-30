@@ -2,11 +2,11 @@ import React, { Component } from 'react';
 import { Home } from './Home';
 import { Users } from './Users';
 import { Login } from './Login';
-import Navigation from './Navigation';
+import  Navigation  from './Navigation';
 import { Routes, Route } from 'react-router';
 import { Navigate } from 'react-router-dom'
 import ErrorPage from './ErrorPage';
-import Logout from './Logout';
+import  Logout  from './Logout';
 
 
 
@@ -15,32 +15,12 @@ export default class App extends Component {
         super(props);
         this.login = this.login.bind(this);
         this.logout = this.logout.bind(this);
-
-    }
-
-
-
-
-    componentDidMount() {
-        const l = JSON.parse(localStorage.profile);
-
-        if (l.token || l.userId || l.username || l.privileges) {
-            this.setState(
-                {
-                    profile: {
-                        userId: l.userId,
-                        token: l.token,
-                        username: l.username,
-                        privileges: l.privileges,
-
-                    }
-                }
-            )
-        }
+       
     }
 
 
     logout = () => {
+
         const l = JSON.parse(localStorage.profile);
         if (l.token || l.userId || l.username || l.privileges) {
             localStorage.setItem('profile', JSON.stringify({
@@ -56,24 +36,32 @@ export default class App extends Component {
     }
 
     login = (loginData) => {
-        const profile = JSON.parse(localStorage.profile);
-
-        if (!profile.token) {
-            localStorage.setItem('profile', JSON.stringify(loginData));
+        var localProfile = localStorage.profile;
+        if (localProfile) {
+            const profile = JSON.parse(localStorage.profile);
+            if (!profile.token) {
+                localStorage.setItem('profile', JSON.stringify(loginData));
+            }
         }
+        else localStorage.setItem('profile', JSON.stringify(loginData));
     }
 
     render() {
-        var profile = JSON.parse(localStorage.profile);
-        const loggedIn = profile ? 'true' : 'false';
-        if (!profile) {
+        var localProfile = localStorage.profile;
+        var loggedIn = 'false';
+        if (localProfile) {
 
+            var profile = JSON.parse(localProfile);
+            loggedIn = profile.token || profile.userId || profile.username || profile.privileges ? 'true' : 'false';
+        }
+        else {
             profile = {
                 userId: '',
                 token: '',
                 username: '',
                 privileges: '',
             }
+           
         }
         //setup routes and send props
         return (
@@ -86,14 +74,14 @@ export default class App extends Component {
                     <Navigation
 
                         isLoggedIn={loggedIn}
-                        login={this.login}
+                        login={this.login }
                         logout={this.logout}
 
                     />
                     <Routes>
 
                         <Route path="/" element={<Home
-                            profile={profile}
+                            profile={profile }
                         />} />
                         <Route path="/login" element={<Login
                             isLoggedIn={loggedIn}
@@ -103,7 +91,7 @@ export default class App extends Component {
                         />} />
                         <Route path="/users" element={<Users
                             isLoggedIn={loggedIn}
-                            token={profile.token}
+                            token={profile.token }
 
                         />} />
                         <Route path="/logout" element={<Logout
