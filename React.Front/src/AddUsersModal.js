@@ -52,7 +52,10 @@ export class AddUsersModal extends Component {
             else {
 
                 alert('Username Created Successfully');
-                this.closeModal();
+                event.target.Username.value = null;
+                event.target.Password.value = null;
+                event.target.Privileges.value = null;
+                document.getElementById('addUsers').submit();
             }
         }
         else {
@@ -89,7 +92,7 @@ export class AddUsersModal extends Component {
                     <Modal.Body>
                         <Row>
                             <Col sm={6}>
-                                <Form onSubmit={this.loader}>
+                                <Form id="addUsers" onSubmit={this.loader}>
                                     <Form.Group controlId="Username">
                                         <Form.Label>Username</Form.Label>
                                         <Form.Control type="text" name="Username" required

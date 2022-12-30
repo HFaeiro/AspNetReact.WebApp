@@ -41,7 +41,10 @@ export class Login extends Component {
             if (res != null) {
                 if (res.status != 400) { //if response status is not a bad request send data to login func
                     this.props.login(res);
+                    event.target.Username.value = null;
+                    event.target.Password.value = null;
                     document.getElementById('login').submit();
+
                 }
                 else {
                     alert('Sorry Invalid Username & Password. Please Try Again!');

@@ -8,45 +8,58 @@ export class EditUsersModal extends Component {
     };
     constructor(props) {
         super(props);
-        this.handleSubmit = this.handleSubmit.bind(this);
+        this.loader = this.loader.bind(this);
 
     }
     openModal = () => this.setState({ showModal: true });
     closeModal = () => this.setState({ showModal: false });
     async handleSubmit(event) {
-
-        fetch(process.env.REACT_APP_API + 'users/' + event.target.Id.value, {
-            method: 'PUT',
-            headers: {
-                'Accept': 'application/json',
-                'Authorization': 'Bearer ' + this.state.token,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                UserId: event.target.Id.value,
-                Username: event.target.Username.value,
-                Password: event.target.Password.value,
-                Privileges: event.target.Privileges.value
-
-
-
-            })
+        const ret = await new Promise(resolve => {
+            event.preventDefault();
+            fetch(process.env.REACT_APP_API + 'users/' + event.target.Id.value, {
+                method: 'PUT',
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': 'Bearer ' + this.state.token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    UserId: event.target.Id.value,
+                    Username: event.target.Username.value,
+                    Password: event.target.Password.value,
+                    Privileges: event.target.Privileges.value
 
 
-        }).then(res => res.json())
-            .then((result) => {
-                this.closeModal()
-                alert(result);
 
-
-            },
-                (error) => {
-                    alert('Failed:' + error);
                 })
 
+
+            }).then(res => res.json())
+                .then((result) => {
+                    this.closeModal()
+                    alert(result);
+
+
+                },
+                    (error) => {
+                        alert('Failed:' + error);
+                    })
+
+        })
     }
 
 
+    loader = async (event) => {
+        const res = await this.handleSubmit(event);
+        if (res) {
+            if (res.status != 400)
+                event.target.Id.value = null;
+            event.target.Username.value = null;
+            event.target.Password.value = null;
+            event.target.Privileges.value = null;
+            document.getElementById('editUsers').submit();
+        }
+    }
 
     render() {
 
@@ -73,7 +86,7 @@ export class EditUsersModal extends Component {
                     <Modal.Body>
                         <Row>
                             <Col sm={6}>
-                                <Form onSubmit={this.handleSubmit}>
+                                <Form id="editUsers" onSubmit={this.loader}>
                                     <Form.Group controlId="Id">
                                         <Form.Label>Id</Form.Label>
                                         <Form.Control type="text" name="Id" required
