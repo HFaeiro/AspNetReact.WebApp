@@ -39,12 +39,14 @@ export default class App extends Component {
     //lets store login data... 
     login = (loginData) => {
         localStorage.setItem('profile', JSON.stringify(loginData));
+        this.setState(
+            { loggedIn: 'true' }); 
     }
 
     render() {
         //get our profile data
         var localProfile = localStorage.profile;
-        var loggedIn = 'false';
+        var loggedIn = this.state.loggedIn;
         var profile;
         if (localProfile) { //if the profile exists we will try to use it 
 

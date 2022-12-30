@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import { Modal, Button, Row, Col, Form } from 'react-bootstrap'
-import { createPath } from 'react-router-dom';
 
 export class AddUsersModal extends Component {
     constructor(props) {
