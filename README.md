@@ -4,11 +4,11 @@
 
 ## Dependancies:
 
->Visual Studio 2022 IDE.
+- >Visual Studio 2022 IDE.
 
->.Net 6 (".NET Desktop Development" package in visual studio installer.)
+- >.Net 6 (".NET Desktop Development" package in visual studio installer.)
 
->ASP.Net core 6. ("ASP.NET and web Development" package in visual studio installer.)
+- >ASP.Net core 6. ("ASP.NET and web Development" package in visual studio installer.)
 
 
 ## How to run.
