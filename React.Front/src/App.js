@@ -15,27 +15,37 @@ export default class App extends Component {
         super(props);
         this.login = this.login.bind(this);
         this.logout = this.logout.bind(this);
-        this.state = { loggedIn: 'false'};
-    }
+        this.state = { loggedIn: 'false', logoutModal : true };
 
+    }
+    setStateAsync = async (state) => {
+        return await new Promise(resolve => {
+        
+            this.setState(state, resolve);
+
+
+        })
+        
+    }
 
     //lets logout now....
     logout = () => {
 
 
         const l = JSON.parse(localStorage.profile);
-        if (l.token || l.userId || l.username || l.privileges) { //check profile data if any exists we wipe 
-            localStorage.setItem('profile', JSON.stringify({
-                userId: '',
-                token: '',
-                username: '',
-                privileges: '',
-            }));
+        if (l.token || l.userId || l.username || l.privileges) { //check profile data if any exists we wipe
+            //localStorage.setItem('profile', JSON.stringify({
+            //    userId: '',
+            //    token: '',
+            //    username: '',
+            //    privileges: '',
+            //}));
+            localStorage.clear();
             this.setState(
                 { loggedIn: 'false' }); //this is where I get warning "cannot update during an existing state transition" wasn't getting this before.. tracing steps back now...
         }
 
-            <Navigate to={"/"} />
+           
 
     }
 
@@ -76,6 +86,7 @@ export default class App extends Component {
 
                     <Navigation 
                         isLoggedIn={loggedIn}
+
                     />
                     <Routes>
 
@@ -94,9 +105,10 @@ export default class App extends Component {
 
                         />} />
                         <Route path="/logout" element={<Logout
-                            isLoggedIn={loggedIn }
+                            isLoggedIn={loggedIn}
                             logout={this.logout}
-
+                            setStateAsync={this.setStateAsync }
+                            showModal={this.state.logoutModal}
 
                         />} />
 

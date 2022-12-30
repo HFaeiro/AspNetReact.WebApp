@@ -7,15 +7,6 @@ export default function Navigation(props) {
 
 
 
-
-
-    const login = () => {
-        props.login();
-    }
-    const logout = () => {
-        props.logout();
-    }
-
     //if user is logged in we will show logout instead of login
     let NavLog = props.isLoggedIn === 'false' ?
         <NavLink className="d-inline p-2 bg-dark text-white" to="/login">

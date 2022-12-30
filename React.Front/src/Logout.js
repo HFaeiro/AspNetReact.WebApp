@@ -1,12 +1,31 @@
 import React/*, { Component,useEffect }*/ from 'react';
-
+import { Button, Modal } from 'react-bootstrap';
 import { Navigate } from 'react-router-dom';
 
 export default function Logout(props) {
-    //call logout from app.js
+    const closeModal = async () => {
+        const res = await props.setStateAsync({ logoutModal: false });
+        window.location = './';
+    }
+    //call logout in app.js or
+    //navigate to the index page.
+    let content = props.isLoggedIn === 'true' || !props.showModal ?
+        <Modal show={props.showModal}
+            onHide={closeModal}
+            size="sm"
+            aria-labelledby="contained-modal-title-vcenter"
+            centered>
 
-    let content = props.isLoggedIn ?
-        props.logout()
+            <Modal.Header closeButton>
+                <Modal.Title id="contained-modal-title-vcenter">
+                    Are you Sure?!
+                </Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                <Button variant='danger' onClick={() => props.logout()}>Yes!</Button>
+                <Button variant='primary' onClick={() => closeModal() }>Nevermind!</Button>
+            </Modal.Body>
+            </Modal>
         : <Navigate to={"/"} />
 
 
@@ -14,7 +33,7 @@ export default function Logout(props) {
 
         <div>
            
-            {/*navigate to the index page.*/}
+            
             {content}
 
 
