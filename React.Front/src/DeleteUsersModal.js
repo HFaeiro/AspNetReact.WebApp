@@ -12,8 +12,11 @@ export class DeleteUsersModal extends Component {
         this.handleSubmit = this.handleSubmit.bind(this);
 
     }
+    //open and close modal lambas
     openModal = () => this.setState({ showModal: true });
     closeModal = () => this.setState({ showModal: false });
+
+    //sends a delete with id
     async handleSubmit(event) {
         fetch(process.env.REACT_APP_API + 'users/' + event.target.Id.value, {
             method: 'DELETE',
@@ -69,14 +72,6 @@ export class DeleteUsersModal extends Component {
                                             disabled
                                             defaultValue={this.props.uName}
                                             placeholder={this.props.uName}>
-                                        </Form.Control>
-                                    </Form.Group>
-                                    <Form.Group controlId="Password">
-                                        <Form.Label>Password</Form.Label>
-                                        <Form.Control type="password" name="Password" required
-                                            disabled
-                                            defaultValue={this.props.uPass}
-                                            placeholder={this.props.uPass}>
                                         </Form.Control>
                                     </Form.Group>
                                     <Form.Group controlId="Privileges">

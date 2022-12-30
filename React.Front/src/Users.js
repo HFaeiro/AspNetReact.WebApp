@@ -18,8 +18,9 @@ export class Users extends Component {
 
     }
 
+    //refreshes list
     refreshList = async () => {
-      
+      //returns promise as the profile[] or null. with token. 
         return await new Promise(resolve => {
             fetch('../' + process.env.REACT_APP_API + 'users', {
                 headers:
@@ -45,12 +46,13 @@ export class Users extends Component {
         
 
     }
-
+    //we need to refresh the users list..
+    //returns promise we never handle.
     loader = async () => {
             const res = await this.refreshList();
     }
 
-
+    //when component mounts and we are confirmed logged in we will begin
     componentDidMount() {
         if (this.props.isLoggedIn == 'true') {
             this.loader();
@@ -58,8 +60,9 @@ export class Users extends Component {
     }
 
 
-
+    //this will map the array of profiles received from server and display them. 
     static renderTable(profile, klass) {
+        //determines if displaying user is admin.
         var isAdmin = klass.props.profile.privileges == 'Admin' ?
             true
             : false;
@@ -83,19 +86,21 @@ export class Users extends Component {
                                 <td>{p.username}</td>
                                 <td>{p.privileges}</td>
                                 <td>
+                                    {/* if admin == true show edit 
+                                      and delete users modal buttons */ }
                                     { isAdmin ? <> <EditUsersModal
                                         uId={p.userId}
                                         uName={p.username}
                                         uPass={p.password}
                                         uPriv={p.privileges}
-                                        token={klass.props.token}
+                                        token={klass.props.profile.token}
                                     />
                                     <DeleteUsersModal
                                         uId={p.userId}
                                         uName={p.username}
                                         uPass={p.password}
                                         uPriv={p.privileges}
-                                        token={klass.props.token}
+                                        token={klass.props.profile.token}
                                         /> </>: <></>}
                                 </td>
                             </tr>)}
@@ -117,7 +122,7 @@ export class Users extends Component {
     }
  
 
-
+    //if not logged in go to login page.. else render the user tables
     render() {
         let contents = (this.props.isLoggedIn === 'false')
             ?

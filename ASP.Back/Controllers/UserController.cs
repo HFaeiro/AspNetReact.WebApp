@@ -67,7 +67,7 @@ namespace ASP.Back.Controllers
             {
                 return BadRequest();
             }
-
+            
             _context.Entry(UserModel).State = EntityState.Modified;
 
             try

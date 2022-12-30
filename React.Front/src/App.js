@@ -22,40 +22,25 @@ export default class App extends Component {
         return await new Promise(resolve => {
         
             this.setState(state, resolve);
-
-
         })
-        
     }
 
     //lets logout now....
     logout = () => {
-
-
         const l = JSON.parse(localStorage.profile);
         if (l.token || l.userId || l.username || l.privileges) { //check profile data if any exists we wipe
-            //localStorage.setItem('profile', JSON.stringify({
-            //    userId: '',
-            //    token: '',
-            //    username: '',
-            //    privileges: '',
-            //}));
-            localStorage.clear();
+            localStorage.clear();//clear local storage.. we don't need anything here atm..
+                                //maybe will need to change that in the future
             this.setState(
-                { loggedIn: 'false' }); //this is where I get warning "cannot update during an existing state transition" wasn't getting this before.. tracing steps back now...
+                { loggedIn: 'false' }); 
         }
-
-           
-
     }
-
 
     //lets store login data... 
     login = (loginData) => {
         localStorage.setItem('profile', JSON.stringify(loginData));
     }
 
-    
     render() {
         //get our profile data
         var localProfile = localStorage.profile;
@@ -63,7 +48,7 @@ export default class App extends Component {
         var profile;
         if (localProfile) { //if the profile exists we will try to use it 
 
-             profile = JSON.parse(localProfile); //lets parse the data now that we know it exists.
+            profile = JSON.parse(localProfile); //lets parse the data now that we know it exists.
             loggedIn = profile.token && profile.userId && profile.username && profile.privileges ? 'true' : 'false'; //lets determine if we're logged in. 
         }
         else { //no data existed.. Usually meant data was null or undefined. we'll create it now. 
@@ -121,6 +106,4 @@ export default class App extends Component {
             </section>
         );
     }
-
-
 }
