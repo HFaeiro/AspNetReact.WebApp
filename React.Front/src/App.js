@@ -7,7 +7,7 @@ import { Routes, Route } from 'react-router';
 import { Navigate } from 'react-router-dom'
 import ErrorPage from './ErrorPage';
 import  Logout  from './Logout';
-
+import {AddUsersModal} from './AddUsersModal'
 
 
 export default class App extends Component {
@@ -86,7 +86,7 @@ export default class App extends Component {
 
                     <Navigation 
                         isLoggedIn={loggedIn}
-
+                        profile={profile }
                     />
                     <Routes>
 
@@ -100,9 +100,8 @@ export default class App extends Component {
                             token={profile.token}
                         />} />
                         <Route path="/users" element={<Users
+                            profile={profile }
                             isLoggedIn={loggedIn}
-                            token={profile.token }
-
                         />} />
                         <Route path="/logout" element={<Logout
                             isLoggedIn={loggedIn}
@@ -110,6 +109,10 @@ export default class App extends Component {
                             setStateAsync={this.setStateAsync }
                             showModal={this.state.logoutModal}
 
+                        />} />
+                        <Route path="/create" element={<AddUsersModal
+                            showModal={true}
+                            dontShowButton={true }
                         />} />
 
 

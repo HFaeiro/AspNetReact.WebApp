@@ -10,7 +10,7 @@ export class Users extends Component {
         this.state = {
             token: '',
             loggedIn: '',
-            profile: [],
+            profiles: [],
             loading: true
 
         }
@@ -25,14 +25,14 @@ export class Users extends Component {
                 headers:
                 {
                     'Accept': 'application/json',
-                    'Authorization': 'Bearer ' + this.props.token,
+                    'Authorization': 'Bearer ' + this.props.profile.token,
                     'Content-Type': 'application/json'
                     
                 }
             })
                 .then(res => res.json())
                 .then(data => {
-                    this.setState({ profile: data, loading: false });
+                    this.setState({ profiles: data, loading: false });
                     resolve(data);
                 },
                     (error) => {
@@ -60,7 +60,9 @@ export class Users extends Component {
 
 
     static renderTable(profile, klass) {
-
+        var isAdmin = klass.props.profile.privileges == 'Admin' ?
+            true
+            : false;
 
         return (
             <>
@@ -81,7 +83,7 @@ export class Users extends Component {
                                 <td>{p.username}</td>
                                 <td>{p.privileges}</td>
                                 <td>
-                                    <EditUsersModal
+                                    { isAdmin ? <> <EditUsersModal
                                         uId={p.userId}
                                         uName={p.username}
                                         uPass={p.password}
@@ -94,7 +96,7 @@ export class Users extends Component {
                                         uPass={p.password}
                                         uPriv={p.privileges}
                                         token={klass.props.token}
-                                    />
+                                        /> </>: <></>}
                                 </td>
                             </tr>)}
                     </tbody>
@@ -125,7 +127,7 @@ export class Users extends Component {
                     isLoggedIn: false
                 }} />
             :
-            Users.renderTable(this.state.profile, this);
+            Users.renderTable(this.state.profiles, this);
   
         return (
             <div>

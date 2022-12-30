@@ -7,13 +7,17 @@ export class AddUsersModal extends Component {
         super(props);
         this.handleSubmit = this.handleSubmit.bind(this);
         this.state = {
-            showModal: false,
+            showModal: props.showModal,
             token: this.props.token
         };
 
     }
     openModal = () => this.setState({ showModal: true });
-    closeModal = () => this.setState({ showModal: false });
+    closeModal = () => {
+        this.setState({ showModal: false });
+        if (this.props.dontShowButton)
+            window.location = './login';
+    }
     handleSubmit = async (event) => {
          const ret = await new Promise(resolve => {
             event.preventDefault();
@@ -31,10 +35,6 @@ export class AddUsersModal extends Component {
 
 
             }).then(res => res.json())
-                //.then((result) => {
-                     
-                //   console.log(result)
-                //    resolve(result);
                 .then(data => {
                     console.log(data)
                     resolve(data);
@@ -65,9 +65,13 @@ export class AddUsersModal extends Component {
         return (
             <>
                 <div className="d-flex align-items-center justify-content-center">
+                {!this.props.dontShowButton ?  
                     <Button variant="primary" onClick={this.openModal}>
                         Create User
-                    </Button>
+                    </Button>:
+                    <></>
+                    }
+                
 
                 </div>
 

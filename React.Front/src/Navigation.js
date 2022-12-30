@@ -8,11 +8,17 @@ export default function Navigation(props) {
 
 
     //if user is logged in we will show logout instead of login
-    let NavLog = props.isLoggedIn === 'false' ?
-        <NavLink className="d-inline p-2 bg-dark text-white" to="/login">
-            Login
-        </NavLink>
-        :
+    let NavLog = props.isLoggedIn === 'false' ? (
+        <>
+            <NavLink className="d-inline p-2 bg-dark text-white" to="/login">
+                Login
+            </NavLink>
+            <NavLink className="d-inline p-2 bg-dark text-white" to="/create">
+                Create an Account
+            </NavLink>
+        </>
+        ):(
+         props.profile.privileges == 'Admin'  ? // if user is admin we will show Users link.
         <>
             <NavLink className="d-inline p-2 bg-dark text-white" to="/logout">
                 Logout
@@ -21,6 +27,14 @@ export default function Navigation(props) {
                 Users
             </NavLink>
         </>
+                :
+                <>
+                <NavLink className="d-inline p-2 bg-dark text-white" to="/logout">
+                    Logout
+                </NavLink>
+                </>
+
+        )
 
 
 
