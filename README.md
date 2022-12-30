@@ -12,17 +12,16 @@
 
 
 ## How to run.
->Open **React.Front.sln** in visual studio 2022 IDE.
+1. >Open **React.Front.sln** in visual studio 2022 IDE.
 
->right click on ***"Solution 'React.Front.sln' (4 of 4 projects)"*** in the Solution explorer.
+2. >right click on ***"Solution 'React.Front.sln' (4 of 4 projects)"*** in the Solution explorer.
 
->click **set startup projects**. 
+    - >click **set startup projects**. 
 
->select **multiple startup projects** and set **ASP.Back to start** and **react.front to start**.
+    - >select **multiple startup projects** and set **ASP.Back to start** and **react.front to start**.
 
->Make sure **ASP.Back is first(top)** and **react.front comes after**. 
+    - >Make sure **ASP.Back is first(top)** and **react.front comes after**. 
 
->Now hit ok. and ****start debugging****! 
-
+3. >Now hit ok. and ****start debugging****! 
 
 
