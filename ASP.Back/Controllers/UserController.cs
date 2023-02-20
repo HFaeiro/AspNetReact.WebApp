@@ -12,16 +12,9 @@ namespace ASP.Back.Controllers
     {
         private readonly TeamManiacsDbContext _context;
 
-
-
-
         public UsersController(TeamManiacsDbContext context )
         {
-
              _context = context;
-           
-
-
         }
 
         // GET: api/Users
@@ -48,7 +41,6 @@ namespace ASP.Back.Controllers
         //}
         // GET: api/Users/5
         [HttpGet("{id}")]
-  
         public async Task<ActionResult<Users>> GetUserModel(int id)
         {
             if (id == 1)

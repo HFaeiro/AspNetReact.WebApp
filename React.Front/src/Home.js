@@ -1,10 +1,12 @@
 import React, { Component } from 'react';
-
+import {Form } from 'react-bootstrap'
 
 export class Home extends Component {
     state =
         {
-            defaultUser:[]
+            defaultUser: [],
+            file: null,
+            video: null
             }
 
     async handleSubmit() {
@@ -22,7 +24,7 @@ export class Home extends Component {
 
     },
         (error) => {
-            alert('Failed:' + error);
+           console.log('Failed:' + error);
         })
 
     }
@@ -30,11 +32,85 @@ export class Home extends Component {
     componentDidMount() {
         this.handleSubmit();
     }
+    loadVideo = file => new Promise((resolve, reject) => {
+        try {
+            var video = document.createElement('video');
+            video.preload = 'metadata';
+            window.URL = window.URL || window.webkitURL;
+            video.onloadedmetadata = function () {
+                window.URL.revokeObjectURL(video.src);
+                if (video.duration > 90) {
+
+                    reject("Invalid Video! Max Video Length is 1:30s");
+                }
+                resolve(this);
+            }
+            video.onerror = function () {
+                reject("Invalid File Type - Please upload a video file")
+            }
+            video.src = URL.createObjectURL(file)
+        }
+        catch (e) {
+            reject(e);
+        }
+    })
+    async handleFile(e) {
+        let file = e.target.files[0];
+        let fileInMB = file.size / 1024 / 1024;
+            try {
+                let video = await this.loadVideo(file);
+
+                if (video && fileInMB < 100) {
+                    this.setState({ file: file });
+                    this.setState({ video: video });
+                }
+                else {
+                    alert("File Too Powerful, Please upload a file smaller than 1GB");
+                }
+            }
+            catch (e) {
+                alert(e);
+            }
+    }
+    uploadFile(e) {
+        var success = true;
+        const formData = new FormData();
+        formData.append("Username", this.props.profile.username);
+        formData.append("File", this.state.file);
+        try {
+            fetch(process.env.REACT_APP_API + 'video', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json'
+                },
+                body: formData
+
+            }).then(
+                response => response.json() // if the response is a JSON object
+            ).then(
+                console.log("sent file : ", this.state.file.name) // Handle the success response object
+            ).catch(
+                error => console.log("fetch: " + error) // Handle the error response object
+                
+            );
+            
+        }
+        catch (e) {
+            console.log("catch: " + e)
+            success = false;
+        }
+        if (success)
+            this.setState({ file: null });
+
+        
+    }
+    
 
     render() {
         //let contents = username if it exists.
         let contents = this.props.profile.username ?
-            <h3>Hello, {this.props.profile.username}</h3>
+                <h3>Hello, {this.props.profile.username}</h3>
+            
             : <div><h3>Hello stranger!</h3>
                 <div><span>
                     You can either create a user or you can login using the default!
@@ -44,19 +120,66 @@ export class Home extends Component {
                     Try this Username : {this.state.defaultUser.username}
                 </span>
                 <div> <span>
-                   And this Password! : {this.state.defaultUser.password}
+                    And this Password! : {this.state.defaultUser.password}
                 </span>
                 </div>
                 <div> <span>
-                    Might see the password change right here if you edit it 
+                    Might see the password change right here if you edit it
                 </span>
                 </div>
             </div>
+
+
+        let loggedInContents = this.state.file ?
+            <div className=" justify-content-left">
+                <table className='table table-striped'
+                    aria-labelledby="tabelLabel">
+                <thead>
+                    <tr>
+                        <th>File Name</th>
+                        <th>File Type</th>
+                        <th>File Size</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    
+                    <tr key={this.state.file.name}>
+                        <td>{this.state.file.name}</td>
+                            <td>{this.state.file.type}</td>
+                            <td>{this.state.file.size / 1024 / 1024 + " MB"}</td>
+                            </tr>
+                    </tbody>
+                    </table>
+                <button className="btn btn-primary" onClick={(e) => this.uploadFile(e)}>
+                    Send File 
+                </button>
+                <button className="btn btn-danger" onClick={(e) => this.setState({file : null})}>
+                    Clear File
+                </button>
+            </div> :
+            <div>
+               
+                <div >
+                    <Form.Group controlId="formFile" className="mb-3">
+                    <Form.Label>Default file input example</Form.Label>
+                    <Form.Control type="file" name="file_source" size="40" accept="video/*"  onChange={(e) => this.handleFile(e)}  />
+                </Form.Group>
+                   
+                </div> 
+                        
+                       
+                    
+                    
+                
+            </div>
+
+
         return (
-            <div className="mt-5 d-flex justify-content-left">
+            <div className="mt-5 justify-content-left">
 
                 {contents}
-
+                {loggedInContents}
+                
             </div>
         );
     }

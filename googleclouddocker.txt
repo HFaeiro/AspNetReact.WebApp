@@ -1,0 +1,11 @@
+git clone https://HFaeiro@github.com/HFaeiro/AspNetReact.WebApp
+git clone https://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@github.com/HFaeiro/AspNetReact.WebApp
+https://github.com/HFaeiro/AspNetReact.WebApp
+
+gcloud beta app deploy ./bin/Release/net6.0/publish/app.yaml
+
+
+gcloud builds submit --tag [IMAGE] C:\Users\Mike\source\repos\React.Front\ASP.Back\bin\Release\net6.0` and `gcloud run deploy silken-bastion --image [IMAGE]
+
+
+gcloud run deploy --source .
