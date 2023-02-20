@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import {Form } from 'react-bootstrap'
-
+import { Navigate, Link } from 'react-router-dom';
 export class Home extends Component {
     state =
         {
@@ -107,10 +107,55 @@ export class Home extends Component {
     
 
     render() {
+
+        let loggedInContents = this.state.file ?
+            <div className=" justify-content-left">
+                <table className='table table-striped'
+                    aria-labelledby="tabelLabel">
+                    <thead>
+                        <tr>
+                            <th>File Name</th>
+                            <th>File Type</th>
+                            <th>File Size</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        <tr key={this.state.file.name}>
+                            <td>{this.state.file.name}</td>
+                            <td>{this.state.file.type}</td>
+                            <td>{this.state.file.size / 1024 / 1024 + " MB"}</td>
+                        </tr>
+                    </tbody>
+                </table>
+                <button className="btn btn-primary" onClick={(e) => this.uploadFile(e)}>
+                    Send File
+                </button>
+                <button className="btn btn-danger" onClick={(e) => this.setState({ file: null })}>
+                    Clear File
+                </button>
+            </div> :
+            <div>
+
+                <div >
+                    <Form.Group controlId="formFile" className="mb-3">
+                        <Form.Label>Upload a Video Submission!</Form.Label>
+                        <Form.Control type="file" name="file_source" size="40" accept="video/*" onChange={(e) => this.handleFile(e)} />
+                    </Form.Group>
+
+                </div>
+
+
+
+
+
+            </div>
+
         //let contents = username if it exists.
         let contents = this.props.profile.username ?
+            < >
                 <h3>Hello, {this.props.profile.username}</h3>
-            
+                   { loggedInContents }</>
             : <div><h3>Hello stranger!</h3>
                 <div><span>
                     You can either create a user or you can login using the default!
@@ -127,58 +172,20 @@ export class Home extends Component {
                     Might see the password change right here if you edit it
                 </span>
                 </div>
+                <Link to="login" className="btn btn-primary" >
+                    Login!
+                </Link>
             </div>
 
 
-        let loggedInContents = this.state.file ?
-            <div className=" justify-content-left">
-                <table className='table table-striped'
-                    aria-labelledby="tabelLabel">
-                <thead>
-                    <tr>
-                        <th>File Name</th>
-                        <th>File Type</th>
-                        <th>File Size</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    
-                    <tr key={this.state.file.name}>
-                        <td>{this.state.file.name}</td>
-                            <td>{this.state.file.type}</td>
-                            <td>{this.state.file.size / 1024 / 1024 + " MB"}</td>
-                            </tr>
-                    </tbody>
-                    </table>
-                <button className="btn btn-primary" onClick={(e) => this.uploadFile(e)}>
-                    Send File 
-                </button>
-                <button className="btn btn-danger" onClick={(e) => this.setState({file : null})}>
-                    Clear File
-                </button>
-            </div> :
-            <div>
-               
-                <div >
-                    <Form.Group controlId="formFile" className="mb-3">
-                    <Form.Label>Default file input example</Form.Label>
-                    <Form.Control type="file" name="file_source" size="40" accept="video/*"  onChange={(e) => this.handleFile(e)}  />
-                </Form.Group>
-                   
-                </div> 
-                        
-                       
-                    
-                    
-                
-            </div>
+       
 
 
         return (
             <div className="mt-5 justify-content-left">
 
                 {contents}
-                {loggedInContents}
+                
                 
             </div>
         );
