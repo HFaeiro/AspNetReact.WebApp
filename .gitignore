@@ -363,3 +363,4 @@ MigrationBackup/
 FodyWeavers.xsd
 /ASP.Back/wwwroot/uploads
 /googleclouddocker.txt
+/ASP.Back/Dockerfile
