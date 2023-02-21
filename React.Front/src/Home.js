@@ -1,14 +1,17 @@
 import React, { Component } from 'react';
 import {Form } from 'react-bootstrap'
 import { Navigate, Link } from 'react-router-dom';
+import { useRef } from 'react';
 export class Home extends Component {
     state =
         {
             defaultUser: [],
             file: null,
-            video: null
-            }
-
+            video: null,
+            showResults: false
+ 
+        }
+     
     async handleSubmit() {
         fetch(process.env.REACT_APP_API + 'users/' + '1', {
             method: 'Get',
@@ -46,7 +49,8 @@ export class Home extends Component {
                 resolve(this);
             }
             video.onerror = function () {
-                reject("Invalid File Type - Please upload a video file")
+
+                reject("Invalid File Type - Please upload a video file: " + video.error.message)
             }
             video.src = URL.createObjectURL(file)
         }
@@ -54,9 +58,14 @@ export class Home extends Component {
             reject(e);
         }
     })
+    getExtention = (filename) =>{
+        return filename.split('.').pop();
+}
     async handleFile(e) {
         let file = e.target.files[0];
         let fileInMB = file.size / 1024 / 1024;
+        let ext = this.getExtention(file.name);
+        if (ext != "avi")
             try {
                 let video = await this.loadVideo(file);
 
@@ -66,11 +75,19 @@ export class Home extends Component {
                 }
                 else {
                     alert("File Too Powerful, Please upload a file smaller than 1GB");
+                    document.getElementById("formFile").value = "";
+
+
                 }
             }
             catch (e) {
                 alert(e);
+                document.getElementById("formFile").value = "";
             }
+        else {
+            alert("Avi No Work, Sorry bud");
+            document.getElementById("formFile").value = "";
+        }
     }
     uploadFile(e) {
         var success = true;
@@ -107,9 +124,21 @@ export class Home extends Component {
     
 
     render() {
-
-        let loggedInContents = this.state.file ?
+       
+        
+        this.inputRef = React.createRef();
+        let loggedInContents = this.state.file && this.state.video ?
             <div className=" justify-content-left">
+                
+                    <button className="btn btn-primary" onClick={(e) => this.setState({ showResults: !this.state.showResults })}>
+                        {this.state.showResults ? "Hide" : "Preview"}
+                    </button>
+                    <div>
+                    {/*this.state.showResults ? */<video width="1080" height="720" preload="metadata" controls="controls" type={this.state.file.type}>
+                        <source src={this.state.video.src} />
+                    </video> /*: null*/}
+                    </div>
+                   
                 <table className='table table-striped'
                     aria-labelledby="tabelLabel">
                     <thead>
@@ -140,7 +169,7 @@ export class Home extends Component {
                 <div >
                     <Form.Group controlId="formFile" className="mb-3">
                         <Form.Label>Upload a Video Submission!</Form.Label>
-                        <Form.Control type="file" name="file_source" size="40" accept="video/*" onChange={(e) => this.handleFile(e)} />
+                        <Form.Control  type="file" name="file_source" size="40" accept="video/*" onChange={(e) => this.handleFile(e)} />
                     </Form.Group>
 
                 </div>
