@@ -11,7 +11,10 @@ export class Home extends Component {
             showResults: false
  
         }
-     
+    clearFiles() {
+        window.URL.revokeObjectURL(this.state.video.src);
+        this.setState({ file: null, video: null });
+    }
     async handleSubmit() {
         fetch(process.env.REACT_APP_API + 'users/' + '1', {
             method: 'Get',
@@ -41,20 +44,23 @@ export class Home extends Component {
             video.preload = 'metadata';
             window.URL = window.URL || window.webkitURL;
             video.onloadedmetadata = function () {
-                window.URL.revokeObjectURL(video.src);
+                
                 if (video.duration > 90) {
 
                     reject("Invalid Video! Max Video Length is 1:30s");
+                    window.URL.revokeObjectURL(video.src);
                 }
                 resolve(this);
             }
             video.onerror = function () {
 
                 reject("Invalid File Type - Please upload a video file: " + video.error.message)
+                window.URL.revokeObjectURL(video.src);
             }
             video.src = URL.createObjectURL(file)
         }
         catch (e) {
+            
             reject(e);
         }
     })
@@ -76,17 +82,19 @@ export class Home extends Component {
                 else {
                     alert("File Too Powerful, Please upload a file smaller than 1GB");
                     document.getElementById("formFile").value = "";
-
+                    window.URL.revokeObjectURL(video.src);
 
                 }
             }
             catch (e) {
                 alert(e);
                 document.getElementById("formFile").value = "";
+                window.URL.revokeObjectURL(this.state.video.src);
             }
         else {
             alert("Avi No Work, Sorry bud");
             document.getElementById("formFile").value = "";
+            window.URL.revokeObjectURL(this.state.video.src);
         }
     }
     uploadFile(e) {
@@ -126,7 +134,7 @@ export class Home extends Component {
     render() {
        
         
-        this.inputRef = React.createRef();
+        
         let loggedInContents = this.state.file && this.state.video ?
             <div className=" justify-content-left">
                 
@@ -134,9 +142,9 @@ export class Home extends Component {
                         {this.state.showResults ? "Hide" : "Preview"}
                     </button>
                     <div>
-                    {/*this.state.showResults ? */<video width="1080" height="720" preload="metadata" controls="controls" type={this.state.file.type}>
-                        <source src={this.state.video.src} />
-                    </video> /*: null*/}
+                    {this.state.showResults ? <video width="1080" height="720" controls muted type={this.state.file.type}
+                       src={this.state.video.src} >
+                    </video> : null}
                     </div>
                    
                 <table className='table table-striped'
@@ -160,7 +168,7 @@ export class Home extends Component {
                 <button className="btn btn-primary" onClick={(e) => this.uploadFile(e)}>
                     Send File
                 </button>
-                <button className="btn btn-danger" onClick={(e) => this.setState({ file: null })}>
+                <button className="btn btn-danger" onClick={(e) => this.clearFiles()}>
                     Clear File
                 </button>
             </div> :
