@@ -54,44 +54,34 @@ namespace ASP.Back.Controllers
                     var user = GetUserByUsername(videoIn.Username);
                     if (user != null)
                     {
-                       
-                        if (user.videos == null)
+                        
+                        if (user.videos == null || user.videos.Count <= 0)
                         {
-                            var uniqueFileName = GetUniqueFileName(videoIn.File.FileName);
-                            var uploads = Path.Combine(hostEnvironment.WebRootPath, "uploads");
-                            Directory.CreateDirectory(uploads);
-                            var filePath = Path.Combine(uploads, uniqueFileName);
-                            FileStream fileStream = new FileStream(filePath, FileMode.Create);
-                            await videoIn.File.CopyToAsync(fileStream);
-                            fileStream.Close();
-                            Video video = new Video(new VideoMetaData(videoIn));
-                            video.MetaData.Filename = uniqueFileName;
-                            // videoMetaData.Username = video.Username;
-                            _context.Videos.Add(video);
-                            var id = await _context.SaveChangesAsync();
+                            Video video = await AddVideoToDB(videoIn);
                             user.videos = new List<int>();
-                            user.videos.Add(id);
+                            user.videos.Add(video.ID);
                             await _context.SaveChangesAsync();
-                            return Ok(GetVideoByFileName(uniqueFileName, true));
+                            //return Ok(GetVideoByFileName(uniqueFileName, true));
                         }
-                        else if(user.videos.Count < 4)
+                        else 
                         {
-                            var uniqueFileName = GetUniqueFileName(videoIn.File.FileName);
-                            var uploads = Path.Combine(hostEnvironment.WebRootPath, "uploads");
-                            Directory.CreateDirectory(uploads);
-                            var filePath = Path.Combine(uploads, uniqueFileName);
-                            FileStream fileStream = new FileStream(filePath, FileMode.Create);
-                            await videoIn.File.CopyToAsync(fileStream);
-                            fileStream.Close();
-                            Video video = new Video(new VideoMetaData(videoIn));
-                            video.MetaData.Filename = uniqueFileName;
-                            // videoMetaData.Username = video.Username;
-                            _context.Videos.Add(video);
-                            var id = await _context.SaveChangesAsync();
-                            user.videos.Add(id);
+
+                            Video video = await AddVideoToDB(videoIn);
+                            user.videos.Add(video.ID);
                             await _context.SaveChangesAsync();
                         }
+                        int storedVideoCount = user.videos.Count;
                         var ID = GetVideosByIDs(user.videos);
+                        if(storedVideoCount > user.videos.Count)
+                        {
+                            if(user.videos.Count <= 0)
+                            { user.videos.Clear();
+                                await _context.SaveChangesAsync();
+                                return await Post(videoIn);
+                                
+                            }
+                            await _context.SaveChangesAsync();
+                        }
                         if (ID.Count > 0)
                             return Ok(ID[0]);
                         else
@@ -106,19 +96,60 @@ namespace ASP.Back.Controllers
             }
 
         }
+        private async Task<Video> AddVideoToDB(VideoUpload videoIn)
+        {
+            var uniqueFileName = GetUniqueFileName(videoIn.File.FileName);
+            SaveVideoToMediaFolder(videoIn, uniqueFileName);
+            Video video = new Video(new VideoMetaData(videoIn));
+            video.MetaData.Filename = uniqueFileName;
+            _context.Videos.Add(video);
+            await _context.SaveChangesAsync();
+            return video;
+        }
+        private async void SaveVideoToMediaFolder(VideoUpload videoIn, string filePath = "")
+        {
+            if(filePath == "")
+            {
+                filePath = GetUniqueFileName(videoIn.File.FileName);
+            }
+            FileStream fileStream = new FileStream(GetUploadsFolder(filePath), FileMode.Create);
+            await videoIn.File.CopyToAsync(fileStream);
+            fileStream.Close();
+        }
+        private string GetUploadsFolder(string fileName)
+        {
+            var uploads = Path.Combine(hostEnvironment.WebRootPath, "uploads");
+            Directory.CreateDirectory(uploads);
+            return Path.Combine(uploads, fileName);
+        }
+
         private List<ActionResult<IFormFile>?> GetVideosByIDs(List<int> IDs)
         {
             
             List<ActionResult<IFormFile>?> videos = new List<ActionResult<IFormFile>?>();
-
+            List<int> badIds = new List<int>();
             foreach (int ID in IDs) {
                 var video = _context.Videos.FirstOrDefault(x =>
                                                    x.ID == ID);
                 if (video != null) {
-                    if(video.MetaData.Filename != "")
-                     videos.Add(GetVideoByFileName(video.MetaData.Filename, check: false));
+                    if (video.MetaData.Filename != "")
+                    {
+                        var vid = GetVideoByFileName(video.MetaData.Filename);
+                        if(vid.Result?.ToString()?.Length > 0)
+                            videos.Add(vid);
+                        else
+                            badIds.Add(ID);
+
+                    }
+                        
                 }
+                else
+                    badIds.Add(ID);
                 
+            }
+            foreach(int ID in badIds)
+            {
+                IDs.Remove(ID);
             }
             return videos;
         }
@@ -129,14 +160,14 @@ namespace ASP.Back.Controllers
         }
 
 
-        private int[]? GetVideoIDsByUsername(string username)
+        private List<int>? GetVideoIDsByUsername(string username)
         {
             var user = GetUserByUsername(username);
             if (user != null)
             {
                 if (user.videos != null)
                 {
-                    return user.videos.ToArray();
+                    return user.videos;
                 }
                 else return null;
             }
@@ -145,23 +176,25 @@ namespace ASP.Back.Controllers
 
         }
         
-        private Microsoft.AspNetCore.Mvc.ActionResult<IFormFile> GetVideoByFileName(string fileName, bool check)
+        private Microsoft.AspNetCore.Mvc.ActionResult<IFormFile> GetVideoByFileName(string fileName)
         {
             try
             {
                 Video? video = null;
-                if (check) {
+               
                     video = _context.Videos.FirstOrDefault(x =>
                                               x.MetaData.Filename.ToLower() == fileName.ToLower());
-                }
-                if (video != null || !check)
+
+                if (video != null)
                 {
-                    var uploads = Path.Combine(hostEnvironment.WebRootPath, "uploads");
-                    var filePath = Path.Combine(uploads, fileName);
-                    FileStream fileStream = new FileStream(filePath, FileMode.Open);
+                    
+                    FileStream fileStream = new FileStream(GetUploadsFolder(fileName), FileMode.Open);
                     if (fileStream.Length > 0)
                     {
-                        IFormFile iVideo = new FormFile(fileStream, 0, fileStream.Length, "File", video.MetaData.Filename);
+                        IFormFile iVideo = new FormFile(fileStream, 0, fileStream.Length, video.MetaData.Title, video.MetaData.Filename)
+                        {
+                            Headers = new HeaderDictionary()
+                        }; 
                         fileStream.Close();
                         return Ok(iVideo);
                     }
