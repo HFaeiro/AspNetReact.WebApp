@@ -362,9 +362,4 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-AspNetReact.WebApp
-/
-TeamManiacs.Data
-/
-Migrations
-/
+/TeamManiacs.Data/Migrations/
