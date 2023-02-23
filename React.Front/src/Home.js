@@ -10,7 +10,7 @@ export class Home extends Component {
             file: null,
             video: null,
             showResults: false
- 
+
         }
     clearFiles() {
         window.URL.revokeObjectURL(this.state.video.src);
@@ -34,11 +34,56 @@ export class Home extends Component {
                     console.log('Failed:' + error);
                 })
     }
+    deleteVideo = async (e) => {
+        fetch(process.env.REACT_APP_API + 'video/' + e, {
+            method: 'Delete',
+            headers: {
+
+                'Accept': 'application/json',
+                'Authorization': 'Bearer ' + this.props.profile.token,
+                'Content-Type': 'application/json'
+            }
+
+        })
+    }
+    playVideo = async (e) => {
+        return await new Promise(resolve => {
+            fetch(process.env.REACT_APP_API + 'video/play/' + e.id, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': 'Bearer ' + this.props.profile.token,
+                    'Content-Type': 'application/json'
+                }
+
+            })
+                .then(res => {
+                    if (res.status == 200)
+                        return res.json()
+                    else
+                        return;
+
+
+                })
+                .then(data => {
+                    this.setState({ video: data });
+                    console.log(data);
+                    resolve(data);
+                },
+                    (error) => {
+                        //alert(error);
+                        resolve(null);
+                    }).
+                catch((error) => {
+
+                    resolve(null);
+                })
+        })
+        }
+
     getUsersVideos = async () => {
         return await new Promise(resolve => {
             if (this.props.profile.username) {
                 fetch(process.env.REACT_APP_API + 'video/' + this.props.profile.userId, {
-                    method: 'Get',
                     headers: {
 
                         'Accept': 'application/json',
@@ -47,19 +92,30 @@ export class Home extends Component {
                     }
 
                 })
-                    .then(res => res.json())
+                    .then(res => {
+                        if (res.status == 200)
+                            return res.json()
+                        else
+                            resolve(null);
+
+
+                    })
                     .then(data => {
-                        this.setState({ videos: data});
+                        this.setState({ videos: data });
                         resolve(data);
                     },
                         (error) => {
                             //alert(error);
                             resolve(null);
-                        })
+                        }).
+                    catch((error) => {
+
+                        resolve(null);
+                    })
             }
         })
     }
-            
+
     async handleSubmit() {
         await this.getDummyUserInfo();
         var videos = await this.getUsersVideos();
@@ -78,7 +134,7 @@ export class Home extends Component {
             video.preload = 'metadata';
             window.URL = window.URL || window.webkitURL;
             video.onloadedmetadata = function () {
-                
+
                 if (video.duration > 90) {
 
                     reject("Invalid Video! Max Video Length is 1:30s");
@@ -94,11 +150,11 @@ export class Home extends Component {
             video.src = URL.createObjectURL(file)
         }
         catch (e) {
-            
+
             reject(e);
         }
     })
-    getExtention = (filename) =>{
+    getExtention = (filename) => {
         return filename.split('.').pop();
     }
     async loadFile(file) {
@@ -120,7 +176,7 @@ export class Home extends Component {
                     this.setState({ video: video });
                 }
                 else {
-                    alert("File Too Powerful, Please upload a file smaller than 1GB");
+                    alert("File Too Powerful, Please upload a file smaller than 100MB");
                     document.getElementById("formFile").value = "";
                     window.URL.revokeObjectURL(video.src);
 
@@ -158,19 +214,19 @@ export class Home extends Component {
 
             }).then(
                 response => {// if the response is a JSON object
-                        console.log(response);
+                    console.log(response);
                 },
-                    (error) => {
-                        alert(error);
-                        
-                    })
-            .then(
-                console.log("sent file : ", this.state.file.name) // Handle the success response object
-            ).catch(
-                error => console.log("fetch: " + error) // Handle the error response object
-                
-            );
-            
+                (error) => {
+                    alert(error);
+
+                })
+                .then(
+                    console.log("sent file : ", this.state.file.name) // Handle the success response object
+                ).catch(
+                    error => console.log("fetch: " + error) // Handle the error response object
+
+                );
+
         }
         catch (e) {
             console.log("catch: " + e)
@@ -179,24 +235,24 @@ export class Home extends Component {
         if (success)
             this.setState({ file: null });
 
-        
-    }
-    
 
-    render() {            
-        
-        let loggedInContents = (this.state.file && this.state.video ) ?
+    }
+
+
+    render() {
+
+        let loggedInContents = (this.state.file && this.state.video) ?
             <div className=" justify-content-left">
-                
-                    <button className="btn btn-primary" onClick={(e) => this.setState({ showResults: !this.state.showResults })}>
-                        {this.state.showResults ? "Hide" : "Preview"}
-                    </button>
-                    <div>
+
+                <button className="btn btn-primary" onClick={(e) => this.setState({ showResults: !this.state.showResults })}>
+                    {this.state.showResults ? "Hide" : "Preview"}
+                </button>
+                <div>
                     {this.state.showResults ? <video width="1080" height="720" controls muted type={this.state.file.type}
-                       src={this.state.video.src} >
+                        src={this.state.video.src} >
                     </video> : null}
-                    </div>
-                
+                </div>
+
                 <table className='table table-striped'
                     aria-labelledby="tabelLabel">
                     <thead>
@@ -218,20 +274,19 @@ export class Home extends Component {
                 <button className="btn btn-primary" onClick={(e) => this.uploadFile(e)}>
                     Send File
                 </button>
-                <button className="btn btn-danger" onClick={(e) => this.clearFiles()}>
+                <button className="btn btn-danger" type="submit" onClick={(e) => this.clearFiles()}>
                     Clear File
                 </button>
-                
+
             </div> :
-            <div>{this.state.videos.length ? <>
-                <Table striped bordered hover variant="dark"
-                    >
+            <div>{this.state.videos ? <>
+                <Table striped responsive bordered hover variant="dark"
+                >
                     <thead>
                         <tr>
                             <th>File Name</th>
                             <th>File Type</th>
                             <th>File Size</th>
-                            <th></th>
                             <th></th>
                         </tr>
                     </thead>
@@ -244,12 +299,11 @@ export class Home extends Component {
                                 <td>{v.fileName}</td>
                                 <td>{v.description}</td>
                                 <td>{v.contentType}</td>
-                                <td><button className="btn btn-primary" onClick={(e) => this.clearFiles()}>
+                                <td><button className="btn btn-primary" onClick={(e) => this.playVideo(v)}>
                                     Play Video
-                                </button></td>
-                                <td><button className="btn btn-danger" onClick={(e) => this.clearFiles()}>
-                                    Delete Video
-                                </button></td>
+                                </button><button as="input" name="Id" value={v.id} className="btn btn-danger" onClick={(e) => this.deleteVideo(v.id)}>
+                                        Delete Video
+                                    </button></td>
                             </tr>)}
                     </tbody>
                 </Table>
@@ -258,22 +312,23 @@ export class Home extends Component {
                 <div >
                     <Form.Group controlId="formFile" className="mb-3">
                         <Form.Label>Upload a Video Submission!</Form.Label>
-                        <Form.Control  type="file" name="file_source" size="40" accept="video/*" onChange={(e) => this.handleFileChange(e)} />
+                        <Form.Control type="file" name="file_source" size="40" accept="video/*" onChange={(e) => this.handleFileChange(e)} />
                     </Form.Group>
 
                 </div>
-
-
-
-
-
             </div>
+        let video = this.state.video && !this.state.file ?
+            <><video width="1080" height="720" controls muted 
+                src={"data:video/mp4;base64," + this.state.video} >
+            </video> : null</> : <></>
+
+
 
         //let contents = username if it exists.
         let contents = this.props.profile.username ?
             < >
                 <h3>Hello, {this.props.profile.username}</h3>
-                   { loggedInContents }</>
+                {loggedInContents}</>
             : <div><h3>Hello stranger!</h3>
                 <div><span>
                     You can either create a user or you can login using the default!
@@ -296,15 +351,15 @@ export class Home extends Component {
             </div>
 
 
-       
+
 
 
         return (
             <div className="mt-5 justify-content-left">
 
                 {contents}
-                
-                
+                {video }
+
             </div>
         );
     }

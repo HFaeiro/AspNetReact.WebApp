@@ -56,6 +56,42 @@ namespace ASP.Back.Controllers
             }
             return BadRequest($"Video.Get: ");
         }
+
+        [HttpGet("play/{id}")]
+        [Authorize]
+        public async Task<ActionResult<string?>> GetPlay(int id)
+        {
+            try
+            {
+                var videoIn = await _context.Videos.FindAsync(id);
+                if (videoIn != null)
+                {
+                    using (FileStream video = GetVideoFromMediaFolder(videoIn))
+                    {
+                        if (video != null)
+                        {
+                            using (MemoryStream ms = new MemoryStream())
+                            {
+                               
+                                await video.CopyToAsync(ms);
+                                string base64Video = Convert.ToBase64String(ms.ToArray(), 0, (int)ms.Length, Base64FormattingOptions.None);
+                                return Ok(base64Video);
+                            }
+                        }
+                        else
+                            return BadRequest($"Video.Get: Video was Null ");
+                    }
+                        
+
+                }
+            }
+            catch (Exception ex)
+            {
+                return BadRequest($"Video.Get: " + ex.Message);
+            }
+            return BadRequest($"Video.Get: ");
+        }
+
         private async Task<IEnumerable<Video>?> GetVideosByUser(Users user)
         {
             List<Video>? result = null;
@@ -135,6 +171,12 @@ namespace ASP.Back.Controllers
               
             }
             return video.ID;
+        }
+        private FileStream GetVideoFromMediaFolder(Video videoIn)
+        {
+           
+            FileStream fileStream = new FileStream(GetUploadsFolder(videoIn.FileName), FileMode.Open);
+            return fileStream;
         }
         private async void SaveVideoToMediaFolder(VideoUpload videoIn, string filePath = "")
         {
@@ -241,8 +283,31 @@ namespace ASP.Back.Controllers
         }
 
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        [Authorize]
+        public async void Delete(int id)
         {
+            try
+            {
+                Video? video = await GetVideoById(id);
+                if (video != null)
+                {
+
+                    _context.Videos.Remove(video);
+                    _context.SaveChanges();
+
+                }
+            }
+            catch (Exception ex)
+            {
+
+            }
+        }
+        private async Task<Video?> GetVideoById(int id)
+        {
+
+            var video = await _context.Videos.FirstOrDefaultAsync(x => x.ID == id);
+
+            return video;
         }
         private string GetUniqueFileName(string fileName)
         {
