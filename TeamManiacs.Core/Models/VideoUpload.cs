@@ -39,50 +39,31 @@ namespace TeamManiacs.Core.Models
     [Table("Videos")]
     public partial class Video
     {
-        public Video(VideoMetaData metaData)
-        {
-           
-            MetaData = metaData;
-        }
         public Video()
         {
-            MetaData = new VideoMetaData();
+
         }
-
-        [Key]
-        public int ID { get; set; }
-        public VideoMetaData MetaData { get; set; }
-        public VideoRating[]? Ratings { get; set; }
-
-    }
-    public partial class VideoMetaData
-    {
-
-            public VideoMetaData(VideoUpload videoIn)
+        public Video(VideoUpload videoIn, string fileName = "")
         {
-            Filename = videoIn.File.FileName;
+
+            FileName = fileName == "" ? videoIn.File.FileName: fileName;
             Title = videoIn.File.Name;
             Description = videoIn.File.ContentDisposition;
             ContentType = videoIn.File.ContentType;
             ContentDisposition = videoIn.File.ContentDisposition;
         }
-        public VideoMetaData(string filename = "", string title = "", string description = "", string contentType = "", string contentDisposition = "")
-        {
-            Filename = filename;
-            Title = title;
-            Description = description;
-            ContentType = contentType;
-            ContentDisposition = contentDisposition;
-        }
 
         [Key]
-        public string Filename { get; set; }
+        public int ID { get; set; }
+        public string FileName { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
         public string ContentType { get; set; }
         public string ContentDisposition { get; set; }
-
+        public ICollection<VideoRating>? Ratings { get; set; }
 
     }
+
+
 
 }
