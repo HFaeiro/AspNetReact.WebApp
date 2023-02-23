@@ -1,11 +1,12 @@
 import React, { Component } from 'react';
-import {Form } from 'react-bootstrap'
+import { Form, Table } from 'react-bootstrap'
 import { Navigate, Link } from 'react-router-dom';
 import { useRef } from 'react';
 export class Home extends Component {
     state =
         {
             defaultUser: [],
+            videos: [],
             file: null,
             video: null,
             showResults: false
@@ -15,7 +16,7 @@ export class Home extends Component {
         window.URL.revokeObjectURL(this.state.video.src);
         this.setState({ file: null, video: null });
     }
-    async handleSubmit() {
+    async getDummyUserInfo() {
         fetch(process.env.REACT_APP_API + 'users/' + '1', {
             method: 'Get',
             headers: {
@@ -24,15 +25,48 @@ export class Home extends Component {
             }
 
         }).then(res => res.json())
-                .then((result) => {
-                    this.setState({ defaultUser: result });
+            .then((result) => {
+                this.setState({ defaultUser: result });
 
 
-    },
-        (error) => {
-           console.log('Failed:' + error);
+            },
+                (error) => {
+                    console.log('Failed:' + error);
+                })
+    }
+    getUsersVideos = async () => {
+        return await new Promise(resolve => {
+            if (this.props.profile.username) {
+                fetch(process.env.REACT_APP_API + 'video/' + this.props.profile.userId, {
+                    method: 'Get',
+                    headers: {
+
+                        'Accept': 'application/json',
+                        'Authorization': 'Bearer ' + this.props.profile.token,
+                        'Content-Type': 'application/json'
+                    }
+
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        this.setState({ videos: data});
+                        resolve(data);
+                    },
+                        (error) => {
+                            //alert(error);
+                            resolve(null);
+                        })
+            }
         })
-
+    }
+            
+    async handleSubmit() {
+        await this.getDummyUserInfo();
+        var videos = await this.getUsersVideos();
+        if (videos)
+            console.log("video array length = " + videos.length);
+        else
+            console.log("videos are " + videos);
     }
 
     componentDidMount() {
@@ -66,12 +100,18 @@ export class Home extends Component {
     })
     getExtention = (filename) =>{
         return filename.split('.').pop();
-}
-    async handleFile(e) {
-        let file = e.target.files[0];
+    }
+    async loadFile(file) {
         let fileInMB = file.size / 1024 / 1024;
+        if (fileInMB <= 0) {
+            fileInMB = file.length / 1024 / 1024;
+
+        }
         let ext = this.getExtention(file.name);
-        if (ext != "avi")
+        if (ext != "avi") {
+            if (ext == 'File') {
+                ext = this.getExtention(file.fileName)
+            }
             try {
                 let video = await this.loadVideo(file);
 
@@ -91,11 +131,16 @@ export class Home extends Component {
                 document.getElementById("formFile").value = "";
                 window.URL.revokeObjectURL(this.state.video.src);
             }
+        }
         else {
             alert("Avi No Work, Sorry bud");
             document.getElementById("formFile").value = "";
             window.URL.revokeObjectURL(this.state.video.src);
         }
+    }
+    async handleFileChange(e) {
+        let file = e.target.files[0];
+        this.loadFile(file)
     }
     uploadFile(e) {
         var success = true;
@@ -103,16 +148,23 @@ export class Home extends Component {
         formData.append("Username", this.props.profile.username);
         formData.append("File", this.state.file);
         try {
-            fetch(process.env.REACT_APP_API + 'video', {
+            fetch(process.env.REACT_APP_API + 'video/', {
                 method: 'POST',
                 headers: {
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'Authorization': 'Bearer ' + this.props.profile.token
                 },
                 body: formData
 
             }).then(
-                response => response.json() // if the response is a JSON object
-            ).then(
+                response => {// if the response is a JSON object
+                        console.log(response);
+                },
+                    (error) => {
+                        alert(error);
+                        
+                    })
+            .then(
                 console.log("sent file : ", this.state.file.name) // Handle the success response object
             ).catch(
                 error => console.log("fetch: " + error) // Handle the error response object
@@ -131,11 +183,9 @@ export class Home extends Component {
     }
     
 
-    render() {
-       
+    render() {            
         
-        
-        let loggedInContents = this.state.file && this.state.video ?
+        let loggedInContents = (this.state.file && this.state.video ) ?
             <div className=" justify-content-left">
                 
                     <button className="btn btn-primary" onClick={(e) => this.setState({ showResults: !this.state.showResults })}>
@@ -146,7 +196,7 @@ export class Home extends Component {
                        src={this.state.video.src} >
                     </video> : null}
                     </div>
-                   
+                
                 <table className='table table-striped'
                     aria-labelledby="tabelLabel">
                     <thead>
@@ -171,13 +221,44 @@ export class Home extends Component {
                 <button className="btn btn-danger" onClick={(e) => this.clearFiles()}>
                     Clear File
                 </button>
+                
             </div> :
-            <div>
+            <div>{this.state.videos.length ? <>
+                <Table striped bordered hover variant="dark"
+                    >
+                    <thead>
+                        <tr>
+                            <th>File Name</th>
+                            <th>File Type</th>
+                            <th>File Size</th>
+                            <th></th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
 
+                        {this.state.videos.map(v =>
+
+                            <tr key={v.id}>
+
+                                <td>{v.fileName}</td>
+                                <td>{v.description}</td>
+                                <td>{v.contentType}</td>
+                                <td><button className="btn btn-primary" onClick={(e) => this.clearFiles()}>
+                                    Play Video
+                                </button></td>
+                                <td><button className="btn btn-danger" onClick={(e) => this.clearFiles()}>
+                                    Delete Video
+                                </button></td>
+                            </tr>)}
+                    </tbody>
+                </Table>
+            </> : <>
+            </>}
                 <div >
                     <Form.Group controlId="formFile" className="mb-3">
                         <Form.Label>Upload a Video Submission!</Form.Label>
-                        <Form.Control  type="file" name="file_source" size="40" accept="video/*" onChange={(e) => this.handleFile(e)} />
+                        <Form.Control  type="file" name="file_source" size="40" accept="video/*" onChange={(e) => this.handleFileChange(e)} />
                     </Form.Group>
 
                 </div>

@@ -26,5 +26,5 @@ public partial class Users
     [JsonConverter(typeof(JsonStringEnumMemberConverter))]
     public PrivTypes Privileges { get; set; }
 
-    public List<int>? videos {get; set;}
+    public List<int>? Videos {get; set;}
 }

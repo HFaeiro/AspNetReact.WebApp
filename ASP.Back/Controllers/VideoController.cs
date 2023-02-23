@@ -28,24 +28,60 @@ namespace ASP.Back.Controllers
             this.hostEnvironment = hostEnvironment;
             this._context = context;
         }
-
-        [HttpGet]
-        public IEnumerable<string> Get()
+        private async Task<Users?> GetUserById(int id)
         {
-            return new string[] { "value1", "value2" };
+            return await _context.UserModels.FindAsync(id);
         }
-
 
         [HttpGet("{id}")]
-        public string Get(int id)
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<Video>>> Get(int id)
         {
-            return "value";
+            List<Video>? result = null;
+            try
+            {
+                var user = await GetUserById(id);
+                if (user != null)
+                {
+                    var videos = await GetVideosByUser(user);
+                    if(videos != null)
+                    {
+                       return Ok(videos);
+                    }
+                    
+                }
+            }
+            catch (Exception ex) {
+                return BadRequest($"Video.Get: " + ex.Message);
+            }
+            return BadRequest($"Video.Get: ");
+        }
+        private async Task<IEnumerable<Video>?> GetVideosByUser(Users user)
+        {
+            List<Video>? result = null;
+            if (user.Videos?.Count > 0)
+            {
+                int storedVideoCount = user.Videos.Count;
+                var ID = GetVideosByIDs(user.Videos.ToList());
+                if (storedVideoCount > ID.Count)
+                {
+                    if(ID.Count == 0)
+                    {
+                        user.Videos.Clear();
+                    }
+                    _context.Entry(user).State = EntityState.Modified;
+                    await _context.SaveChangesAsync();
+                }
+                if (ID?.Count > 0)
+                    return ID;
+            }
+            return result;
         }
 
-
         [HttpPost]
+        [Authorize]
         [DisableRequestSizeLimit]
-        public async Task<ActionResult<IFormFile>> Post( [FromForm]VideoUpload videoIn)
+        public async Task<ActionResult> Post( [FromForm]VideoUpload videoIn)
         {
             try
             {
@@ -55,38 +91,26 @@ namespace ASP.Back.Controllers
                     if (user != null)
                     {
                         
-                        if (user.videos == null || user.videos.Count <= 0)
+                        if (user.Videos == null || user.Videos.Count <= 0)
                         {
-                            Video video = await AddVideoToDB(videoIn);
-                            user.videos = new List<int>();
-                            user.videos.Add(video.ID);
+                            int ID = await AddVideoToDB(videoIn);
+                            user.Videos = new List<int>();
+                            user.Videos.Add(ID);
+                            _context.Entry(user).State = EntityState.Modified;
                             await _context.SaveChangesAsync();
                             //return Ok(GetVideoByFileName(uniqueFileName, true));
                         }
                         else 
                         {
 
-                            Video video = await AddVideoToDB(videoIn);
-                            user.videos.Add(video.ID);
+                            int ID = await AddVideoToDB(videoIn);
+                            user.Videos.Add(ID);
+                            _context.Entry(user).State = EntityState.Modified;
                             await _context.SaveChangesAsync();
                         }
-                        int storedVideoCount = user.videos.Count;
-                        var ID = GetVideosByIDs(user.videos);
-                        if(storedVideoCount > user.videos.Count)
-                        {
-                            if(user.videos.Count <= 0)
-                            { user.videos.Clear();
-                                await _context.SaveChangesAsync();
-                                return await Post(videoIn);
-                                
-                            }
-                            await _context.SaveChangesAsync();
-                        }
-                        if (ID.Count > 0)
-                            return Ok(ID[0]);
-                        else
-                            return BadRequest($"Video.POST:  No Videos by ID");
-                    }
+
+                            return Ok($"Added Video to User!");
+                   }
                 }
                 return BadRequest();
             }
@@ -96,15 +120,21 @@ namespace ASP.Back.Controllers
             }
 
         }
-        private async Task<Video> AddVideoToDB(VideoUpload videoIn)
+        private async Task<int> AddVideoToDB(VideoUpload videoIn)
         {
             var uniqueFileName = GetUniqueFileName(videoIn.File.FileName);
             SaveVideoToMediaFolder(videoIn, uniqueFileName);
-            Video video = new Video(new VideoMetaData(videoIn));
-            video.MetaData.Filename = uniqueFileName;
-            _context.Videos.Add(video);
-            await _context.SaveChangesAsync();
-            return video;
+            Video video = new Video(videoIn, uniqueFileName);
+            try
+            {
+                _context.Videos.Add(video);
+                await _context.SaveChangesAsync();
+            }
+            catch(Exception ex)
+            {
+              
+            }
+            return video.ID;
         }
         private async void SaveVideoToMediaFolder(VideoUpload videoIn, string filePath = "")
         {
@@ -123,25 +153,27 @@ namespace ASP.Back.Controllers
             return Path.Combine(uploads, fileName);
         }
 
-        private List<ActionResult<IFormFile>?> GetVideosByIDs(List<int> IDs)
+        private List<Video>? GetVideosByIDs(List<int> IDs)
         {
             
-            List<ActionResult<IFormFile>?> videos = new List<ActionResult<IFormFile>?>();
+            List<Video>? videos = new List<Video>();
             List<int> badIds = new List<int>();
             foreach (int ID in IDs) {
                 var video = _context.Videos.FirstOrDefault(x =>
                                                    x.ID == ID);
                 if (video != null) {
-                    if (video.MetaData.Filename != "")
+                    if (video.FileName != "")
                     {
-                        var vid = GetVideoByFileName(video.MetaData.Filename);
-                        if(vid.Result?.ToString()?.Length > 0)
-                            videos.Add(vid);
-                        else
-                            badIds.Add(ID);
+                        //var vid = GetVideoByFileName(video.Filename);
+                        //if(vid != null)
+                            videos.Add(video);
+                        //else
+                        //    badIds.Add(ID);
 
                     }
-                        
+                    else
+                        badIds.Add(ID);
+
                 }
                 else
                     badIds.Add(ID);
@@ -151,6 +183,7 @@ namespace ASP.Back.Controllers
             {
                 IDs.Remove(ID);
             }
+            
             return videos;
         }
         private Users? GetUserByUsername(string username)
@@ -165,9 +198,9 @@ namespace ASP.Back.Controllers
             var user = GetUserByUsername(username);
             if (user != null)
             {
-                if (user.videos != null)
+                if (user.Videos != null)
                 {
-                    return user.videos;
+                    return user.Videos;
                 }
                 else return null;
             }
@@ -176,34 +209,28 @@ namespace ASP.Back.Controllers
 
         }
         
-        private Microsoft.AspNetCore.Mvc.ActionResult<IFormFile> GetVideoByFileName(string fileName)
+        private FileResult? GetVideoByFileName(string fileName)
         {
             try
             {
                 Video? video = null;
                
                     video = _context.Videos.FirstOrDefault(x =>
-                                              x.MetaData.Filename.ToLower() == fileName.ToLower());
+                                              x.FileName.ToLower() == fileName.ToLower());
 
                 if (video != null)
                 {
                     
-                    FileStream fileStream = new FileStream(GetUploadsFolder(fileName), FileMode.Open);
-                    if (fileStream.Length > 0)
-                    {
-                        IFormFile iVideo = new FormFile(fileStream, 0, fileStream.Length, video.MetaData.Title, video.MetaData.Filename)
-                        {
-                            Headers = new HeaderDictionary()
-                        }; 
-                        fileStream.Close();
-                        return Ok(iVideo);
-                    }
-                    return BadRequest($"Video.GetVideoByFileName:  Failed to Open File");
+                    return File(fileName,video.ContentType, video.FileName);
+                    
+                   //return BadRequest($"Video.GetVideoByFileName:  Failed to Open File");
                 }
-                return BadRequest($"Video.GetVideoByFileName:  Failed to Find Video in DB");
+                return null;
+                // return BadRequest($"Video.GetVideoByFileName:  Failed to Find Video in DB");
             }
             catch(Exception ex) {
-                return BadRequest($"Video.GetVideoByFileName: " + ex);
+                return null;
+                // return BadRequest($"Video.GetVideoByFileName: " + ex);
             }
            
         }
