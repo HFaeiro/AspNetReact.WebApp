@@ -58,7 +58,7 @@ export class AddUsersModal extends Component {
             }
         }
         else {
-            alert('Undefined Behavior');
+           console.log('Undefined Behavior');
         }
     }
 

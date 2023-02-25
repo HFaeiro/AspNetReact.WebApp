@@ -362,7 +362,9 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 
-/TeamManiacs.Data/Migrations/
 /ASP.Back/wwwroot/uploads
-*.mp4
 /googleclouddocker.txt
+/ASP.Back/Dockerfile
+/TeamManiacs.Data/Migrations
+*.mp4
+

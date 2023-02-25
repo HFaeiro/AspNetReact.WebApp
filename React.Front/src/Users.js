@@ -4,6 +4,7 @@ import { AddUsersModal } from './AddUsersModal';
 import { EditUsersModal } from './EditUsersModal';
 import { DeleteUsersModal } from './DeleteUsersModal';
 import { Navigate } from 'react-router-dom';
+
 export class Users extends Component {
     constructor(props) {
         super(props);
@@ -12,10 +13,7 @@ export class Users extends Component {
             loggedIn: '',
             profiles: [],
             loading: true
-
         }
-
-
     }
 
     //refreshes list
@@ -27,8 +25,7 @@ export class Users extends Component {
                 {
                     'Accept': 'application/json',
                     'Authorization': 'Bearer ' + this.props.profile.token,
-                    'Content-Type': 'application/json'
-                    
+                    'Content-Type': 'application/json' 
                 }
             })
                 .then(res => res.json())
@@ -37,14 +34,11 @@ export class Users extends Component {
                     resolve(data);
                 },
                     (error) => {
-                        
                         //alert(error);
                         resolve(null);
                     })
 
         })
-        
-
     }
     //we need to refresh the users list..
     //returns promise we never handle.
@@ -80,6 +74,7 @@ export class Users extends Component {
                         </tr>
                     </thead>
                     <tbody>
+
                         {profile.map(p =>
                             <tr key={p.userId}>
                                 <td>{p.userId}</td>

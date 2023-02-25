@@ -32,10 +32,7 @@ export default function Logout(props) {
     return (
 
         <div>
-           
-            
             {content}
-
 
         </div>
     );
