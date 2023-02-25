@@ -363,3 +363,6 @@ MigrationBackup/
 FodyWeavers.xsd
 
 /TeamManiacs.Data/Migrations/
+/ASP.Back/wwwroot/uploads
+*.mp4
+/googleclouddocker.txt
