@@ -13,6 +13,19 @@ namespace TeamManiacs.Core.Models;
 [Table("Users")]
 public partial class Users
 {
+   
+    public Users replace(Users obj)
+    {
+        this.UserId = ((Users)obj).UserId;
+        this.Username= ((Users)obj).Username;
+        this.Privileges = ((Users)obj).Privileges;
+        this.Password = ((Users)obj).Password;
+        return this;
+    }
+
+        
+        
+     
     [Key]
     public int UserId { get; set; }
 

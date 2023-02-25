@@ -71,8 +71,14 @@ namespace ASP.Back.Controllers
             {
                 return BadRequest();
             }
-            
-            _context.Entry(UserModel).State = EntityState.Modified;
+            var userModel = _context.UserModels.FirstOrDefault(x =>
+                                                    x.Username.ToLower() == UserModel.Username.ToLower());
+            if (userModel == null)
+            {
+                return NotFound();
+            }
+
+            _context.Entry(userModel.replace(UserModel)).State = EntityState.Modified;
 
             try
             {
@@ -129,7 +135,7 @@ namespace ASP.Back.Controllers
             _context.UserModels.Remove(tmpUserModel);
             await _context.SaveChangesAsync();
 
-            return NoContent();
+            return Ok($"Deleted User With Id of: " + id);
         }
 
         private bool UserModelExists(int id)

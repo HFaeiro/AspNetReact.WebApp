@@ -9,7 +9,13 @@ export class Home extends Component {
             videos: [],
             file: null,
             video: null,
-            showResults: false
+            fetchedVideo:
+            {
+                id: null,
+                video: null
+             },
+            showResults: false,
+            showPlayer: false
 
         }
     clearFiles() {
@@ -65,8 +71,14 @@ export class Home extends Component {
 
                 })
                 .then(data => {
-                    this.setState({ video: data });
-                    console.log(data);
+                    this.setState(
+                    ({
+                        fetchedVideo:
+                        {
+                            id: e.id,
+                            video: data
+                        }
+                    }));
                     resolve(data);
                 },
                     (error) => {
@@ -119,8 +131,10 @@ export class Home extends Component {
     async handleSubmit() {
         await this.getDummyUserInfo();
         var videos = await this.getUsersVideos();
-        if (videos)
+        if (videos) {
+
             console.log("video array length = " + videos.length);
+        }
         else
             console.log("videos are " + videos);
     }
@@ -171,12 +185,12 @@ export class Home extends Component {
             try {
                 let video = await this.loadVideo(file);
 
-                if (video && fileInMB < 100) {
+                if (video && fileInMB < 20) {
                     this.setState({ file: file });
                     this.setState({ video: video });
                 }
                 else {
-                    alert("File Too Powerful, Please upload a file smaller than 100MB");
+                    alert("File Too Powerful, Please upload a file smaller than 20MB");
                     document.getElementById("formFile").value = "";
                     window.URL.revokeObjectURL(video.src);
 
@@ -232,9 +246,11 @@ export class Home extends Component {
             console.log("catch: " + e)
             success = false;
         }
-        if (success)
+        if (success) {
             this.setState({ file: null });
+            this.setState({ video: null });
 
+        }
 
     }
 
@@ -252,7 +268,6 @@ export class Home extends Component {
                         src={this.state.video.src} >
                     </video> : null}
                 </div>
-
                 <table className='table table-striped'
                     aria-labelledby="tabelLabel">
                     <thead>
@@ -291,18 +306,23 @@ export class Home extends Component {
                         </tr>
                     </thead>
                     <tbody>
-
                         {this.state.videos.map(v =>
-
                             <tr key={v.id}>
-
                                 <td>{v.fileName}</td>
                                 <td>{v.description}</td>
                                 <td>{v.contentType}</td>
-                                <td><button className="btn btn-primary" onClick={(e) => this.playVideo(v)}>
-                                    Play Video
-                                </button><button as="input" name="Id" value={v.id} className="btn btn-danger" onClick={(e) => this.deleteVideo(v.id)}>
-                                        Delete Video
+                                <td><button className="btn btn-primary" name="playButton" onClick={() => {
+                                    (this.state.showPlayer && this.state.fetchedVideo.id != v.id
+                                        ? this.setState({ showPlayer: this.state.showPlayer })
+                                        : this.setState({ showPlayer: !this.state.showPlayer }) );
+                                    if(this.state.fetchedVideo.id != v.id )
+                                        this.playVideo(v);
+
+                                }
+                                }>
+                                    {this.state.showPlayer && this.state.fetchedVideo.id == v.id ? "Hide" : "Play"}
+                                </button><button  as="input" name="Id" value={v.id} className="btn btn-danger" onClick={(e) => this.deleteVideo(v.id)}>
+                                        Delete Video<span className="glyphicon glyphicon-trash"></span>
                                     </button></td>
                             </tr>)}
                     </tbody>
@@ -317,10 +337,10 @@ export class Home extends Component {
 
                 </div>
             </div>
-        let video = this.state.video && !this.state.file ?
-            <><video width="1080" height="720" controls muted 
-                src={"data:video/mp4;base64," + this.state.video} >
-            </video> : null</> : <></>
+        let video = this.state.fetchedVideo.id && this.state.showPlayer ?
+            <><video width="1080" height="720" autoplay controls muted
+                src={"data:video/mp4;base64," + this.state.fetchedVideo.video} >
+            </video> : {null}</> : <></>
 
 
 

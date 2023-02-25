@@ -288,7 +288,7 @@ namespace ASP.Back.Controllers
         {
             try
             {
-                Video? video = await GetVideoById(id);
+                Video? video = _context.Videos.Find(id);
                 if (video != null)
                 {
 
@@ -302,13 +302,13 @@ namespace ASP.Back.Controllers
 
             }
         }
-        private async Task<Video?> GetVideoById(int id)
-        {
+        //private async Task<Video?> GetVideoById(int id)
+        //{
 
-            var video = await _context.Videos.FirstOrDefaultAsync(x => x.ID == id);
+        //    var video = 
 
-            return video;
-        }
+        //    return video;
+        //}
         private string GetUniqueFileName(string fileName)
         {
             fileName = Path.GetFileName(fileName);
