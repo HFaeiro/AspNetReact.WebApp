@@ -8,7 +8,7 @@ import { Navigate } from 'react-router-dom'
 import ErrorPage from './ErrorPage';
 import  Logout  from './Logout';
 import {AddUsersModal} from './AddUsersModal'
-import { Video } from './videos'
+import { MyVideos } from './MyVideos'
 
 export default class App extends Component {
     constructor(props) {
@@ -71,6 +71,7 @@ export default class App extends Component {
                         Login Portal
                     </h3>
 
+                    <h3>Hello, {profile.username}</h3>
                     <Navigation 
                         isLoggedIn={loggedIn}
                         profile={profile }
@@ -101,7 +102,7 @@ export default class App extends Component {
                             showModal={true}
                             dontShowButton={true }
                         />} />
-                        <Route path="/videos" element={<Video
+                        <Route path="/myvideos" element={<MyVideos
                             profile={profile}
                         />} />
 

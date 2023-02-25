@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { Form, Table } from 'react-bootstrap'
 import { Navigate, Link } from 'react-router-dom';
 import { useRef } from 'react';
-import {videos } from './videos.js'
+import {MyVideos} from './MyVideos.js'
 export class Home extends Component {
     state =
         {
@@ -66,8 +66,11 @@ export class Home extends Component {
 
         //let contents = username if it exists.
         let contents = this.props.profile.username ?
-            < >
-                <h3>Hello, {this.props.profile.username}</h3>
+            <>
+                
+                <MyVideos
+                    profile={this.props.profile}
+                />
                 </>
             : <div><h3>Hello stranger!</h3>
                 <div><span>
