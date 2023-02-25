@@ -8,7 +8,7 @@ import { Navigate } from 'react-router-dom'
 import ErrorPage from './ErrorPage';
 import  Logout  from './Logout';
 import {AddUsersModal} from './AddUsersModal'
-
+import { Video } from './videos'
 
 export default class App extends Component {
     constructor(props) {
@@ -101,7 +101,9 @@ export default class App extends Component {
                             showModal={true}
                             dontShowButton={true }
                         />} />
-
+                        <Route path="/videos" element={<Video
+                            profile={profile}
+                        />} />
 
                     </Routes>
                 </div>

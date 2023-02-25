@@ -104,7 +104,7 @@ export class EditUsersModal extends Component {
                                     </Form.Group>
                                     <Form.Group controlId="Password">
                                         <Form.Label>Password</Form.Label>
-                                        <Form.Control type="password" name="Password" required>
+                                        <Form.Control type="password" name="Password" >
 
                                         </Form.Control>
                                     </Form.Group>

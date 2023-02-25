@@ -8,10 +8,10 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Runtime.CompilerServices;
+using System.IO;
 using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace ASP.Back.Controllers
 {
@@ -294,7 +294,11 @@ namespace ASP.Back.Controllers
 
                     _context.Videos.Remove(video);
                     _context.SaveChanges();
-
+                    var fullFilePath = GetUploadsFolder(video.FileName);
+                    if (System.IO.File.Exists(fullFilePath))
+                    {
+                        System.IO.File.Delete(fullFilePath);
+                    }
                 }
             }
             catch (Exception ex)

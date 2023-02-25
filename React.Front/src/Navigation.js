@@ -17,22 +17,24 @@ export default function Navigation(props) {
                 Create an Account
             </NavLink>
         </>
-        ):(
-         props.profile.privileges == 'Admin'  ? // if user is admin we will show Users link.
+    ) : (
+
         <>
             <NavLink className="d-inline p-2 bg-dark text-white" to="/logout">
                 Logout
-            </NavLink>
-            <NavLink className="d-inline p-2 bg-dark text-white" to="/users">
-                Users
-            </NavLink>
-        </>
-                :
-                <>
-                <NavLink className="d-inline p-2 bg-dark text-white" to="/logout">
-                    Logout
                 </NavLink>
-                </>
+                {props.profile.privileges == 'Admin' ? /*// if user is admin we will show Users link.*/
+                    <> <NavLink className="d-inline p-2 bg-dark text-white" to="/users">
+                    Users
+                </NavLink>
+                <NavLink className="d-inline p-2 bg-dark text-white" to="/videos">
+                    videos
+                </NavLink>
+        </>
+                : 
+                     null}
+        </>
+
 
         )
 
