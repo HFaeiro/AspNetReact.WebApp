@@ -42,6 +42,7 @@ export class Home extends Component {
    
 
     async handleSubmit() {
+        if(!this.props.profile)
         await this.getDummyUserInfo();
         
     }

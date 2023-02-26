@@ -147,7 +147,7 @@ export class MyVideos extends Component {
                                 }>
                                     {this.state.showPlayer && this.state.fetchedVideo.id == v.id ? "Hide" : "Play"}
                                 </button><button   name="Id" value={v.id} className="btn btn-danger" onClick={(e) => this.deleteVideo(v.id).then(() => window.location.reload())}>
-                                        Delete Video<span className="glyphicon glyphicon-trash"></span>
+                                        Delete<span className="glyphicon glyphicon-trash"></span>
                                     </button></td>
                             </tr>)}
                     </tbody>
