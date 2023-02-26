@@ -75,7 +75,7 @@ export default class App extends Component {
                     
                     {profile.username ?
                         <>
-                            <h3>Hello, {profile.username}</h3>
+                            <h3>Hello, {profile.username}!</h3>
 
                         </>
                         : <div><h3>Hello stranger!</h3></div>}
