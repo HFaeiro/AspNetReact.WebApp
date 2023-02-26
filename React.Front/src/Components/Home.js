@@ -2,7 +2,8 @@ import React, { Component } from 'react';
 import { Form, Table } from 'react-bootstrap'
 import { Navigate, Link } from 'react-router-dom';
 import { useRef } from 'react';
-import {MyVideos} from './MyVideos.js'
+import { MyVideos } from './MyVideos.js'
+import './Home.css'
 export class Home extends Component {
     state =
         {
@@ -67,12 +68,12 @@ export class Home extends Component {
         //let contents = username if it exists.
         let contents = this.props.profile.username ?
             <>
-                
+
                 <MyVideos
                     profile={this.props.profile}
                 />
-                </>
-            : <div><h3>Hello stranger!</h3>
+            </>
+            :<> <div className="homePage" >
                 <div><span>
                     You can either create a user or you can login using the default!
                 </span>
@@ -88,10 +89,11 @@ export class Home extends Component {
                     Might see the password change right here if you edit it
                 </span>
                 </div>
-                <Link to="login" className="btn btn-primary" >
+
+            </div><div className="loginButton">
+           <Link to="login" className="btn btn-primary" >
                     Login!
-                </Link>
-            </div>
+                    </Link></div></>
 
 
 

@@ -9,6 +9,7 @@ import ErrorPage from './ErrorPage';
 import  Logout  from './Logout';
 import {AddUsersModal} from './AddUsersModal'
 import { MyVideos } from './MyVideos'
+import {UploadVideo } from './UploadVideo'
 
 export default class App extends Component {
     constructor(props) {
@@ -71,7 +72,13 @@ export default class App extends Component {
                         Login Portal
                     </h3>
 
-                    <h3>Hello, {profile.username}</h3>
+                    
+                    {profile.username ?
+                        <>
+                            <h3>Hello, {profile.username}</h3>
+
+                        </>
+                        : <div><h3>Hello stranger!</h3></div>}
                     <Navigation 
                         isLoggedIn={loggedIn}
                         profile={profile }
@@ -104,6 +111,11 @@ export default class App extends Component {
                         />} />
                         <Route path="/myvideos" element={<MyVideos
                             profile={profile}
+                           
+                        />} />
+                        <Route path="/myvideos" element={<UploadVideo
+                            profile={profile}
+
                         />} />
 
                     </Routes>

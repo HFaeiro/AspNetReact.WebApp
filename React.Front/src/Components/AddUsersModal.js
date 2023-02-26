@@ -66,7 +66,7 @@ export class AddUsersModal extends Component {
        
         return (
             <>
-                <div className="d-flex align-items-center justify-content-center">
+                <div className="addUsersModal">
                 {!this.props.dontShowButton ?  
                     <Button variant="primary" onClick={this.openModal}>
                         Create User

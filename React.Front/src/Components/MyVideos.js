@@ -21,7 +21,18 @@ export class MyVideos extends Component {
         var videos = this.getUsersVideos();
 
     }
+    deleteVideo = async (e) => {
+        fetch(process.env.REACT_APP_API + 'video/' + e, {
+            method: 'Delete',
+            headers: {
 
+                'Accept': 'application/json',
+                'Authorization': 'Bearer ' + this.props.profile.token,
+                'Content-Type': 'application/json'
+            }
+
+        })
+    }
 
     playVideo = async (e) => {
         return await new Promise(resolve => {
@@ -84,8 +95,10 @@ export class MyVideos extends Component {
 
                     })
                     .then(data => {
-                        this.setState({ videos: data });
-                        resolve(data);
+                        if (data != undefined) {
+                            this.setState({ videos: data });
+                            resolve(data);
+                        }
                     },
                         (error) => {
                             //alert(error);
@@ -141,20 +154,34 @@ export class MyVideos extends Component {
             </> : <>
             </>}
                 
+
             </div>
+
         let video = this.state.fetchedVideo.id && this.state.showPlayer ?
             <><video className="VideoPlayer" autoPlay controls muted
                 src={"data:video/mp4;base64," + this.state.fetchedVideo.video} >
             </video> : {null}</> : <></>
 
+        let uploadVideos = 
+            this.props.profile ?
+                <div>
+                    <UploadVideo
+                        profile={this.props.profile}
+                    />
+                </div>
+                :
+                <></>
+        
         return (
             <div>
-                <UploadVideo />
+               
             
             <div className="mt-5 justify-content-left">
                 
+                {uploadVideos}
                 {contents}
                 {video}
+               
 
                 </div>
                 </div>

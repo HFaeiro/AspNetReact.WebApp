@@ -3,12 +3,16 @@ import { Form } from 'react-bootstrap'
 
 import './UploadVideo.css';
 export class UploadVideo extends Component {
-    state =
+    constructor(props) {
+        super(props);
+
+        this.state =
         {
             file: null,
             video: null,
             showResults: false,
         }
+    }
     clearFiles() {
         window.URL.revokeObjectURL(this.state.video.src);
         this.setState({ file: null, video: null });
@@ -85,7 +89,7 @@ export class UploadVideo extends Component {
         let file = e.target.files[0];
         this.loadFile(file)
     }
-    async uploadFile(e) {
+    async uploadFile() {
         var success = true;
         const formData = new FormData();
         formData.append("Username", this.props.profile.username);
@@ -105,13 +109,13 @@ export class UploadVideo extends Component {
                 },
                 (error) => {
                     alert(error);
-
+                    success = false;
                 })
                 .then(
                     console.log("sent file : ", this.state.file.name) // Handle the success response object
                 ).catch(
-                    error => console.log("fetch: " + error) // Handle the error response object
-
+                    error => console.log("fetch: " + error), // Handle the error response object
+                    success = false
                 );
 
         }
@@ -130,7 +134,7 @@ export class UploadVideo extends Component {
 
     render() {
         return (
-            (this.state.file && this.state.video) ?
+            (this.state.file && this.state.video && this.props != undefined) ?
 
                 <div className=" justify-content-left">
 
@@ -160,7 +164,7 @@ export class UploadVideo extends Component {
                             </tr>
                         </tbody>
                     </table>
-                    <button className="btn btn-primary" onClick={(e) => { this.uploadFile(e).then(() => window.location.reload()) }}>
+                    <button className="btn btn-primary" onClick={(e) => { this.uploadFile().then(() => window.location.reload()) }}>
                         Upload File
                     </button>
                     <button className="btn btn-danger" type="submit" onClick={(e) => this.clearFiles()}>

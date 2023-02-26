@@ -54,7 +54,7 @@ namespace ASP.Back.Controllers
             catch (Exception ex) {
                 return BadRequest($"Video.Get: " + ex.Message);
             }
-            return BadRequest($"Video.Get: ");
+            return BadRequest($"Video.Get: No Videos");
         }
 
         [HttpGet("play/{id}")]

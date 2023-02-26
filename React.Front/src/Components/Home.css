@@ -1,0 +1,27 @@
+.homePage {
+    flex-direction: column;
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: center;
+    align-content: space-around;
+}
+.loginButton {
+    flex-direction: column;
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: center;
+    align-content: space-around;
+}
+/*.btn-primary {
+    flex-direction: column;
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: center;
+    align-content: space-around;
+}*/

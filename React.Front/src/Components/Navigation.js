@@ -20,16 +20,17 @@ export default function Navigation(props) {
     ) : (
 
         <>
-            <NavLink className="d-inline p-2 bg-dark text-white" to="/logout">
+                 <NavLink className="d-inline p-2 bg-dark text-white" to="/logout">
                 Logout
+                </NavLink>
+                <NavLink className="d-inline p-2 bg-dark text-white" to="/myvideos">
+                    My Videos
                 </NavLink>
                 {props.profile.privileges == 'Admin' ? /*// if user is admin we will show Users link.*/
                     <> <NavLink className="d-inline p-2 bg-dark text-white" to="/users">
                     Users
                 </NavLink>
-                <NavLink className="d-inline p-2 bg-dark text-white" to="/myvideos">
-                   My Videos
-                </NavLink>
+
         </>
                 : 
                      null}
