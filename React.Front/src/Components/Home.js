@@ -37,18 +37,7 @@ export class Home extends Component {
                 })
     }
 
-    deleteVideo = async (e) => {
-        fetch(process.env.REACT_APP_API + 'video/' + e, {
-            method: 'Delete',
-            headers: {
 
-                'Accept': 'application/json',
-                'Authorization': 'Bearer ' + this.props.profile.token,
-                'Content-Type': 'application/json'
-            }
-
-        })
-    }
 
    
 
