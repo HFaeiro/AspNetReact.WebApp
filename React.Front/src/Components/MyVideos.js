@@ -118,7 +118,7 @@ export class MyVideos extends Component {
 
     render() {
         let contents =
-            <div>{this.state.videos ? <>
+            <div>{this.state.videos.length ? <>
                 <Table striped responsive bordered hover variant="dark"
                 >
                     <thead>
@@ -126,7 +126,7 @@ export class MyVideos extends Component {
                             <th>File Name</th>
                             <th>File Type</th>
                             <th>File Size</th>
-                            <th></th>
+                            <th ></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -135,7 +135,8 @@ export class MyVideos extends Component {
                                 <td>{v.fileName}</td>
                                 <td>{v.description}</td>
                                 <td>{v.contentType}</td>
-                                <td><button className="btn btn-primary" name="playButton" onClick={() => {
+                                
+                                <td className="buttons"><button className="btn btn-primary" name="playButton" onClick={() => {
                                     (this.state.showPlayer && this.state.fetchedVideo.id != v.id
                                         ? this.setState({ showPlayer: this.state.showPlayer })
                                         : this.setState({ showPlayer: !this.state.showPlayer }));
@@ -145,7 +146,7 @@ export class MyVideos extends Component {
                                 }
                                 }>
                                     {this.state.showPlayer && this.state.fetchedVideo.id == v.id ? "Hide" : "Play"}
-                                </button><button as="input" name="Id" value={v.id} className="btn btn-danger" onClick={(e) => this.deleteVideo(v.id).then(() => window.location.reload())}>
+                                </button><button   name="Id" value={v.id} className="btn btn-danger" onClick={(e) => this.deleteVideo(v.id).then(() => window.location.reload())}>
                                         Delete Video<span className="glyphicon glyphicon-trash"></span>
                                     </button></td>
                             </tr>)}
@@ -157,10 +158,11 @@ export class MyVideos extends Component {
 
             </div>
 
-        let video = this.state.fetchedVideo.id && this.state.showPlayer ?
+        let video = this.state.fetchedVideo.video && this.state.showPlayer ?
             <><video className="VideoPlayer" autoPlay controls muted
                 src={"data:video/mp4;base64," + this.state.fetchedVideo.video} >
             </video> : {null}</> : <></>
+
 
         let uploadVideos = 
             this.props.profile ?
