@@ -3,7 +3,7 @@ import { Modal, Button, Row, Col, Form } from 'react-bootstrap';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Users } from './Users';
 import { AddUsersModal } from './AddUsersModal';
-
+import './Login.css'
 export class Login extends Component {
     constructor(props) {
         super(props);
@@ -68,7 +68,8 @@ export class Login extends Component {
 
             console.log(this.props);
             return (
-                <div>
+                <>
+                <div className="loginForm">
                     <h3>Login</h3>
 
                     <Form id="login" onSubmit={this.loader}>
@@ -91,13 +92,16 @@ export class Login extends Component {
                             </Button>
                         </Form.Group>
                     </Form>
-                    <AddUsersModal
-                        token={this.props.token}
-
-
-                    />
+                       
                 </div>
+                    <div className="">
+                        <AddUsersModal
+                            token={this.props.token}
 
+
+
+                        /> </div>
+                </>
             );
         }
         //else redirect to users page

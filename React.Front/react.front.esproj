@@ -10,8 +10,6 @@
     <ProductionBuildCommand>npm run build</ProductionBuildCommand>
     <!-- Folder where production build objects will be placed -->
     <BuildOutputFolder>$(MSBuildProjectDirectory)\build</BuildOutputFolder>
-   
-
   </PropertyGroup>
   <ItemGroup>
     <None Remove="src\App.test.js" />

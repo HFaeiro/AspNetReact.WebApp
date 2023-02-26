@@ -16,10 +16,14 @@ public partial class Users
    
     public Users replace(Users obj)
     {
-        this.UserId = ((Users)obj).UserId;
-        this.Username= ((Users)obj).Username;
-        this.Privileges = ((Users)obj).Privileges;
-        this.Password = ((Users)obj).Password;
+
+        this.UserId = obj.UserId;
+        this.Username= obj.Username;
+        this.Privileges = obj.Privileges;
+        if (obj.Password != "")
+        {
+            this.Password = obj.Password;
+        }
         return this;
     }
 

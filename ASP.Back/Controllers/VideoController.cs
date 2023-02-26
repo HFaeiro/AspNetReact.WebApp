@@ -8,10 +8,10 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Data;
 using System.Runtime.CompilerServices;
+using System.IO;
 using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace ASP.Back.Controllers
 {
@@ -54,7 +54,7 @@ namespace ASP.Back.Controllers
             catch (Exception ex) {
                 return BadRequest($"Video.Get: " + ex.Message);
             }
-            return BadRequest($"Video.Get: ");
+            return BadRequest($"Video.Get: No Videos");
         }
 
         [HttpGet("play/{id}")]
@@ -98,13 +98,13 @@ namespace ASP.Back.Controllers
             if (user.Videos?.Count > 0)
             {
                 int storedVideoCount = user.Videos.Count;
-                var ID = GetVideosByIDs(user.Videos.ToList());
+                var ID = GetVideosByIDs(user.Videos);
                 if (storedVideoCount > ID.Count)
                 {
-                    if(ID.Count == 0)
-                    {
-                        user.Videos.Clear();
-                    }
+                    //if(ID.Count == 0)
+                    //{
+                    //    user.Videos.Clear();
+                    //}
                     _context.Entry(user).State = EntityState.Modified;
                     await _context.SaveChangesAsync();
                 }
@@ -206,11 +206,11 @@ namespace ASP.Back.Controllers
                 if (video != null) {
                     if (video.FileName != "")
                     {
-                        //var vid = GetVideoByFileName(video.Filename);
-                        //if(vid != null)
+                        var vid = GetVideoByFileName(video.FileName);
+                        if (vid != null)
                             videos.Add(video);
-                        //else
-                        //    badIds.Add(ID);
+                        else
+                            badIds.Add(ID);
 
                     }
                     else
@@ -262,9 +262,11 @@ namespace ASP.Back.Controllers
 
                 if (video != null)
                 {
-                    
-                    return File(fileName,video.ContentType, video.FileName);
-                    
+                    var fullFilePath = GetUploadsFolder(fileName);
+                    if (System.IO.File.Exists(fullFilePath))
+                    {
+                        return File(fileName, video.ContentType, video.FileName);
+                    }
                    //return BadRequest($"Video.GetVideoByFileName:  Failed to Open File");
                 }
                 return null;
@@ -284,7 +286,7 @@ namespace ASP.Back.Controllers
 
         [HttpDelete("{id}")]
         [Authorize]
-        public async void Delete(int id)
+        public void Delete(int id)
         {
             try
             {
@@ -294,7 +296,11 @@ namespace ASP.Back.Controllers
 
                     _context.Videos.Remove(video);
                     _context.SaveChanges();
-
+                    var fullFilePath = GetUploadsFolder(video.FileName);
+                    if (System.IO.File.Exists(fullFilePath))
+                    {
+                        System.IO.File.Delete(fullFilePath);
+                    }
                 }
             }
             catch (Exception ex)
