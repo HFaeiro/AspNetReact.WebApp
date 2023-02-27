@@ -29,10 +29,7 @@ export class EditUsersModal extends Component {
                     Password: event.target.Password.value,
                     Privileges: event.target.Privileges.value
 
-
-
                 })
-
 
             })
                 .then(res => {
@@ -45,7 +42,6 @@ export class EditUsersModal extends Component {
                             Password: this.props.uPass,
                             Privileges: this.props.uPriv
                         }
-
 
                         var areEdits = false;
                         if (event.target.Username.value != '' && profile.Username != event.target.Username.value) {
@@ -67,16 +63,9 @@ export class EditUsersModal extends Component {
                         event.target.Privileges.value = null;
                         document.getElementById('editUsers').submit();
 
-
-
                     }
                     resolve(res.json())
-                
-
-
-
-                      
-                    
+            
                 }
 
             )
