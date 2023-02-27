@@ -16,6 +16,7 @@ export default class App extends Component {
         super(props);
         this.login = this.login.bind(this);
         this.logout = this.logout.bind(this);
+        this.updateProfile = this.updateProfile.bind(this);
         this.state = { loggedIn: 'false', logoutModal : true };
 
     }
@@ -24,6 +25,11 @@ export default class App extends Component {
         
             this.setState(state, resolve);
         })
+    }
+    updateProfile = (profile) =>
+    {
+        localStorage.setItem('profile', JSON.stringify(profile));
+
     }
 
     //lets logout now....
@@ -86,7 +92,9 @@ export default class App extends Component {
                     <Routes>
 
                         <Route path="/" element={<Home
-                            profile={profile }
+                            profile={profile}
+                            updateProfile={this.updateProfile}
+
                         />} />
                         <Route path="/login" element={<Login
                             isLoggedIn={loggedIn}
@@ -97,6 +105,7 @@ export default class App extends Component {
                         <Route path="/users" element={<Users
                             profile={profile }
                             isLoggedIn={loggedIn}
+                            updateProfile={this.updateProfile}
                         />} />
                         <Route path="/logout" element={<Logout
                             isLoggedIn={loggedIn}
@@ -111,11 +120,11 @@ export default class App extends Component {
                         />} />
                         <Route path="/myvideos" element={<MyVideos
                             profile={profile}
+                            updateProfile={this.updateProfile}
                            
                         />} />
-                        <Route path="/myvideos" element={<UploadVideo
+                        <Route path="/upload-videos" element={<UploadVideo
                             profile={profile}
-
                         />} />
 
                     </Routes>

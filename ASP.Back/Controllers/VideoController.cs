@@ -117,35 +117,47 @@ namespace ASP.Back.Controllers
         [HttpPost]
         [Authorize]
         [DisableRequestSizeLimit]
-        public async Task<ActionResult> Post( [FromForm]VideoUpload videoIn)
+        public async Task<ActionResult<int>> Post( [FromForm]VideoUpload videoIn)
         {
             try
             {
                 if (videoIn.File.Length / 1024 / 1024 <= 100)
                 {
+                    //TODO!!!//
+                    //will need to validate user better before actually posting videos. need another abstract layer?
+                    //https://stackoverflow.com/questions/44783744/how-to-authorize-a-user-to-only-see-his-own-records-with-asp-net-identity-2-0
+                    //https://stackoverflow.com/questions/30701006/how-to-get-the-current-logged-in-user-id-in-asp-net-core?fbclid=IwAR3MSdxk2CyVvlzRoHfBV2BiY-WC9CefVTtNkH0YAuwEHh5uzAD1nWaGN_8
+                    
+                    
                     var user = GetUserByUsername(videoIn.Username);
                     if (user != null)
                     {
-                        
+                        int? ID = null;
                         if (user.Videos == null || user.Videos.Count <= 0)
                         {
-                            int ID = await AddVideoToDB(videoIn);
+                            ID = await AddVideoToDB(videoIn);
                             user.Videos = new List<int>();
-                            user.Videos.Add(ID);
-                            _context.Entry(user).State = EntityState.Modified;
-                            await _context.SaveChangesAsync();
-                            //return Ok(GetVideoByFileName(uniqueFileName, true));
+                            if (ID != null)
+                            {
+                                user.Videos.Add((int)ID);
+                                _context.Entry(user).State = EntityState.Modified;
+                                await _context.SaveChangesAsync();
+                            }
+                            
                         }
-                        else 
+                        else
                         {
 
-                            int ID = await AddVideoToDB(videoIn);
-                            user.Videos.Add(ID);
-                            _context.Entry(user).State = EntityState.Modified;
-                            await _context.SaveChangesAsync();
+                            ID = await AddVideoToDB(videoIn);
+                            if (ID != null)
+                            {
+                                user.Videos.Add((int)ID);
+                                _context.Entry(user).State = EntityState.Modified;
+                                await _context.SaveChangesAsync();
+                            }
                         }
 
-                            return Ok($"Added Video to User!");
+                            return Ok(ID);
                    }
                 }
                 return BadRequest();

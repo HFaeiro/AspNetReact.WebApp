@@ -64,22 +64,34 @@ namespace ASP.Back.Controllers
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> PutUserModel(int id,Users UserModel)
+        public async Task<IActionResult> PutUserModel(int id, Users UserModel)
         {
 
             if (id != UserModel.UserId)
             {
                 return BadRequest();
             }
-            var userModel = _context.UserModels.FirstOrDefault(x =>
-                                                    x.Username.ToLower() == UserModel.Username.ToLower());
+            var userModel = await _context.UserModels.FindAsync(id);
             if (userModel == null)
             {
                 return NotFound();
             }
 
-            _context.Entry(userModel.replace(UserModel)).State = EntityState.Modified;
 
+            if (userModel.Username != UserModel.Username)
+            {
+
+                var tstUser = _context.UserModels.FirstOrDefault(x =>
+                                                       x.Username.ToLower() == UserModel.Username.ToLower());
+                if (tstUser == null)
+                {
+                    _context.Entry(userModel.replace(UserModel)).State = EntityState.Modified;
+                }
+                else
+                    return BadRequest($"Username Already Taken");
+            }
+            else
+                _context.Entry(userModel.replace(UserModel)).State = EntityState.Modified;
             try
             {
                 await _context.SaveChangesAsync();
@@ -97,6 +109,7 @@ namespace ASP.Back.Controllers
             }
 
             return Ok($"Edited Successfully");
+
         }
 
         // POST: api/Users
