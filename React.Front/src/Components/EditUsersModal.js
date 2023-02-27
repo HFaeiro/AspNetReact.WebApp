@@ -13,7 +13,7 @@ export class EditUsersModal extends Component {
     }
     openModal = () => this.setState({ showModal: true });
     closeModal = () => this.setState({ showModal: false });
-    async handleSubmit(event) {
+    handleSubmit = async (event) => {
         const ret = await new Promise(resolve => {
             event.preventDefault();
             fetch(process.env.REACT_APP_API + 'users/' + event.target.Id.value, {
@@ -34,31 +34,68 @@ export class EditUsersModal extends Component {
                 })
 
 
-            }).then(res => res.json())
-                .then((result) => {
-                    this.closeModal()
-                    alert(result);
+            })
+                .then(res => {
+                    if (res.status == 200) {
+                        event.target.Id.value = null;
+
+                        var profile =
+                        {
+                            Username: this.props.uName,
+                            Password: this.props.uPass,
+                            Privileges: this.props.uPriv
+                        }
 
 
-                },
-                    (error) => {
-                        alert('Failed:' + error);
-                    })
+                        var areEdits = false;
+                        if (event.target.Username.value != '' && profile.Username != event.target.Username.value) {
+                            profile.Username = event.target.Username.value;
+                            areEdits = true;
+                        }
+                        if (event.target.Password.value != '' && event.target.Password.value != profile.Password) {
+                            profile.Username = event.target.Password.value
+                            areEdits = true;
+                        }
+                        if (event.target.Privileges.value != '' && event.target.Privileges.value != profile.Privileges) {
+                            profile.Privileges = event.target.Privileges.value
+                            areEdits = true;
+                        }
+                        if (areEdits == true)
+                            this.props.updateProfile(profile);
+                        event.target.Username.value = null;
+
+                        event.target.Privileges.value = null;
+                        document.getElementById('editUsers').submit();
+
+
+
+                    }
+                    resolve(res.json())
+                
+
+
+
+                      
+                    
+                }
+
+            )
 
         })
+        return ret;
     }
 
 
     loader = async (event) => {
         const res = await this.handleSubmit(event);
         if (res) {
-            if (res.status != 400)
-                event.target.Id.value = null;
-            event.target.Username.value = null;
-            event.target.Password.value = null;
-            event.target.Privileges.value = null;
-            document.getElementById('editUsers').submit();
+
+            
+                alert(res);
+        } else {
+            console.log('Undefined Behavior');
         }
+        event.target.Password.value = null;
     }
 
     render() {

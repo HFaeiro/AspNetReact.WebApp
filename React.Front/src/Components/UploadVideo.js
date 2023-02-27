@@ -104,8 +104,14 @@ export class UploadVideo extends Component {
                 body: formData
 
             }).then(
-                response => {// if the response is a JSON object
-                    console.log(response);
+                response => response.json())
+                .then(data => {// if the response is a JSON object
+                    if (data.status == 200) {
+                        var profile = this.props.profile;
+                        profile.videos.push(data);
+
+                        this.props.updateProfile(profile);
+                    }
                 },
                 (error) => {
                     alert(error);
@@ -115,7 +121,7 @@ export class UploadVideo extends Component {
                     console.log("sent file : ", this.state.file.name) // Handle the success response object
                 ).catch(
                     error => console.log("fetch: " + error), // Handle the error response object
-                    success = false
+                    /*success = false*/
                 );
 
         }
@@ -126,6 +132,7 @@ export class UploadVideo extends Component {
         if (success) {
             this.setState({ file: null });
             this.setState({ video: null });
+
 
         }
 
@@ -142,7 +149,7 @@ export class UploadVideo extends Component {
                         {this.state.showResults ? "Hide" : "Preview"}
                     </button>
                     <div>
-                        {this.state.showResults ? <video width="1080" height="720" controls muted type={this.state.file.type}
+                        {this.state.showResults ? <video controls muted type={this.state.file.type}
                             src={this.state.video.src} >
                         </video> : null}
                     </div>
@@ -164,7 +171,7 @@ export class UploadVideo extends Component {
                             </tr>
                         </tbody>
                     </table>
-                    <button className="btn btn-primary" onClick={(e) => { this.uploadFile().then(() => window.location.reload()) }}>
+                    <button className="btn btn-primary" onClick={(e) => { this.uploadFile()/*.then(() => window.location.reload())*/ }}>
                         Upload File
                     </button>
                     <button className="btn btn-danger" type="submit" onClick={(e) => this.clearFiles()}>

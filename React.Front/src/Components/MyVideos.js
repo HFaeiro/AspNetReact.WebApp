@@ -13,12 +13,14 @@ export class MyVideos extends Component {
                 id: null,
                 video: null
             },
-
+            updateVideos: false,
             showPlayer: false
 
         }
     componentDidMount() {
-        var videos = this.getUsersVideos();
+        if (this.props.profile.videos.length > 0)
+            this.getUsersVideos();
+
 
     }
     deleteVideo = async (e) => {
@@ -74,7 +76,7 @@ export class MyVideos extends Component {
         })
     }
 
-    getUsersVideos = async () => {
+   getUsersVideos = async () => {
         return await new Promise(resolve => {
             if (this.props.profile.username) {
                 fetch(process.env.REACT_APP_API + 'video/' + this.props.profile.userId, {
@@ -98,6 +100,7 @@ export class MyVideos extends Component {
                         if (data != undefined) {
                             this.setState({ videos: data });
                             resolve(data);
+
                         }
                     },
                         (error) => {
@@ -169,6 +172,7 @@ export class MyVideos extends Component {
                 <div>
                     <UploadVideo
                         profile={this.props.profile}
+                        updateProfile={this.props.updateProfile }
                     />
                 </div>
                 :

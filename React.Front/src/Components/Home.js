@@ -42,7 +42,7 @@ export class Home extends Component {
    
 
     async handleSubmit() {
-        if(!this.props.profile)
+        if (this.props.profile.username == '')
         await this.getDummyUserInfo();
         
     }
@@ -61,6 +61,8 @@ export class Home extends Component {
 
                 <MyVideos
                     profile={this.props.profile}
+                    updateProfile={this.props.updateProfile}
+
                 />
             </>
             :<> <div className="homePage" >

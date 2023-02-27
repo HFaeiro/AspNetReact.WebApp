@@ -89,6 +89,7 @@ export class Users extends Component {
                                         uPass={p.password}
                                         uPriv={p.privileges}
                                         token={klass.props.profile.token}
+                                        updateProfile={klass.props.updateProfile }
                                     />
                                     <DeleteUsersModal
                                         uId={p.userId}
