@@ -22,6 +22,14 @@ namespace TeamManiacs.Core.Models
             Privileges = privileges;
             Videos = videos;
         }
+        public Profile(Users user)
+        {
+            UserId = user.UserId;
+            Username = user.Username;
+            Privileges= user.Privileges;
+            Videos = user.Videos;
+        }
+
 
         [Key]
         public int UserId { get; set; }
