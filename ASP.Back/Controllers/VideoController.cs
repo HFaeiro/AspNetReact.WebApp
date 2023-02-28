@@ -221,9 +221,10 @@ namespace ASP.Back.Controllers
                         var vid = GetVideoByFileName(video.FileName);
                         if (vid != null)
                             videos.Add(video);
+#if !DEBUG //we don't want to delete not found on disk videos if we are in dev environment
                         else
                             badIds.Add(ID);
-
+#endif
                     }
                     else
                         badIds.Add(ID);
