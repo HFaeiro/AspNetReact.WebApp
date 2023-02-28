@@ -177,7 +177,7 @@ export class UploadVideo extends Component {
                             </tr>
                         </tbody>
                     </table>
-                    <button className="btn btn-primary" onClick={(e) => { this.uploadFile()/*.then(() => window.location.reload())*/ }}>
+                    <button className="btn btn-primary" onClick={(e) => { this.uploadFile().then(() => window.location.reload()) }}>
                         Upload File
                     </button>
                     <button className="btn btn-danger" type="submit" onClick={(e) => this.clearFiles()}>
