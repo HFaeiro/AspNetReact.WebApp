@@ -14,15 +14,25 @@ export class MyVideos extends Component {
                 video: null
             },
             updateVideos: false,
-            showPlayer: false
+            showPlayer: false,
+           
 
         }
     componentDidMount() {
-        if (this.props.profile.videos)
-        if (this.props.profile.videos.length > 0)
-            this.getUsersVideos();
+        if (this.props.profile.videos) {
+            if (this.props.profile.videos.length > 0) {
+                this.getUsersVideos();
+            }
 
+            else if (this.props.profile.vidPollCount >= 2) {
+                this.getUsersVideos();
+                this.props.resetPollCount()
 
+            }
+            else {
+                this.props.incrementPollCount()
+            }
+        }
     }
     deleteVideo = async (e) => {
         fetch(process.env.REACT_APP_API + 'video/' + e, {

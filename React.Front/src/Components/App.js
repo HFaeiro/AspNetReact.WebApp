@@ -17,8 +17,8 @@ export default class App extends Component {
         this.login = this.login.bind(this);
         this.logout = this.logout.bind(this);
         this.updateProfile = this.updateProfile.bind(this);
-        this.state = { loggedIn: 'false', logoutModal : true };
-
+        this.state = { loggedIn: 'false', logoutModal: true};
+        
     }
     setStateAsync = async (state) => {
         return await new Promise(resolve => {
@@ -31,7 +31,20 @@ export default class App extends Component {
         localStorage.setItem('profile', JSON.stringify(profile));
 
     }
+    resetPollCount = () => {
 
+        var profile = this.getProfile();
+        profile.vidPollCount = 0;
+        this.updateProfile(profile);
+
+    }
+    incrementPollCount = () => {
+        var profile = this.getProfile();
+        profile.vidPollCount++;
+        this.updateProfile(profile);
+        
+
+    }
     //lets logout now....
     logout = () => {
         const l = JSON.parse(localStorage.profile);
@@ -49,16 +62,14 @@ export default class App extends Component {
         this.setState(
             { loggedIn: 'true' }); 
     }
-
-    render() {
-        //get our profile data
+    getProfile = () => {
         var localProfile = localStorage.profile;
-        var loggedIn = this.state.loggedIn;
+        
         var profile;
         if (localProfile) { //if the profile exists we will try to use it 
 
             profile = JSON.parse(localProfile); //lets parse the data now that we know it exists.
-            loggedIn = profile.token && profile.userId && profile.username && profile.privileges ? 'true' : 'false'; //lets determine if we're logged in. 
+            
         }
         else { //no data existed.. Usually meant data was null or undefined. we'll create it now. 
             profile = {
@@ -66,10 +77,19 @@ export default class App extends Component {
                 token: '',
                 username: '',
                 privileges: '',
+                vidPollCount: 0
             }
             localStorage.setItem('profile', JSON.stringify(profile)); //setup blank tables in the Local item. 
-           
+
         }
+        return profile;
+    }
+
+    render() {
+        //get our profile data
+        var profile = this.getProfile();
+        //lets determine if we're logged in. 
+        var loggedIn = profile.token && profile.userId && profile.username && profile.privileges ? 'true' : 'false'; 
         //setup routes and send props
         return (
             <section className="App">
@@ -94,7 +114,8 @@ export default class App extends Component {
                         <Route path="/" element={<Home
                             profile={profile}
                             updateProfile={this.updateProfile}
-
+                            incrementPollCount={this.incrementPollCount }
+                            resetPollCount={this.resetPollCount }
                         />} />
                         <Route path="/login" element={<Login
                             isLoggedIn={loggedIn}
@@ -121,10 +142,13 @@ export default class App extends Component {
                         <Route path="/myvideos" element={<MyVideos
                             profile={profile}
                             updateProfile={this.updateProfile}
+                            incrementPollCount={this.incrementPollCount}
+                            resetPollCount={this.resetPollCount}
                            
                         />} />
                         <Route path="/upload-videos" element={<UploadVideo
                             profile={profile}
+
                         />} />
 
                     </Routes>

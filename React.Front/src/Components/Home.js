@@ -62,7 +62,8 @@ export class Home extends Component {
                 <MyVideos
                     profile={this.props.profile}
                     updateProfile={this.props.updateProfile}
-
+                    incrementPollCount={this.props.incrementPollCount}
+                    resetPollCount={this.props.resetPollCount}
                 />
             </>
             :<> <div className="homePage" >
