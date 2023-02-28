@@ -18,6 +18,7 @@ export class MyVideos extends Component {
 
         }
     componentDidMount() {
+        if (this.props.profile.videos)
         if (this.props.profile.videos.length > 0)
             this.getUsersVideos();
 

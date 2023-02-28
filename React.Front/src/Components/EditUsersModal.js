@@ -78,9 +78,7 @@ export class EditUsersModal extends Component {
     loader = async (event) => {
         const res = await this.handleSubmit(event);
         if (res) {
-
-            
-                alert(res);
+             alert(res);
         } else {
             console.log('Undefined Behavior');
         }
