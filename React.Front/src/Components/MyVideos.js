@@ -35,6 +35,13 @@ export class MyVideos extends Component {
             }
 
         })
+        
+            var videoIndex = this.props.profile.videos.indexOf(e);
+        if (videoIndex >= 0) {
+            var profile = this.props.profile;
+            profile.videos.splice(videoIndex, 1);
+            this.props.updateProfile(profile);
+        }
     }
 
     playVideo = async (e) => {
@@ -93,15 +100,27 @@ export class MyVideos extends Component {
                         if (res.status == 200)
                             return res.json()
                         else
-                            resolve(null);
+                            return res;
 
 
                     })
                     .then(data => {
                         if (data != undefined) {
-                            this.setState({ videos: data });
+                            var profile = this.props.profile;
+                            profile.videos = [];
+                            if (data.status == undefined) {
+                                this.setState({ videos: data });
+                                data.forEach(video => {
+                                    profile.videos.push(video.id);
+                                })
+                            }
+                            this.props.updateProfile(profile);
+
                             resolve(data);
 
+                        }
+                        else{ 
+                            resolve(null);
                         }
                     },
                         (error) => {
@@ -109,15 +128,12 @@ export class MyVideos extends Component {
                             resolve(null);
                         }).
                     catch((error) => {
-
+                        console.log(error);
                         resolve(null);
                     })
             }
         })
     }
-
-
-    
 
 
     render() {
@@ -146,7 +162,6 @@ export class MyVideos extends Component {
                                         : this.setState({ showPlayer: !this.state.showPlayer }));
                                     if (this.state.fetchedVideo.id != v.id)
                                         this.playVideo(v);
-
                                 }
                                 }>
                                     {this.state.showPlayer && this.state.fetchedVideo.id == v.id ? "Hide" : "Play"}
@@ -158,8 +173,6 @@ export class MyVideos extends Component {
                 </Table>
             </> : <>
             </>}
-                
-
             </div>
 
         let video = this.state.fetchedVideo.video && this.state.showPlayer ?
@@ -181,20 +194,14 @@ export class MyVideos extends Component {
         
         return (
             <div>
-               
-            
             <div className="mt-5 justify-content-left">
                 
                 {uploadVideos}
                 {contents}
                 {video}
-               
-
                 </div>
                 </div>
            
         );
     }
-
-
 }
