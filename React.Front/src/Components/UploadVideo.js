@@ -104,12 +104,18 @@ export class UploadVideo extends Component {
                 body: formData
 
             }).then(
-                response => response.json())
+                response => {
+
+                    if (response.status == 200) {
+                        return response.json()
+                    }
+
+                   
+                })
                 .then(data => {// if the response is a JSON object
-                    if (data.status == 200) {
+                    if (data) {
                         var profile = this.props.profile;
                         profile.videos.push(data);
-
                         this.props.updateProfile(profile);
                     }
                 },
@@ -171,7 +177,7 @@ export class UploadVideo extends Component {
                             </tr>
                         </tbody>
                     </table>
-                    <button className="btn btn-primary" onClick={(e) => { this.uploadFile().then(() => window.location.reload()) }}>
+                    <button className="btn btn-primary" onClick={(e) => { this.uploadFile()/*.then(() => window.location.reload())*/ }}>
                         Upload File
                     </button>
                     <button className="btn btn-danger" type="submit" onClick={(e) => this.clearFiles()}>
