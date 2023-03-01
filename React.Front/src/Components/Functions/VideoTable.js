@@ -1,6 +1,7 @@
 import { Table } from 'react-bootstrap'
 import { cloneElement } from 'react';
 function VideoTable(props) {
+
     let contents =
 
         <Table striped responsive bordered hover variant="dark">
@@ -23,10 +24,7 @@ function VideoTable(props) {
                             }>
                                 {props.showPlayer && (props.video ? props.video.id : null) == v.id ? "Hide" : "Play"}
                             </button>
-
-                            {/*how is this going to work when i need to pass in props? how does this work?
-                             for example if i need the value of the current mapped key v.id? */
-                                cloneElement(props.children, { value: v.id })}
+                            {cloneElement(props.children, { value: v.id })}  
                         </td>
                     </tr>
                 )}

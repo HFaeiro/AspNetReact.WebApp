@@ -25,7 +25,7 @@ export class Videos extends Component {
     }
     
     componentDidMount() {
-        if (this.props.user) {
+        if (this.props.userId) {
             this.getVideos();
         }
     }
@@ -34,48 +34,10 @@ export class Videos extends Component {
             ? this.setState({ showPlayer: this.state.showPlayer })
             : this.setState({ showPlayer: !this.state.showPlayer });
         if (this.state.fetchedVideo.id != video.id)
-            this.playVideo(video.id);
+            this.getVideo(video.id);
     }
+
     getVideo = async (e) => {
-        return await new Promise(resolve => {
-            fetch(process.env.REACT_APP_API + 'video/play/' + e.id, {
-                headers: {
-                    'Accept': 'application/json',
-                    'Authorization': 'Bearer ' + this.props.profile.token,
-                    'Content-Type': 'application/json'
-                }
-
-            })
-                .then(res => {
-                    if (res.status == 200)
-                        return res.json()
-                    else
-                        return;
-
-
-                })
-                .then(data => {
-                    this.setState(
-                        ({
-                            fetchedVideo:
-                            {
-                                id: e.id,
-                                video: data
-                            }
-                        }));
-                    resolve(data);
-                },
-                    (error) => {
-                        //alert(error);
-                        resolve(null);
-                    }).
-                catch((error) => {
-
-                    resolve(null);
-                })
-        })
-    }
-    playVideo = async (e) => {
         return await new Promise(resolve => {
             fetch(process.env.REACT_APP_API + 'video/play/' + e, {
                 headers: {
@@ -98,7 +60,7 @@ export class Videos extends Component {
                         ({
                             fetchedVideo:
                             {
-                                id: e.id,
+                                id: e,
                                 video: data
                             }
                         }));
@@ -117,12 +79,12 @@ export class Videos extends Component {
 
     getVideos = async () => {
         return await new Promise(resolve => {
-            if (this.props.user.username) {
-                fetch(process.env.REACT_APP_API + 'video/' + this.props.user.userId, {
+            
+                fetch(process.env.REACT_APP_API + 'video/' + this.props.userId, {
                     headers: {
 
                         'Accept': 'application/json',
-                        'Authorization': 'Bearer ' + this.props.user.token,
+                        'Authorization': 'Bearer ' + this.props.token,
                         'Content-Type': 'application/json'
                     }
 
@@ -150,7 +112,7 @@ export class Videos extends Component {
 
                         resolve(null);
                     })
-            }
+            
         })
     }
     render() {
@@ -179,15 +141,9 @@ export class Videos extends Component {
         return (
             <div>
 
-
-                <div className="mt-5 justify-content-left">
-
-
                     {contents}
                     {video}
 
-
-                </div>
             </div>
 
         );

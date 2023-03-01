@@ -4,13 +4,11 @@ import { Users } from './Users';
 import { Login } from './Login';
 import  Navigation  from './Navigation';
 import { Routes, Route } from 'react-router';
-import { Navigate } from 'react-router-dom'
 import ErrorPage from './ErrorPage';
 import  Logout  from './Logout';
 import {AddUsersModal} from './AddUsersModal'
 import { MyVideos } from './MyVideos'
-import {UploadVideo } from './UploadVideo'
-
+import { Videos } from './video'
 export default class App extends Component {
     constructor(props) {
         super(props);
@@ -146,10 +144,10 @@ export default class App extends Component {
                             resetPollCount={this.resetPollCount}
                            
                         />} />
-                        <Route path="/upload-videos" element={<UploadVideo
+                        <Route path="/videos:userid" element={<Videos
                             profile={profile}
-
                         />} />
+
 
                     </Routes>
                 </div>

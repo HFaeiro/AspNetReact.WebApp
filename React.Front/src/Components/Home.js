@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Form, Table } from 'react-bootstrap'
-import { Navigate, Link } from 'react-router-dom';
+import {  Link } from 'react-router-dom';
 import { useRef } from 'react';
 import { MyVideos } from './MyVideos.js'
 import './Home.css'

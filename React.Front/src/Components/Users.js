@@ -3,7 +3,7 @@ import { ButtonToolbar, Button } from 'react-bootstrap'
 import { AddUsersModal } from './AddUsersModal';
 import { EditUsersModal } from './EditUsersModal';
 import { DeleteUsersModal } from './DeleteUsersModal';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 
 export class Users extends Component {
     constructor(props) {
@@ -61,7 +61,10 @@ export class Users extends Component {
             true
             : false;
 
+
+
         return (
+            
             <>
 
                 <table className='table table-striped'
@@ -100,7 +103,11 @@ export class Users extends Component {
                                         />
 
                                         {p.videos.length ? <>
-                                            <button className="btn btn-primary" onClick={() => { }}>
+                                            <button className="btn btn-primary" onClick={() => {
+                                                useNavigate('/videos', {
+                                                    userId: p.userId
+                                                })
+                                                }}>
                                                 Videos
                                             </button>
                                         </> : <></>}
