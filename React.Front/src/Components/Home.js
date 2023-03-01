@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Form, Table } from 'react-bootstrap'
-import { Navigate, Link } from 'react-router-dom';
+import {  Link } from 'react-router-dom';
 import { useRef } from 'react';
 import { MyVideos } from './MyVideos.js'
 import './Home.css'
@@ -39,17 +39,12 @@ export class Home extends Component {
 
 
 
-   
-
     async handleSubmit() {
         if (this.props.profile.username == '')
         await this.getDummyUserInfo();
         
     }
 
-
-
-    
 
 
     render() {
@@ -59,11 +54,12 @@ export class Home extends Component {
         let contents = this.props.profile.username ?
             <>
 
-                <MyVideos
+                {/*<MyVideos
                     profile={this.props.profile}
                     updateProfile={this.props.updateProfile}
-
-                />
+                    incrementPollCount={this.props.incrementPollCount}
+                    resetPollCount={this.props.resetPollCount}
+                />*/}
             </>
             :<> <div className="homePage" >
                 <div><span>
@@ -86,9 +82,6 @@ export class Home extends Component {
            <Link to="login" className="btn btn-primary" >
                     Login!
                     </Link></div></>
-
-
-
 
 
         return (
