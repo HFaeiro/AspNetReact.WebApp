@@ -1,8 +1,7 @@
 import React, { Component } from 'react';
 import { Table } from 'react-bootstrap'
 import VideoTable from './Functions/VideoTable'
-   
-
+import { Navigate } from 'react-router-dom';
 
 export class Videos extends Component {
     constructor(props) {
@@ -18,14 +17,14 @@ export class Videos extends Component {
                 video: null
             },
             updateVideos: false,
-            showPlayer: false
-
+            showPlayer: false,
+            user: null
         }
         
     }
     
     componentDidMount() {
-        if (this.props.userId) {
+        if (this.props.user) {
             this.getVideos();
         }
     }
@@ -42,7 +41,7 @@ export class Videos extends Component {
             fetch(process.env.REACT_APP_API + 'video/play/' + e, {
                 headers: {
                     'Accept': 'application/json',
-                    'Authorization': 'Bearer ' + this.props.user.token,
+                    'Authorization': 'Bearer ' + this.props.token,
                     'Content-Type': 'application/json'
                 }
 
@@ -80,7 +79,7 @@ export class Videos extends Component {
     getVideos = async () => {
         return await new Promise(resolve => {
             
-                fetch(process.env.REACT_APP_API + 'video/' + this.props.userId, {
+                fetch(process.env.REACT_APP_API + 'video/' + this.props.user.userId, {
                     headers: {
 
                         'Accept': 'application/json',
@@ -127,7 +126,7 @@ export class Videos extends Component {
                 >{this.props.children }
                 </VideoTable>
 
-            </> : <>
+            </> : <>No Videos!
             </>}
             </div>
 

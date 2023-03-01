@@ -46,8 +46,8 @@ export class MyVideos extends Component {
             }
 
         })
-        
-            var videoIndex = this.props.profile.videos.indexOf(e);
+       
+        var videoIndex = this.props.profile.videos.indexOf(parseInt(e.target.value));
         if (videoIndex >= 0) {
             var profile = this.props.profile;
             profile.videos.splice(videoIndex, 1);
@@ -63,6 +63,17 @@ export class MyVideos extends Component {
                         profile={this.props.profile}
                         updateProfile={this.props.updateProfile }
                     />
+                    {
+                        this.props.profile.videos.length > 0 ? 
+                            <Videos
+                                user={this.props.profile}
+                                token={this.props.profile.token}>
+                                <button name="Id" className="btn btn-danger"
+                                    onClick={(e) => this.deleteVideo(e).then(() => window.location.reload())}>
+                                    Delete
+                                </button>
+                            </Videos> : <></>
+                    }
                 </div>
                 :
                 <></>
@@ -72,14 +83,7 @@ export class MyVideos extends Component {
             <div className="mt-5 justify-content-left">
                 
                 {uploadVideos}
-                    <Videos
-                        userId={this.props.profile.userId}
-                        token={this.props.profile.token }>
-                        <button name="Id" className="btn btn-danger"
-                            onClick={(e) => this.deleteVideo(e).then(() => window.location.reload())}>
-                        Delete
-                        </button>
-                    </Videos>
+                    
                 
                 </div>
                 </div>

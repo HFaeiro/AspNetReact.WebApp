@@ -24,7 +24,7 @@ function VideoTable(props) {
                             }>
                                 {props.showPlayer && (props.video ? props.video.id : null) == v.id ? "Hide" : "Play"}
                             </button>
-                            {cloneElement(props.children, { value: v.id })}  
+                            {props.children? cloneElement(props.children, { value: v.id }) :null}  
                         </td>
                     </tr>
                 )}

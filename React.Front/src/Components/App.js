@@ -15,7 +15,7 @@ export default class App extends Component {
         this.login = this.login.bind(this);
         this.logout = this.logout.bind(this);
         this.updateProfile = this.updateProfile.bind(this);
-        this.state = { loggedIn: 'false', logoutModal: true};
+        this.state = { loggedIn: 'false', logoutModal: true, myHistory: null };
         
     }
     setStateAsync = async (state) => {
@@ -144,10 +144,10 @@ export default class App extends Component {
                             resetPollCount={this.resetPollCount}
                            
                         />} />
-                        <Route path="/videos:userid" element={<Videos
-                            profile={profile}
+                        <Route path="/videos" element={<Videos
+                           
                         />} />
-
+                        
 
                     </Routes>
                 </div>

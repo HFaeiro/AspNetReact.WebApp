@@ -54,12 +54,12 @@ export class Home extends Component {
         let contents = this.props.profile.username ?
             <>
 
-                <MyVideos
+                {/*<MyVideos
                     profile={this.props.profile}
                     updateProfile={this.props.updateProfile}
                     incrementPollCount={this.props.incrementPollCount}
                     resetPollCount={this.props.resetPollCount}
-                />
+                />*/}
             </>
             :<> <div className="homePage" >
                 <div><span>
