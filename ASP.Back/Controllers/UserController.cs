@@ -19,7 +19,7 @@ namespace ASP.Back.Controllers
 
         // GET: api/Users
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<Profile>>> GetUserModels()
         {
             var users = await _context.UserModels.ToListAsync();
