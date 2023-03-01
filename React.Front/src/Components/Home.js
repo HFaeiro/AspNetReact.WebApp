@@ -39,17 +39,12 @@ export class Home extends Component {
 
 
 
-   
-
     async handleSubmit() {
         if (this.props.profile.username == '')
         await this.getDummyUserInfo();
         
     }
 
-
-
-    
 
 
     render() {
@@ -87,9 +82,6 @@ export class Home extends Component {
            <Link to="login" className="btn btn-primary" >
                     Login!
                     </Link></div></>
-
-
-
 
 
         return (

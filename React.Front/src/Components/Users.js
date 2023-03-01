@@ -97,7 +97,14 @@ export class Users extends Component {
                                         uPass={p.password}
                                         uPriv={p.privileges}
                                         token={klass.props.profile.token}
-                                        /> </>: <></>}
+                                        />
+
+                                        {p.videos.length ? <>
+                                            <button className="btn btn-primary" onClick={() => { }}>
+                                                Videos
+                                            </button>
+                                        </> : <></>}
+                                    </>  : <></>}
                                 </td>
                             </tr>)}
                     </tbody>
