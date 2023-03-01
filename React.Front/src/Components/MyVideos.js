@@ -4,6 +4,7 @@ import { Navigate, Link } from 'react-router-dom';
 import { useRef } from 'react';
 import './MyVideos.css';
 import { UploadVideo } from './UploadVideo'
+import {Videos } from './video'
 export class MyVideos extends Component {
     state =
         {
@@ -147,43 +148,20 @@ export class MyVideos extends Component {
 
 
     render() {
-        let contents =
-            <div>{this.state.videos.length ? <>
-                <Table striped responsive bordered hover variant="dark"
-                >
-                    <thead>
-                        <tr>
-                            <th>File Name</th>
-                            <th>File Type</th>
-                            <th>File Size</th>
-                            <th ></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {this.state.videos.map(v =>
-                            <tr key={v.id}>
-                                <td>{v.fileName}</td>
-                                <td>{v.description}</td>
-                                <td>{v.contentType}</td>
-                                
-                                <td className="buttons"><button className="btn btn-primary" name="playButton" onClick={() => {
-                                    (this.state.showPlayer && this.state.fetchedVideo.id != v.id
-                                        ? this.setState({ showPlayer: this.state.showPlayer })
-                                        : this.setState({ showPlayer: !this.state.showPlayer }));
-                                    if (this.state.fetchedVideo.id != v.id)
-                                        this.playVideo(v);
-                                }
-                                }>
-                                    {this.state.showPlayer && this.state.fetchedVideo.id == v.id ? "Hide" : "Play"}
-                                </button><button   name="Id" value={v.id} className="btn btn-danger" onClick={(e) => this.deleteVideo(v.id).then(() => window.location.reload())}>
-                                        Delete<span className="glyphicon glyphicon-trash"></span>
-                                    </button></td>
-                            </tr>)}
-                    </tbody>
-                </Table>
-            </> : <>
-            </>}
-            </div>
+        //let contents =
+        //    <button
+        //        name="Id"
+        //        value={v.id}
+        //        className="btn btn-danger"
+        //        onClick={(e) => this.deleteVideo(e).then(() => window.location.reload())}>
+        //        Delete
+        //        <span className="glyphicon glyphicon-trash"/>
+        //         </button>
+                            
+                    
+                
+            
+            
 
         let video = this.state.fetchedVideo.video && this.state.showPlayer ?
             <><video className="VideoPlayer" autoPlay controls muted
@@ -207,7 +185,13 @@ export class MyVideos extends Component {
             <div className="mt-5 justify-content-left">
                 
                 {uploadVideos}
-                {contents}
+                    <Videos
+                        user={this.props.profile}>
+                        <button name="Id" className="btn btn-danger"
+                            onClick={(e) => this.deleteVideo(e).then(() => window.location.reload())}>
+                        Delete
+                        </button>
+                    </Videos>
                 {video}
                 </div>
                 </div>

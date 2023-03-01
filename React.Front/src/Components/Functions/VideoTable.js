@@ -1,5 +1,5 @@
 import { Table } from 'react-bootstrap'
-
+import { cloneElement } from 'react';
 function VideoTable(props) {
     let contents =
 
@@ -19,14 +19,14 @@ function VideoTable(props) {
                         <td>{v.description}</td>
                         <td>{v.contentType}</td>
                         <td className="buttons">
-                            <button className="btn btn-primary" name="playButton" onClick={() => { props.onPlay }
+                            <button className="btn btn-primary" name="playButton" onClick={() =>  props.onPlay(v) 
                             }>
-                                {props.showPlayer && props.video.id == v.id ? "Hide" : "Play"}
+                                {props.showPlayer && (props.video ? props.video.id : null) == v.id ? "Hide" : "Play"}
                             </button>
 
                             {/*how is this going to work when i need to pass in props? how does this work?
                              for example if i need the value of the current mapped key v.id? */
-                                props.children}
+                                cloneElement(props.children, { value: v.id })}
                         </td>
                     </tr>
                 )}
@@ -43,4 +43,4 @@ function VideoTable(props) {
         </div>
 
     );
-}
+} export default VideoTable

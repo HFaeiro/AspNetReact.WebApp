@@ -5,11 +5,11 @@ import VideoTable from './Functions/VideoTable'
 
 
 export class Videos extends Component {
-    contructor(props) {
+    constructor(props) {
         super(props);
         this.onPlay = this.onPlay.bind(this);
-    }
-    state =
+
+        this.state =
         {
             videos: [],
             fetchedVideo:
@@ -21,17 +21,20 @@ export class Videos extends Component {
             showPlayer: false
 
         }
+        
+    }
+    
     componentDidMount() {
         if (this.props.user) {
-            getVideos();
+            this.getVideos();
         }
     }
-    onPlay() {
-        this.state.showPlayer && this.state.fetchedVideo.id != v.id
+    onPlay(video) {
+        this.state.showPlayer && this.state.fetchedVideo.id != video.id
             ? this.setState({ showPlayer: this.state.showPlayer })
-            : this.setState({ showPlayer: !this.state.showPlayer }));
-        if (this.state.fetchedVideo.id != v.id)
-            this.playVideo(v);
+            : this.setState({ showPlayer: !this.state.showPlayer });
+        if (this.state.fetchedVideo.id != video.id)
+            this.playVideo(video.id);
     }
     getVideo = async (e) => {
         return await new Promise(resolve => {
@@ -72,15 +75,54 @@ export class Videos extends Component {
                 })
         })
     }
+    playVideo = async (e) => {
+        return await new Promise(resolve => {
+            fetch(process.env.REACT_APP_API + 'video/play/' + e, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': 'Bearer ' + this.props.user.token,
+                    'Content-Type': 'application/json'
+                }
+
+            })
+                .then(res => {
+                    if (res.status == 200)
+                        return res.json()
+                    else
+                        return;
+
+
+                })
+                .then(data => {
+                    this.setState(
+                        ({
+                            fetchedVideo:
+                            {
+                                id: e.id,
+                                video: data
+                            }
+                        }));
+                    resolve(data);
+                },
+                    (error) => {
+                        //alert(error);
+                        resolve(null);
+                    }).
+                catch((error) => {
+
+                    resolve(null);
+                })
+        })
+    }
 
     getVideos = async () => {
         return await new Promise(resolve => {
-            if (this.props.profile.username) {
+            if (this.props.user.username) {
                 fetch(process.env.REACT_APP_API + 'video/' + this.props.user.userId, {
                     headers: {
 
                         'Accept': 'application/json',
-                        'Authorization': 'Bearer ' + this.props.profile.token,
+                        'Authorization': 'Bearer ' + this.props.user.token,
                         'Content-Type': 'application/json'
                     }
 
@@ -114,12 +156,14 @@ export class Videos extends Component {
     render() {
 
         let contents =
-            <div>{this.state.videos.length ? <>
+            <div>{this.state.videos.length > 0 ? <>
                 <VideoTable
                     onPlay={this.onPlay}
-                    videos={this.videos}
+                    videos={this.state.videos}
                     showPlayer={this.state.showPlayer}
-                />
+                    video={this.state.fetchedVideo }
+                >{this.props.children }
+                </VideoTable>
 
             </> : <>
             </>}
