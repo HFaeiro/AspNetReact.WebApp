@@ -19,7 +19,7 @@ namespace ASP.Back.Controllers
 
         // GET: api/Users
         [HttpGet]
-        [Authorize(Roles = "Admin")]
+        [Authorize]
         public async Task<ActionResult<IEnumerable<Profile>>> GetUserModels()
         {
             var users = await _context.UserModels.ToListAsync();
@@ -53,7 +53,7 @@ namespace ASP.Back.Controllers
         //}
         // GET: api/Users/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Profile>> GetUserModel(int id)
+        public async Task<ActionResult<Users>> GetUserModel(int id)
         {
             if (id == 1)
             {
@@ -64,7 +64,7 @@ namespace ASP.Back.Controllers
                     return NotFound();
                 }
 
-                return new Profile(UserModel);
+                return UserModel;
             }
             else
             {
