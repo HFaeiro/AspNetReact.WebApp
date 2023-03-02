@@ -1,10 +1,9 @@
 import React, { Component } from 'react';
-import { ButtonToolbar, Button } from 'react-bootstrap'
 import { AddUsersModal } from './AddUsersModal';
 import { EditUsersModal } from './EditUsersModal';
 import { DeleteUsersModal } from './DeleteUsersModal';
-import { Navigate } from 'react-router-dom';
-
+import { Navigate, Link } from 'react-router-dom';
+import { Videos } from './video'
 export class Users extends Component {
     constructor(props) {
         super(props);
@@ -12,7 +11,9 @@ export class Users extends Component {
             token: '',
             loggedIn: '',
             profiles: [],
-            loading: true
+            loading: true,
+            friend: null
+
         }
     }
 
@@ -52,7 +53,9 @@ export class Users extends Component {
             this.loader();
         }
     }
+    navigateToVideos(e) {
 
+    }
 
     //this will map the array of profiles received from server and display them. 
     static renderTable(profile, klass) {
@@ -61,7 +64,10 @@ export class Users extends Component {
             true
             : false;
 
+
+
         return (
+            
             <>
 
                 <table className='table table-striped'
@@ -97,7 +103,16 @@ export class Users extends Component {
                                         uPass={p.password}
                                         uPriv={p.privileges}
                                         token={klass.props.profile.token}
-                                        /> </>: <></>}
+                                        />
+
+                                        {p.videos.length ? <>
+                                            <button value={p.userId} className="btn btn-primary" onClick={(e) => {
+                                                klass.setState({friend: p})
+                                                 }}>
+                                                Videos
+                                            </button>
+                                        </> : <></>}
+                                    </>  : <></>}
                                 </td>
                             </tr>)}
                     </tbody>
@@ -127,12 +142,23 @@ export class Users extends Component {
                     token: '',
                     isLoggedIn: false
                 }} />
-            :
-            Users.renderTable(this.state.profiles, this);
+            : 
+                
+                
+            this.state.friend ?
+                <Videos
+                    user={this.state.friend}
+                    token={this.props.profile.token}>
+                   
+                </Videos> : Users.renderTable(this.state.profiles, this); 
+                
+       
+           
+            
   
         return (
             <div>
-                <h3>Users</h3>
+                {/*<h3>Users</h3>*/}
 
                 {contents}
             </div>
