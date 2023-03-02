@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
 
@@ -148,8 +149,8 @@ namespace ASP.Back.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteUserModel(int id)
         {
-            
-           if(id == 1)
+
+            if (id == 1)
                 return BadRequest();
             var tmpUserModel = await _context.UserModels.FindAsync(id);
             if (tmpUserModel == null)

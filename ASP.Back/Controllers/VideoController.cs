@@ -11,7 +11,7 @@ using System.Runtime.CompilerServices;
 using System.IO;
 using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
-
+using System.Security.Claims;
 
 namespace ASP.Back.Controllers
 {
@@ -168,21 +168,31 @@ namespace ASP.Back.Controllers
             }
 
         }
-        private async Task<int> AddVideoToDB(VideoUpload videoIn)
+        private async Task<int?> AddVideoToDB(VideoUpload videoIn)
         {
-            var uniqueFileName = GetUniqueFileName(videoIn.File.FileName);
-            SaveVideoToMediaFolder(videoIn, uniqueFileName);
-            Video video = new Video(videoIn, uniqueFileName);
-            try
+
+          
+            var claimsIdentity = this.User.Identity as ClaimsIdentity;
+            var userId = claimsIdentity?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            if (userId?.Length > 0)
             {
-                _context.Videos.Add(video);
-                await _context.SaveChangesAsync();
+
+                var uniqueFileName = GetUniqueFileName(videoIn.File.FileName);
+                Video video = new Video(videoIn,userId, uniqueFileName);
+                try
+                {
+                    _context.Videos.Add(video);
+                    await _context.SaveChangesAsync();
+                    SaveVideoToMediaFolder(videoIn, uniqueFileName);
+
+                }
+                catch (Exception ex)
+                {
+
+                }
+                return video.ID;
             }
-            catch(Exception ex)
-            {
-              
-            }
-            return video.ID;
+            return null;
         }
         private FileStream GetVideoFromMediaFolder(Video videoIn)
         {
@@ -190,14 +200,14 @@ namespace ASP.Back.Controllers
             FileStream fileStream = new FileStream(GetUploadsFolder(videoIn.FileName), FileMode.Open);
             return fileStream;
         }
-        private async void SaveVideoToMediaFolder(VideoUpload videoIn, string filePath = "")
+        private void SaveVideoToMediaFolder(VideoUpload videoIn, string filePath = "")
         {
             if(filePath == "")
             {
                 filePath = GetUniqueFileName(videoIn.File.FileName);
             }
             FileStream fileStream = new FileStream(GetUploadsFolder(filePath), FileMode.Create);
-            await videoIn.File.CopyToAsync(fileStream);
+           videoIn.File.CopyTo(fileStream);
             fileStream.Close();
         }
         private string GetUploadsFolder(string fileName)
