@@ -24,7 +24,11 @@ export class Login extends Component {
                     Password: event.target.Password.value,
                 })
             })
-                .then(res => res.json())
+                .then(res => {
+                    if (res.status == 200)
+                        return res.json();
+                    else return res;
+                })
                 .then(data => {
                     resolve(data); //got the data now lets see what it is! this goes back to loader()
                 })
@@ -39,7 +43,7 @@ export class Login extends Component {
             event.preventDefault();
             const res = await this.getPostResponse(event);//await login response from server
             if (res != null) {
-                if (res.status != 400) { //if response status is not a bad request send data to login func
+                if (!res.status) { //if response status is not a bad request send data to login func
                     this.props.login(res);
                     event.target.Username.value = null;
                     event.target.Password.value = null;
@@ -50,6 +54,7 @@ export class Login extends Component {
                     alert('Sorry Invalid Username & Password. Please Try Again!');
                     if (this.props.isLoggedIn === 'true')
                         this.props.logout();
+                    event.target.Password.value = null;
                 }
             }
             else { //if invalid return value from login we will just send to logout to make sure no lingering logged in vals
