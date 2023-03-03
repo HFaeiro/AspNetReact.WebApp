@@ -4,7 +4,9 @@ import { Navigate, Link } from 'react-router-dom';
 import { useRef } from 'react';
 import './MyVideos.css';
 import { UploadVideo } from './UploadVideo'
-import {Videos } from './video'
+import { Videos } from './video'
+
+
 export class MyVideos extends Component {
     state =
         {
@@ -72,6 +74,7 @@ export class MyVideos extends Component {
                                     onClick={(e) => this.deleteVideo(e).then(() => window.location.reload())}>
                                     Delete
                                 </button>
+                                
                             </Videos> : <></>
                     }
                 </div>

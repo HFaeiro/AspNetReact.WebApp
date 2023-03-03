@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { Component, useEffect } from 'react';
 import { AddUsersModal } from './AddUsersModal';
 import { EditUsersModal } from './EditUsersModal';
 import { DeleteUsersModal } from './DeleteUsersModal';
@@ -142,11 +142,7 @@ export class Users extends Component {
         
         let contents = (this.props.isLoggedIn === 'false')
             ?
-            <Navigate to={"/login"} props={
-                {
-                    token: '',
-                    isLoggedIn: false
-                }} />
+            this.props.router.navigate('/login')
             :
 
 

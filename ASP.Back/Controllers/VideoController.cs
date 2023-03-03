@@ -134,11 +134,7 @@ namespace ASP.Back.Controllers
             {
                 if (videoIn.File.Length / 1024 / 1024 <= 100)
                 {
-                    //TODO!!!//
-                    //will need to validate user better before actually posting videos. need another abstract layer?
-                    //https://stackoverflow.com/questions/44783744/how-to-authorize-a-user-to-only-see-his-own-records-with-asp-net-identity-2-0
-                    //https://stackoverflow.com/questions/30701006/how-to-get-the-current-logged-in-user-id-in-asp-net-core?fbclid=IwAR3MSdxk2CyVvlzRoHfBV2BiY-WC9CefVTtNkH0YAuwEHh5uzAD1nWaGN_8
-                    
+                   
                     var user = GetUserByUsername(videoIn.Username);
                     if (user != null)
                     {

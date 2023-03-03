@@ -1,5 +1,7 @@
+import React from 'react';
 import { Table } from 'react-bootstrap'
 import { cloneElement } from 'react';
+
 function VideoTable(props) {
 
     let contents =
@@ -24,7 +26,13 @@ function VideoTable(props) {
                             }>
                                 {props.showPlayer && (props.video ? props.video.id : null) == v.id ? "Hide" : "Play"}
                             </button>
-                            {props.children? cloneElement(props.children, { value: v.id }) :null}  
+                            {props.children ?
+                                props.children.length <= 1 ? cloneElement(props.children, { value: v.id }) :
+                                    React.Children.map(props.children, child =>
+                                        child.$$typeof && cloneElement(child, { value: v.id })) : null
+                               
+                                
+                              }
                         </td>
                     </tr>
                 )}
