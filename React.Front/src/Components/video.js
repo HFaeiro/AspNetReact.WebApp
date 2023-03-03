@@ -1,13 +1,12 @@
 import React, { Component } from 'react';
 import { Table } from 'react-bootstrap'
 import VideoTable from './Functions/VideoTable'
-import { Navigate } from 'react-router-dom';
-
-export class Videos extends Component {
+import { Navigate, useParams } from 'react-router-dom';
+import { withRouter } from '../Utils/withRouter'
+ export class Videos extends Component {
     constructor(props) {
         super(props);
         this.onPlay = this.onPlay.bind(this);
-
         this.state =
         {
             videos: [],
@@ -18,15 +17,17 @@ export class Videos extends Component {
             },
             updateVideos: false,
             showPlayer: false,
-            user: null
+            userId: props.router ? props.router.location.state.userId : this.props.userId,
+            token: props.token
         }
         
     }
     
     componentDidMount() {
-        if (this.props.user) {
+        if (this.state.userId) {
             this.getVideos();
         }
+
     }
     onPlay(video) {
         this.state.showPlayer && this.state.fetchedVideo.id != video.id
@@ -41,7 +42,7 @@ export class Videos extends Component {
             fetch(process.env.REACT_APP_API + 'video/play/' + e, {
                 headers: {
                     'Accept': 'application/json',
-                    'Authorization': 'Bearer ' + this.props.token,
+                    'Authorization': 'Bearer ' + this.state.token,
                     'Content-Type': 'application/json'
                 }
 
@@ -79,11 +80,11 @@ export class Videos extends Component {
     getVideos = async () => {
         return await new Promise(resolve => {
             
-                fetch(process.env.REACT_APP_API + 'video/' + this.props.user.userId, {
+                fetch(process.env.REACT_APP_API + 'video/' + this.state.userId , {
                     headers: {
 
                         'Accept': 'application/json',
-                        'Authorization': 'Bearer ' + this.props.token,
+                        'Authorization': 'Bearer ' + this.state.token,
                         'Content-Type': 'application/json'
                     }
 
@@ -147,4 +148,4 @@ export class Videos extends Component {
 
         );
     }
-}
+} export const VideoRoute = withRouter(Videos)

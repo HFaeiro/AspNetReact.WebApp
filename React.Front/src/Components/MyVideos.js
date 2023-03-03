@@ -66,7 +66,7 @@ export class MyVideos extends Component {
                     {
                         this.props.profile.videos.length > 0 ? 
                             <Videos
-                                user={this.props.profile}
+                                userId={this.props.profile.userId}
                                 token={this.props.profile.token}>
                                 <button name="Id" className="btn btn-danger"
                                     onClick={(e) => this.deleteVideo(e).then(() => window.location.reload())}>

@@ -18,7 +18,7 @@ function VideoTable(props) {
                     <tr key={v.id}>
                         <td>{v.fileName}</td>
                         <td>{v.description}</td>
-                        <td>{v.contentType}</td>
+                        <td>{v.contentSize /1024 /1024}</td>
                         <td className="buttons">
                             <button className="btn btn-primary" name="playButton" onClick={() =>  props.onPlay(v) 
                             }>

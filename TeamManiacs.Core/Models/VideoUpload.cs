@@ -55,7 +55,7 @@ namespace TeamManiacs.Core.Models
             ContentType = videoIn.File.ContentType;
             ContentDisposition = videoIn.File.ContentDisposition;
             Uploader = uploader;
-          
+            isPrivate= true;
         }
 
         [Key]
