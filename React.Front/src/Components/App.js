@@ -26,7 +26,11 @@ export default class App extends Component {
     }
     updateProfile = (profile) =>
     {
-        localStorage.setItem('profile', JSON.stringify(profile));
+        var _profile = this.getProfile();
+        _profile.username = profile.username;
+        _profile.privileges = profile.privileges;
+
+        localStorage.setItem('profile', JSON.stringify(_profile));
 
     }
     resetPollCount = () => {
