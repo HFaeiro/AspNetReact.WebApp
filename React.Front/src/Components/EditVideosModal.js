@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Modal, Button, Row, Col, Form } from 'react-bootstrap'
+import { Modal, Button, Row, Col, Form, Container } from 'react-bootstrap'
 
 export class EditVideosModal extends Component {
     state = {
@@ -79,16 +79,16 @@ export class EditVideosModal extends Component {
                     size="lg"
                     aria-labelledby="contained-modal-title-vcenter"
                     centered>
-
+                    <Form id="editVideo" onSubmit={this.loader}>
                     <Modal.Header closeButton>
                         <Modal.Title id="contained-modal-title-vcenter">
                             Edit Video
                         </Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
-                        <Row>
-                            <Col sm={6}>
-                                <Form id="editVideo" onSubmit={this.loader}>
+                        <Container fluid="lg">
+                        
+                             <Row className="justify-content-md-center">
                                     <Form.Group controlId="Id">
                                         <Form.Control type="text" name="Id" required hidden
                                             disabled
@@ -96,6 +96,7 @@ export class EditVideosModal extends Component {
                                             placeholder={this.props.video.id}>
                                         </Form.Control>
                                     </Form.Group>
+                                    <Col>
                                     <Form.Group controlId="Title">
                                         <Form.Label>Title</Form.Label>
                                         <Form.Control type="text" name="Title" required
@@ -103,14 +104,18 @@ export class EditVideosModal extends Component {
                                             placeholder={this.props.video.title}>
                                         </Form.Control>
                                     </Form.Group>
+                                </Col>
+                                </Row>
+                            <Row className="mb-3">
+                                
                                     <Form.Group controlId="Description">
                                         <Form.Label>Description</Form.Label>
-                                        <Form.Control type="Description" name="Description" required
+                                        <Form.Control as="textarea" rows={3} type="Description" name="Description" required
                                             defaultValue={this.props.video.description}
                                             placeholder={this.props.video.description}>
                                         </Form.Control>
                                     </Form.Group>
-
+                                <Col sm={3}>  
                                     <Form.Group controlId="Private">
                                         <Form.Label>Private</Form.Label>
                                         <Form.Select type="text" name="Private"
@@ -124,21 +129,32 @@ export class EditVideosModal extends Component {
                                         </Form.Select>
                                     </Form.Group>
                                     <Form.Group>
-                                        <Button variant="primary" type="submit">
-                                            Save
-                                        </Button>
+                                       
                                     </Form.Group>
-                                </Form>
+                                </Col>
+                            </Row>
+                                
 
-                            </Col>
-                        </Row>
+                    </Container>
 
                     </Modal.Body>
                     <Modal.Footer>
-                        <Button variant="danger" onClick={this.closeModal}>
-                            Done
-                        </Button>
-                    </Modal.Footer>
+                        
+                        <Row xs="auto">
+                        
+                            <Col>
+                                <Button variant="primary" type="submit">
+                            Save
+                                </Button>
+                            </Col>
+                            <Col>
+                                <Button variant="danger" onClick={this.closeModal}>
+                           Cancel
+                            </Button>
+                            </Col>
+                        </Row>
+                    
+                    </Modal.Footer></Form>
                 </Modal>
             </>
         )
