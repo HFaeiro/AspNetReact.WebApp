@@ -55,8 +55,10 @@ export class Users extends Component {
             this.loader();
         }
     }
-    navigateToVideos(e) {
-
+    componentDidUpdate(prevprops, prevState) {
+        if (!prevState.friend && this.state.friend) {
+            this.props.router.navigate('/videos', { state: { userId: this.state.friend.userId } })
+        }
     }
 
     //this will map the array of profiles received from server and display them. 
@@ -146,10 +148,7 @@ export class Users extends Component {
             :
 
 
-            this.state.friend ?
-                this.props.router.navigate('/videos', { state: { userId: this.state.friend.userId } } )
-
-                : Users.renderTable(this.state.profiles, this);
+           Users.renderTable(this.state.profiles, this);
 
 
 

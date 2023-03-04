@@ -53,9 +53,9 @@ namespace ASP.Back.Controllers
                 }
             }
             catch (Exception ex) {
-                return BadRequest($"Video.Get: " + ex.Message);
+                return BadRequest($"Video.GET: " + ex.Message);
             }
-            return BadRequest($"Video.Get: No Videos");
+            return BadRequest($"Video.GET: No Videos");
         }
 
         [HttpGet("play/{id}")]
@@ -73,7 +73,7 @@ namespace ASP.Back.Controllers
                         if(videoIn.isPrivate)
                         {
                             if (userName != videoIn.Uploader)
-                                return BadRequest($"Video.Get: Video is Private");
+                                return BadRequest($"Video.GET: Video is Private");
                         }
                         using (FileStream video = GetVideoFromMediaFolder(videoIn))
                         {
@@ -88,7 +88,7 @@ namespace ASP.Back.Controllers
                                 }
                             }
                             else
-                                return BadRequest($"Video.Get: Video was Null ");
+                                return BadRequest($"Video.GET: Video was Null ");
                         }
                     }
                         
@@ -97,9 +97,9 @@ namespace ASP.Back.Controllers
             }
             catch (Exception ex)
             {
-                return BadRequest($"Video.Get: " + ex.Message);
+                return BadRequest($"Video.GET: " + ex.Message);
             }
-            return BadRequest($"Video.Get: ");
+            return BadRequest($"Video.GET: ");
         }
 
         private async Task<IEnumerable<Video>?> GetVideosByUser(Users user)
@@ -328,9 +328,53 @@ namespace ASP.Back.Controllers
            
         }
 
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [HttpPut]
+        [Authorize]
+        public async Task<IActionResult> Put([FromBody] VideoEdit videoIn)
         {
+
+            var userName = GetUserNameFromToken();
+            if (userName?.Length > 0)
+            {
+                if (videoIn.Id > 0)
+                {
+                    Video? video = GetVideoById(videoIn.Id);
+                    if (video != null)
+                    {
+                        if (video.Uploader == userName)
+                        {
+                            video.isPrivate = videoIn.IsPrivate;
+                            video.Description = videoIn.Description;
+                            //video.Ratings = videoIn.Ratings;
+                            video.Title = videoIn.Title;
+                            
+                            _context.Entry(video).State = EntityState.Modified;
+                            try
+                            {
+                                await _context.SaveChangesAsync();
+                            }
+                            catch (DbUpdateConcurrencyException)
+                            {
+                                
+                                {
+                                    throw;
+                                }
+                            }
+                            return Ok($"Video Edited Successfully");
+                        }
+
+                    }
+                }
+
+            }
+            return BadRequest($"Video.PUT");
+        }
+
+        public Video? GetVideoById(int id)
+        {
+
+            return _context.Videos.Find(id);
+            
         }
 
         [HttpDelete("{id}")]
@@ -339,7 +383,7 @@ namespace ASP.Back.Controllers
         {
             try
             {
-                Video? video = _context.Videos.Find(id);
+                Video? video = GetVideoById(id);
                 if (video != null)
                 {
 

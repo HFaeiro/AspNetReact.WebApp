@@ -6,6 +6,7 @@ import './MyVideos.css';
 import { UploadVideo } from './UploadVideo'
 import { Videos } from './video'
 
+import { EditVideosModal } from './EditVideosModal'
 
 export class MyVideos extends Component {
     state =
@@ -36,6 +37,9 @@ export class MyVideos extends Component {
         //        this.props.incrementPollCount()
         //    }
         //}
+    }
+    editVideo = async (e) => {
+
     }
     deleteVideo = async (e) => {
         fetch(process.env.REACT_APP_API + 'video/' + e.target.value, {
@@ -70,11 +74,14 @@ export class MyVideos extends Component {
                             <Videos
                                 userId={this.props.profile.userId}
                                 token={this.props.profile.token}>
+                                <EditVideosModal
+                                    token={this.props.profile.token}
+                                />
                                 <button name="Id" className="btn btn-danger"
                                     onClick={(e) => this.deleteVideo(e).then(() => window.location.reload())}>
                                     Delete
                                 </button>
-                                
+                               
                             </Videos> : <></>
                     }
                 </div>

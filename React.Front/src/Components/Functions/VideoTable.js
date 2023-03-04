@@ -10,6 +10,8 @@ function VideoTable(props) {
             <thead>
                 <tr>
                     <th>File Name</th>
+                    <th>Title</th>
+                    <th>Description</th>
                     <th>File Type</th>
                     <th>File Size</th>
                     <th ></th>
@@ -19,8 +21,10 @@ function VideoTable(props) {
                 {props.videos.map(v =>
                     <tr key={v.id}>
                         <td>{v.fileName}</td>
+                        <td>{v.title}</td>
                         <td>{v.description}</td>
-                        <td>{v.contentSize /1024 /1024}</td>
+                        <td>{v.contentType}</td>
+                        <td>{(v.contentSize / 1024 / 1024).toFixed(2)}MB</td>
                         <td className="buttons">
                             <button className="btn btn-primary" name="playButton" onClick={() =>  props.onPlay(v) 
                             }>
@@ -29,7 +33,7 @@ function VideoTable(props) {
                             {props.children ?
                                 props.children.length <= 1 ? cloneElement(props.children, { value: v.id }) :
                                     React.Children.map(props.children, child =>
-                                        child.$$typeof && cloneElement(child, { value: v.id })) : null
+                                        child.$$typeof && cloneElement(child, { value: v.id , video : v })) : null
                                
                                 
                               }

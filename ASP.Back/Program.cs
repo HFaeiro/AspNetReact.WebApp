@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using TeamManiacs.Core.Convertors;
 
 internal class Program
 {
@@ -48,7 +49,7 @@ internal class Program
                         {
                             //o.JsonSerializerOptions.NumberHandling = JsonNumberHandling.AllowReadingFromString;
                             o.JsonSerializerOptions.Converters.Add(new JsonStringEnumMemberConverter());
-
+                            o.JsonSerializerOptions.Converters.Add(new BoolConvertor());
                         });
 
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
