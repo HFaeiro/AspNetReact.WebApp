@@ -8,7 +8,29 @@ using System.Net.Mime;
 
 namespace TeamManiacs.Core.Models
 {
-    
+
+    public partial class VideoEdit
+    {
+
+        public VideoEdit(int id, string title, string description, bool isPrivate) {
+            Id = id;
+            Title = title;
+            Description = description;
+            IsPrivate = isPrivate;
+        }
+
+        [Key]
+        [Required]
+        public int Id { get; set; }
+        [Required]
+        [MaxLength(255)]
+        public string Title { get; set; }
+        [Required]
+        [MaxLength(255)]
+        public string Description { get; set; }
+        [Required]
+        public bool IsPrivate { get; set; }
+    }
     public partial class VideoUpload
     {
 
@@ -55,7 +77,7 @@ namespace TeamManiacs.Core.Models
             ContentType = videoIn.File.ContentType;
             ContentDisposition = videoIn.File.ContentDisposition;
             Uploader = uploader;
-          
+            isPrivate= true;
         }
 
         [Key]

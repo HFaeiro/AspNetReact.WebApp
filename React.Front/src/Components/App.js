@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import { Home } from './Home';
-import { Users } from './Users';
+import { UserRouter } from './Users';
 import { Login } from './Login';
 import  Navigation  from './Navigation';
 import { Routes, Route } from 'react-router';
@@ -8,7 +8,7 @@ import ErrorPage from './ErrorPage';
 import  Logout  from './Logout';
 import {AddUsersModal} from './AddUsersModal'
 import { MyVideos } from './MyVideos'
-import { Videos } from './video'
+import { Videos, VideoRoute } from './video'
 export default class App extends Component {
     constructor(props) {
         super(props);
@@ -108,7 +108,7 @@ export default class App extends Component {
                         profile={profile }
                     />
                     <Routes>
-
+                        
                         <Route path="/" element={<Home
                             profile={profile}
                             updateProfile={this.updateProfile}
@@ -121,7 +121,7 @@ export default class App extends Component {
                             logout={this.logout}
                             token={profile.token}
                         />} />
-                        <Route path="/users" element={<Users
+                        <Route path="/users" element={<UserRouter
                             profile={profile }
                             isLoggedIn={loggedIn}
                             updateProfile={this.updateProfile}
@@ -144,10 +144,11 @@ export default class App extends Component {
                             resetPollCount={this.resetPollCount}
                            
                         />} />
-                        <Route path="/videos" element={<Videos
-                           
-                        />} />
                         
+                        <Route path="/videos" element={<VideoRoute
+                            token={profile.token}
+                        />} />
+                            
 
                     </Routes>
                 </div>
