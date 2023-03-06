@@ -39,3 +39,7 @@ steps:
     publishWebProjects: true
     modifyOutputPath: false
     workingDirectory: '/'
+- task: Npm@1
+  inputs:
+    command: 'install'
+    workingDir: '/React.Front'
