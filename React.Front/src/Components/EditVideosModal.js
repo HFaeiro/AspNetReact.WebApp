@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Modal, Button, Row, Col, Form, Container } from 'react-bootstrap'
+import { Modal, Button, Row, Col, Form, Container, FloatingLabel } from 'react-bootstrap'
 
 export class EditVideosModal extends Component {
     state = {
