@@ -34,35 +34,37 @@ export class EditUsersModal extends Component {
             })
                 .then(res => {
                     if (res.status == 200) {
+                        
+                        if (this.props.uId == event.target.Id.value) {
+                            var profile =
+                            {
+                                username: this.props.uName,
+                                password: this.props.uPass,
+                                privileges: this.props.uPriv
+                            }
+
+                            var areEdits = false;
+                            if (event.target.Username.value != '' && profile.Username != event.target.Username.value) {
+                                profile.username = event.target.Username.value;
+                                areEdits = true;
+                            }
+                            if (event.target.Password.value != '' && event.target.Password.value != profile.Password) {
+                                profile.password = event.target.Password.value
+                                areEdits = true;
+                            }
+                            if (event.target.Privileges.value != '' && event.target.Privileges.value != profile.Privileges) {
+                                profile.privileges = event.target.Privileges.value
+                                areEdits = true;
+                            }
+                            if (areEdits == true)
+                                this.props.updateProfile(profile);
+                        }
                         event.target.Id.value = null;
-
-                        var profile =
-                        {
-                            Username: this.props.uName,
-                            Password: this.props.uPass,
-                            Privileges: this.props.uPriv
-                        }
-
-                        var areEdits = false;
-                        if (event.target.Username.value != '' && profile.Username != event.target.Username.value) {
-                            profile.Username = event.target.Username.value;
-                            areEdits = true;
-                        }
-                        if (event.target.Password.value != '' && event.target.Password.value != profile.Password) {
-                            profile.Username = event.target.Password.value
-                            areEdits = true;
-                        }
-                        if (event.target.Privileges.value != '' && event.target.Privileges.value != profile.Privileges) {
-                            profile.Privileges = event.target.Privileges.value
-                            areEdits = true;
-                        }
-                        if (areEdits == true)
-                            this.props.updateProfile(profile);
                         event.target.Username.value = null;
 
                         event.target.Privileges.value = null;
                         document.getElementById('editUsers').submit();
-
+                        
                     }
                     resolve(res.json())
             
