@@ -31,7 +31,7 @@ steps:
     script: |
       dotnet nuget locals all --clear
 
-- task: NuGetAuthenticate@0
+- task: NuGetAuthenticate@1
 
 - task: DotNetCoreCLI@2
   inputs:
