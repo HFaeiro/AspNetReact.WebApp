@@ -20,6 +20,10 @@ steps:
   inputs:
     command: 'install'
     workingDir: 'D:\a\1\s\React.Front'
+- task: Npm@1
+  inputs:
+    command: 'publish'
+    workingDir: 'D:\a\1\s\React.Front'
 - task: NuGetCommand@2
   inputs:
     restoreSolution: '$(solution)'
