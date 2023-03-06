@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Modal, Button, Row, Col, Form } from 'react-bootstrap'
+import { Modal, Button, Row, Col, Form, Container } from 'react-bootstrap'
 
 export class EditVideosModal extends Component {
     state = {
@@ -82,13 +82,13 @@ export class EditVideosModal extends Component {
 
                     <Modal.Header closeButton>
                         <Modal.Title id="contained-modal-title-vcenter">
-                            Edit Video
+                            Edit Your Video
                         </Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
-                        <Row>
-                            <Col sm={6}>
-                                <Form id="editVideo" onSubmit={this.loader}>
+                        <Container fluid="lg">
+                        
+                                <Row className="mb-3">
                                     <Form.Group controlId="Id">
                                         <Form.Control type="text" name="Id" required hidden
                                             disabled
@@ -96,42 +96,52 @@ export class EditVideosModal extends Component {
                                             placeholder={this.props.video.id}>
                                         </Form.Control>
                                     </Form.Group>
+                                    <Col>
+                                       
                                     <Form.Group controlId="Title">
-                                        <Form.Label>Title</Form.Label>
+                                         <FloatingLabel controlId="floatingInput" label="Video Title"
+                                            className="mb-3">
                                         <Form.Control type="text" name="Title" required
                                             defaultValue={this.props.video.title}
                                             placeholder={this.props.video.title}>
-                                        </Form.Control>
-                                    </Form.Group>
+                                                </Form.Control>
+                                            </FloatingLabel>
+                                            </Form.Group>
+                                            
+                                </Col>
                                     <Form.Group controlId="Description">
-                                        <Form.Label>Description</Form.Label>
-                                        <Form.Control type="Description" name="Description" required
+                                        <FloatingLabel controlId="floatingInput" label="Description">
+                                        <Form.Control as="textarea" rows={3} type="Description" name="Description" required
                                             defaultValue={this.props.video.description}
                                             placeholder={this.props.video.description}>
                                         </Form.Control>
+                                        </FloatingLabel>
                                     </Form.Group>
-
-                                    <Form.Group controlId="Private">
-                                        <Form.Label>Private</Form.Label>
+                                    <Col sm={3}>  
+                                       
+                                        <Form.Group controlId="Private">
+                                            <FloatingLabel controlID="floatingInput" label="Privacy">
+                                        
                                         <Form.Select type="text" name="Private"
 
                                             defaultValue={this.props.video.isPrivate.toString()}
 
                                             placeholder={this.props.video.isPrivate.toString()}>
-                                            <option>True</option>
-                                            <option>False</option>
+                                            <option value="True">Private</option>
+                                                <option value="False">Public</option>
 
-                                        </Form.Select>
+                                                </Form.Select>
+                                            </FloatingLabel>
                                     </Form.Group>
                                     <Form.Group>
-                                        <Button variant="primary" type="submit">
-                                            Save
-                                        </Button>
-                                    </Form.Group>
-                                </Form>
+                                       
+                                            </Form.Group>
+                                        
+                                </Col>
+                            </Row>
+                                
 
-                            </Col>
-                        </Row>
+                    </Container>
 
                     </Modal.Body>
                     <Modal.Footer>

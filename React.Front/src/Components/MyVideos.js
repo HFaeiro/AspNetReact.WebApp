@@ -82,7 +82,7 @@ export class MyVideos extends Component {
                                     Delete
                                 </button>
                                
-                            </Videos> : <></>
+                            </Videos> : <>An Error Has Occured In Upload Component</>
                     }
                 </div>
                 :
