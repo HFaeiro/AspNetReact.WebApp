@@ -19,7 +19,10 @@ steps:
 - task: UseDotNet@2
   inputs:
     version: 6.x
+    includePreviewVersions: true
   displayName: 'Use .NET Core sdk 6.x'
+
+
 
 - task: PowerShell@2
   displayName: Clean
