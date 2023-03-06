@@ -109,6 +109,8 @@ namespace ASP.Back.Controllers
             {
                 int storedVideoCount = user.Videos.Count;
                 var ID = GetVideosByIDs(user.Videos);
+#if !DEBUG //we don't want to delete not found on disk videos if we are in dev environment
+
                 if (storedVideoCount > ID.Count)
                 {
                     //if(ID.Count == 0)
@@ -119,6 +121,7 @@ namespace ASP.Back.Controllers
                     _context.Entry(user).State = EntityState.Modified;
                     await _context.SaveChangesAsync();
                 }
+#endif
                 if (ID?.Count > 0)
                     return ID;
             }
@@ -254,7 +257,7 @@ namespace ASP.Back.Controllers
 
                     if (video.FileName != "")
                     {
-                        var vid = GetVideoByFileName(video.FileName);
+                        var vid = GetFileFromVideo(video);
                         if (vid != null)
                             videos.Add(video);
 #if !DEBUG //we don't want to delete not found on disk videos if we are in dev environment
@@ -299,7 +302,26 @@ namespace ASP.Back.Controllers
                 return null;
 
         }
-        
+        private FileResult? GetFileFromVideo(Video video)
+        {
+            try
+            {
+                    var fullFilePath = GetUploadsFolder(video.FileName);
+                    if (System.IO.File.Exists(fullFilePath))
+                    {
+                        return File(video.FileName, video.ContentType, video.FileName);
+                    }
+                    //return BadRequest($"Video.GetVideoByFileName:  Failed to Open File");
+
+                // return BadRequest($"Video.GetVideoByFileName:  Failed to Find Video in DB");
+            }
+            catch (Exception ex)
+            {
+                return null;
+                // return BadRequest($"Video.GetVideoByFileName: " + ex);
+            }
+            return null;
+        }
         private FileResult? GetVideoByFileName(string fileName)
         {
             try

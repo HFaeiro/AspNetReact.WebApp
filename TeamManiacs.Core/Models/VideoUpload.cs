@@ -69,7 +69,7 @@ namespace TeamManiacs.Core.Models
         {
 
             FileName = fileName == "" ? videoIn.File.FileName: fileName;
-            Title = videoIn.File.FileName.Split('_')?[0];
+            Title = videoIn.File.FileName.Split('_')[0];
             if(Title?.Length < 0)
                 Title = videoIn.File.FileName;
             ContentSize = (int)videoIn.File.OpenReadStream().Length;

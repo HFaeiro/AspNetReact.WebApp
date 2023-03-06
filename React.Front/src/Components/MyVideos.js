@@ -81,8 +81,8 @@ export class MyVideos extends Component {
                                     onClick={(e) => this.deleteVideo(e).then(() => window.location.reload())}>
                                     Delete
                                 </button>
-                               
-                            </Videos> : <></>
+                            </Videos> : <>An Error Has Occured In Upload Component</>
+
                     }
                 </div>
                 :

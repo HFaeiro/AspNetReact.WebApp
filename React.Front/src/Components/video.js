@@ -17,7 +17,8 @@ import { withRouter } from '../Utils/withRouter'
             },
             updateVideos: false,
             showPlayer: false,
-            userId: props.router ? props.router.location.state.userId : this.props.userId,
+            userId: props.router ? props.router.location.state ? props.router.location.state.userId : null : this.props.userId,
+
             token: props.token
         }
         

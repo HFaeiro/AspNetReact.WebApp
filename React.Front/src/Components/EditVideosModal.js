@@ -79,16 +79,18 @@ export class EditVideosModal extends Component {
                     size="lg"
                     aria-labelledby="contained-modal-title-vcenter"
                     centered>
-                    <Form id="editVideo" onSubmit={this.loader}>
+
                     <Modal.Header closeButton>
                         <Modal.Title id="contained-modal-title-vcenter">
-                            Edit Video
+                            Edit Your Video
+
                         </Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
                         <Container fluid="lg">
                         
-                             <Row className="justify-content-md-center">
+                                <Row className="mb-3">
+
                                     <Form.Group controlId="Id">
                                         <Form.Control type="text" name="Id" required hidden
                                             disabled
@@ -96,41 +98,49 @@ export class EditVideosModal extends Component {
                                             placeholder={this.props.video.id}>
                                         </Form.Control>
                                     </Form.Group>
-                                    <Col>
+                                    <Col>  
                                     <Form.Group controlId="Title">
-                                        <Form.Label>Title</Form.Label>
+                                         <FloatingLabel controlId="floatingInput" label="Video Title"
+                                            className="mb-3">
                                         <Form.Control type="text" name="Title" required
                                             defaultValue={this.props.video.title}
                                             placeholder={this.props.video.title}>
-                                        </Form.Control>
-                                    </Form.Group>
+                                                </Form.Control>
+                                            </FloatingLabel>
+                                            </Form.Group>
+                                            
                                 </Col>
-                                </Row>
-                            <Row className="mb-3">
-                                
                                     <Form.Group controlId="Description">
-                                        <Form.Label>Description</Form.Label>
+                                        <FloatingLabel controlId="floatingInput" label="Description">
+
                                         <Form.Control as="textarea" rows={3} type="Description" name="Description" required
                                             defaultValue={this.props.video.description}
                                             placeholder={this.props.video.description}>
                                         </Form.Control>
+                                        </FloatingLabel>
                                     </Form.Group>
-                                <Col sm={3}>  
-                                    <Form.Group controlId="Private">
-                                        <Form.Label>Private</Form.Label>
+                                    <Col sm={3}>  
+                                       
+                                        <Form.Group controlId="Private">
+                                            <FloatingLabel controlID="floatingInput" label="Privacy">
+                                        
+
                                         <Form.Select type="text" name="Private"
 
                                             defaultValue={this.props.video.isPrivate.toString()}
 
                                             placeholder={this.props.video.isPrivate.toString()}>
-                                            <option>True</option>
-                                            <option>False</option>
 
-                                        </Form.Select>
+                                            <option value="True">Private</option>
+                                                <option value="False">Public</option>
+
+                                                </Form.Select>
+                                            </FloatingLabel>
                                     </Form.Group>
                                     <Form.Group>
                                        
-                                    </Form.Group>
+                                            </Form.Group>
+
                                 </Col>
                             </Row>
                                 
@@ -139,22 +149,11 @@ export class EditVideosModal extends Component {
 
                     </Modal.Body>
                     <Modal.Footer>
-                        
-                        <Row xs="auto">
-                        
-                            <Col>
-                                <Button variant="primary" type="submit">
-                            Save
-                                </Button>
-                            </Col>
-                            <Col>
-                                <Button variant="danger" onClick={this.closeModal}>
-                           Cancel
-                            </Button>
-                            </Col>
-                        </Row>
-                    
-                    </Modal.Footer></Form>
+                        <Button variant="danger" onClick={this.closeModal}>
+                            Cancel
+                        </Button>
+                    </Modal.Footer>
+
                 </Modal>
             </>
         )
