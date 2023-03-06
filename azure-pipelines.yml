@@ -16,7 +16,10 @@ variables:
 
 steps:
 - task: NuGetToolInstaller@1
-
+- task: Npm@1
+  inputs:
+    command: 'install'
+    workingDir: 'D:\a\1\s\React.Front'
 - task: NuGetCommand@2
   inputs:
     restoreSolution: '$(solution)'
@@ -33,13 +36,9 @@ steps:
     platform: '$(buildPlatform)'
     configuration: '$(buildConfiguration)'
 
+
 - task: DotNetCoreCLI@2
   inputs:
     command: 'publish'
     publishWebProjects: true
     modifyOutputPath: false
-    workingDirectory: '/'
-- task: Npm@1
-  inputs:
-    command: 'install'
-    workingDir: '/React.Front'
