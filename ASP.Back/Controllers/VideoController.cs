@@ -392,7 +392,7 @@ namespace ASP.Back.Controllers
             return BadRequest($"Video.PUT");
         }
 
-        public Video? GetVideoById(int id)
+        private Video? GetVideoById(int id)
         {
 
             return _context.Videos.Find(id);
@@ -423,13 +423,7 @@ namespace ASP.Back.Controllers
 
             }
         }
-        //private async Task<Video?> GetVideoById(int id)
-        //{
 
-        //    var video = 
-
-        //    return video;
-        //}
         private string GetUniqueFileName(string fileName)
         {
             fileName = Path.GetFileName(fileName);
