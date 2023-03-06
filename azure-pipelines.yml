@@ -43,4 +43,7 @@ steps:
     npm run build
   displayName: 'npm install and build'
 
-- task: CopyPublishBuildArtifacts@1
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'publish'
+    publishWebProjects: true
