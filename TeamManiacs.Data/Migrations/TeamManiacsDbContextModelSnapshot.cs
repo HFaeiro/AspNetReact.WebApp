@@ -106,9 +106,8 @@ namespace TeamManiacs.Data.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Uploader")
-                        .IsRequired()
-                        .HasColumnType("longtext");
+                    b.Property<int>("Uploader")
+                        .HasColumnType("int");
 
                     b.Property<bool>("isPrivate")
                         .HasColumnType("tinyint(1)");

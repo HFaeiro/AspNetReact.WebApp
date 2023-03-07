@@ -67,12 +67,12 @@ namespace ASP.Back.Controllers
                 var videoIn = await _context.Videos.FindAsync(id);
                 if (videoIn != null)
                 {
-                    var userName = GetUserNameFromToken();
-                    if (userName?.Length > 0)
+                    var userId = GetUserIdFromToken();
+                    if (userId != null)
                     {
                         if(videoIn.isPrivate)
                         {
-                            if (userName != videoIn.Uploader)
+                            if (userId != videoIn.Uploader)
                                 return BadRequest($"Video.GET: Video is Private");
                         }
                         using (FileStream video = GetVideoFromMediaFolder(videoIn))
@@ -131,67 +131,91 @@ namespace ASP.Back.Controllers
         [HttpPost]
         [Authorize]
         [DisableRequestSizeLimit]
-        public async Task<ActionResult<int>> Post( [FromForm]VideoUpload videoIn)
+        public async Task<ActionResult<int>> Post([FromForm] VideoUpload videoIn)
         {
             try
             {
                 if (videoIn.File.Length / 1024 / 1024 <= 100)
                 {
-                   
-                    var user = GetUserByUsername(videoIn.Username);
-                    if (user != null)
-                    {
-                        int? ID = null;
-                        if (user.Videos == null || user.Videos.Count <= 0)
-                        {
-                            ID = await AddVideoToDB(videoIn);
-                            user.Videos = new List<int>();
-                            if (ID != null)
-                            {
-                                user.Videos.Add((int)ID);
-                                _context.Entry(user).State = EntityState.Modified;
-                                await _context.SaveChangesAsync();
-                            }
-                            
-                        }
-                        else
-                        {
 
-                            ID = await AddVideoToDB(videoIn);
-                            if (ID != null)
+                    var userId = GetUserIdFromToken();
+                    if (userId != null)
+                    {
+                        var user = await GetUserById((int)userId);
+                        if (user != null)
+                        {
+                            int? ID = null;
+                            if (user.Videos == null || user.Videos.Count <= 0)
                             {
-                                user.Videos.Add((int)ID);
-                                _context.Entry(user).State = EntityState.Modified;
-                                await _context.SaveChangesAsync();
+                                ID = await AddVideoToDB(videoIn);
+                                user.Videos = new List<int>();
+                                if (ID != null)
+                                {
+                                    user.Videos.Add((int)ID);
+                                    _context.Entry(user).State = EntityState.Modified;
+                                    await _context.SaveChangesAsync();
+                                }
+
                             }
-                        }
+                            else
+                            {
+
+                                ID = await AddVideoToDB(videoIn);
+                                if (ID != null)
+                                {
+                                    user.Videos.Add((int)ID);
+                                    _context.Entry(user).State = EntityState.Modified;
+                                    await _context.SaveChangesAsync();
+                                }
+                            }
                             return Ok(ID);
-                   }
+                        }
+                    }
                 }
                 return BadRequest();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return BadRequest(ex);
             }
 
         }
-        private string? GetUserNameFromToken()
+        private DateTime? GetExpirationFromToken()
+        {
+            var claimsPrinciple = this.User.Identity as ClaimsPrincipal;
+            Claim? exp = claimsPrinciple?.FindFirst("exp");
+            if (exp != null)
+            {
+                var expiration = new DateTime(long.Parse(exp.Value));
+                return expiration;
+            }
+            else return null;
+        }
+        private int? GetUserIdFromToken()
         {
             var claimsIdentity = this.User.Identity as ClaimsIdentity;
-            return claimsIdentity?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            string? claimId = null;
+            try
+            {
+               claimId =  claimsIdentity?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+                if(claimId != null)
+                    return Int32.Parse(claimId);
+            }
+            catch (FormatException)
+            {
+                return null;
+            }
 
+            return null;
         }
         private async Task<int?> AddVideoToDB(VideoUpload videoIn)
         {
 
-            var userName = GetUserNameFromToken();
-            if (userName?.Length > 0)
+            var userId = GetUserIdFromToken();
+            if (userId != null)
             {
-                if (userName == videoIn.Username)
-                {
                     var uniqueFileName = GetUniqueFileName(videoIn.File.FileName);
-                    Video video = new Video(videoIn, userName, uniqueFileName);
+                    Video video = new Video(videoIn, (int)userId, uniqueFileName);
                     try
                     {
                         _context.Videos.Add(video);
@@ -204,7 +228,6 @@ namespace ASP.Back.Controllers
 
                     }
                     return video.ID;
-                }
             }
             return null;
         }
@@ -236,23 +259,16 @@ namespace ASP.Back.Controllers
 
             List<Video>? videos = new List<Video>();
             List<int> badIds = new List<int>();
-            var userName = GetUserNameFromToken();
-            bool hasUser = userName?.Length > 0;
+            var userId = GetUserIdFromToken();
             foreach (int ID in IDs) {
                 var video = _context.Videos.FirstOrDefault(x =>
                                                    x.ID == ID);
                 if (video != null) {
 
-                    if (video.isPrivate)
+                    if (video.isPrivate && userId != null && userId != video.Uploader)
                     {
-                        
-                        if (hasUser)
-                        {
-                            if (userName != video.Uploader)
-                                continue;
-                        }
-                        else //we can't verify if this is users own private video so we will skip this private video. 
-                            continue;
+                        //we can't verify if this is users own private video so we will skip this private video.
+                        continue;
                     }
 
                     if (video.FileName != "")
@@ -355,15 +371,15 @@ namespace ASP.Back.Controllers
         public async Task<IActionResult> Put([FromBody] VideoEdit videoIn)
         {
 
-            var userName = GetUserNameFromToken();
-            if (userName?.Length > 0)
+            var userId = GetUserIdFromToken();
+            if (userId != null)
             {
                 if (videoIn.Id > 0)
                 {
                     Video? video = GetVideoById(videoIn.Id);
                     if (video != null)
                     {
-                        if (video.Uploader == userName)
+                        if (video.Uploader == userId)
                         {
                             video.isPrivate = videoIn.IsPrivate;
                             video.Description = videoIn.Description;

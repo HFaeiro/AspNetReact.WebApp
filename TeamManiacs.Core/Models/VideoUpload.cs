@@ -33,11 +33,7 @@ namespace TeamManiacs.Core.Models
     }
     public partial class VideoUpload
     {
-
-        public string Username { get; set; }
-
         public IFormFile File { get; set; }
-
 
     }
    
@@ -65,7 +61,7 @@ namespace TeamManiacs.Core.Models
         {
 
         }
-        public Video(VideoUpload videoIn, string uploader, string fileName = "")
+        public Video(VideoUpload videoIn, int uploader, string fileName = "")
         {
 
             FileName = fileName == "" ? videoIn.File.FileName: fileName;
@@ -89,7 +85,7 @@ namespace TeamManiacs.Core.Models
         public string Description { get; set; }
         public string ContentType { get; set; }
         public string ContentDisposition { get; set; }
-        public string Uploader { get; set; } 
+        public int Uploader { get; set; } 
         public ICollection<VideoRating>? Ratings { get; set; }
 
     }

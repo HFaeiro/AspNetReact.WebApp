@@ -135,7 +135,7 @@ import { withRouter } from '../Utils/withRouter'
         let video = this.state.fetchedVideo.video && this.state.showPlayer ?
             <><video className="VideoPlayer" autoPlay controls muted
                 src={"data:video/mp4;base64," + this.state.fetchedVideo.video} >
-            </video> : {null}</> : <></>
+            </video> </> : <></>
 
 
 
