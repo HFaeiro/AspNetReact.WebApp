@@ -12,6 +12,7 @@ using System.IO;
 using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
 using System.Security.Claims;
+using NuGet.Protocol;
 
 namespace ASP.Back.Controllers
 {
@@ -35,7 +36,7 @@ namespace ASP.Back.Controllers
 
         [HttpGet("{id}")]
         [Authorize]
-        public async Task<ActionResult<IEnumerable<Video>>> Get(int id)
+        public async Task<ActionResult<IAsyncEnumerable<Video>>> Get(int id)
         {
            
             try
@@ -57,8 +58,10 @@ namespace ASP.Back.Controllers
             }
             return BadRequest($"Video.GET: No Videos");
         }
-
+        /// <response code="200">Returns the Requested Video</response>
+        /// <response code="400">If the item is null</response>
         [HttpGet("play/{id}")]
+        [Produces("application/json")]
         [Authorize]
         public async Task<ActionResult<string?>> GetPlay(int id)
         {
