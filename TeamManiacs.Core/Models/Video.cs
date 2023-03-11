@@ -161,12 +161,12 @@ namespace TeamManiacs.Core.Models
                     Ratings.SequenceEqual(other.Ratings)
                 );
         }
-        public static bool operator ==(Video left, Video right)
+        public static bool operator ==(Video? left, Video? right)
         {
             return Equals(left, right);
         }
 
-        public static bool operator !=(Video left, Video right)
+        public static bool operator !=(Video? left, Video? right)
         {
             return !Equals(left, right);
         }
