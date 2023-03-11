@@ -13,6 +13,8 @@ using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
 using System.Security.Claims;
 using NuGet.Protocol;
+using System.Drawing.Drawing2D;
+using System.Text;
 
 namespace ASP.Back.Controllers
 {
@@ -61,9 +63,8 @@ namespace ASP.Back.Controllers
         /// <response code="200">Returns the Requested Video</response>
         /// <response code="400">If the item is null</response>
         [HttpGet("play/{id}")]
-        [Produces("application/json")]
         [Authorize]
-        public async Task<ActionResult<string?>> GetPlay(int id)
+        public async Task GetPlay(int id)
         {
             try
             {
@@ -75,34 +76,58 @@ namespace ASP.Back.Controllers
                     {
                         if(videoIn.isPrivate)
                         {
-                            if (userId != videoIn.Uploader)
-                                return BadRequest($"Video.GET: Video is Private");
+                            //if (userId != videoIn.Uploader)
+                            //    return BadRequest($"Video.GET: Video is Private");
                         }
-                        using (FileStream video = GetVideoFromMediaFolder(videoIn))
+
+                        using (FileStream? video = GetVideoFromMediaFolder(videoIn))
                         {
                             if (video != null)
                             {
-                                using (MemoryStream ms = new MemoryStream())
-                                {
 
-                                    await video.CopyToAsync(ms);
-                                    string base64Video = Convert.ToBase64String(ms.ToArray(), 0, (int)ms.Length, Base64FormattingOptions.None);
-                                    return Ok(base64Video);
+                                Response.StatusCode = 200;
+                                byte[] buffer = new byte[1024*10];
+                                int bytesRead = 0;
+                                while ((bytesRead = video.Read(buffer, 0, buffer.Length - 1)) > 0)
+                                {
+                                    //string base64Video = Convert.ToBase64String(buffer, 0, bytesRead, Base64FormattingOptions.None);
+                                    await Response.Body.WriteAsync(buffer, 0, bytesRead);
+
                                 }
+                                
+                                await Response.Body.FlushAsync();
+                                return;
                             }
                             else
-                                return BadRequest($"Video.GET: Video was Null ");
+                            {
+                               
+                                Response.StatusCode = 400;
+                                var str1 = Encoding.UTF8.GetBytes($"Video.GET: User was Null ");
+                                await Response.Body.WriteAsync(str1, 0 ,str1.Length);
+                                return;
+                            }
                         }
-                    }
-                        
+                }
+                    Response.StatusCode = 400;
+                    var str2 = Encoding.UTF8.GetBytes($"Video.GET: User was Null ");
+                    await Response.Body.WriteAsync(str2, 0, str2.Length);
+                    return;
 
                 }
+                Response.StatusCode = 400;
+                var str = Encoding.UTF8.GetBytes($"Video.GET: Video Does not Exist on DB ");
+                await Response.Body.WriteAsync(str, 0, str.Length);
+                return;
             }
             catch (Exception ex)
             {
-                return BadRequest($"Video.GET: " + ex.Message);
+                Response.StatusCode = 400;
+                var str = Encoding.UTF8.GetBytes($"Video.GET: " + ex.Message);
+                await Response.Body.WriteAsync(str, 0, str.Length);
+                return;
+
+
             }
-            return BadRequest($"Video.GET: ");
         }
 
         private async Task<IEnumerable<Video>?> GetVideosByUser(Users user)
@@ -234,11 +259,13 @@ namespace ASP.Back.Controllers
             }
             return null;
         }
-        private FileStream GetVideoFromMediaFolder(Video videoIn)
+        private FileStream? GetVideoFromMediaFolder(Video videoIn)
         {
            
-            FileStream fileStream = new FileStream(GetUploadsFolder(videoIn.FileName), FileMode.Open);
-            return fileStream;
+
+                FileStream? fileStream = new FileStream(GetUploadsFolder(videoIn.FileName), FileMode.Open, FileAccess.Read);
+                return fileStream;
+           
         }
         private void SaveVideoToMediaFolder(VideoUpload videoIn, string filePath = "")
         {

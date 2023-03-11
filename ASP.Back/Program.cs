@@ -11,6 +11,8 @@ using System.Text;
 using TeamManiacs.Core.Convertors;
 using Microsoft.OpenApi.Models;
 using System.Reflection;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.ResponseCompression;
 
 internal class Program
 {
@@ -28,7 +30,11 @@ internal class Program
                                   policy.WithOrigins("localhost").AllowAnyHeader().AllowAnyMethod(); 
                               });
         });
-
+        builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(x =>
+        {
+            x.ValueLengthLimit = int.MaxValue;
+            x.MultipartBodyLengthLimit = int.MaxValue; // In case of multipart
+        });
         //Add services to the container.
         builder.Services.AddDbContext<TeamManiacsDbContext>(options =>
         {
@@ -80,7 +86,11 @@ internal class Program
             var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
             c.IncludeXmlComments(xmlPath);
         });
-
+        builder.Services.AddResponseCompression(options =>
+        {
+            options.Providers.Add<GzipCompressionProvider>();
+            options.EnableForHttps = true;
+        });
         builder.Services.AddControllers()
                         .AddJsonOptions(o =>
                         {
@@ -111,9 +121,8 @@ internal class Program
         //{
             app.UseSwagger();
             app.UseSwaggerUI();
-       // }
-        
-        
+        // }
+        app.UseResponseCompression();
         app.UseStaticFiles();
         app.UseRouting();
         app.UseDefaultFiles();

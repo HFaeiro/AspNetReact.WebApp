@@ -11,4 +11,8 @@ module.exports = function (app) {
     });
 
     app.use(appProxy);
+    app.use(bodyParser.json({
+        limit: '100000kb',
+        type: 'application/json'
+    }));
 };

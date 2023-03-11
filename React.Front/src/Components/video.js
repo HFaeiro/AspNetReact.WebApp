@@ -37,32 +37,57 @@ import { withRouter } from '../Utils/withRouter'
         if (this.state.fetchedVideo.id != video.id)
             this.getVideo(video.id);
     }
+     loadVideo = file => new Promise((resolve, reject) => {
+         try {
+             var video = document.createElement('video');
+             video.preload = 'metadata';
+             window.URL = window.URL || window.webkitURL;
+             video.onloadedmetadata = function () {
+                 
+                 //if (video.duration > 90) {
 
+                 //    reject("Invalid Video! Max Video Length is 1:30s");
+                 //}
+                 resolve(this);
+             }
+             video.onerror = function () {
+                 reject("Invalid File Type - Please upload a video file")
+             }
+             video.src = URL.createObjectURL(file)
+         }
+         catch (e) {
+             reject(e);
+         }
+     })
     getVideo = async (e) => {
         return await new Promise(resolve => {
             fetch(process.env.REACT_APP_API + 'video/play/' + e, {
                 headers: {
-                    'Accept': 'application/json',
-                    'Authorization': 'Bearer ' + this.state.token,
-                    'Content-Type': 'application/json'
+                   'Authorization': 'Bearer ' + this.state.token,
+                    'Accept' : '*/*',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'Connection' : 'keep-alive'
                 }
 
             })
                 .then(res => {
                     if (res.status == 200)
-                        return res.json()
+                        return res.blob();
                     else
                         return;
 
 
                 })
                 .then(data => {
+                    
+                    var video = URL.createObjectURL(data);
+                    
                     this.setState(
                         ({
                             fetchedVideo:
                             {
                                 id: e,
-                                video: data
+                                video: video
                             }
                         }));
                     resolve(data);
@@ -133,7 +158,7 @@ import { withRouter } from '../Utils/withRouter'
 
         let video = this.state.fetchedVideo.video && this.state.showPlayer ?
             <><video className="VideoPlayer" autoPlay controls muted
-                src={"data:video/mp4;base64," + this.state.fetchedVideo.video} >
+                src={this.state.fetchedVideo.video} >
             </video> </> : <></>
 
 
