@@ -106,39 +106,14 @@ namespace TeamManiacs.Data.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
-                    b.Property<string>("Uploader")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<bool>("isPrivate")
-                        .HasColumnType("tinyint(1)");
-
-                    b.HasKey("ID");
-
-                    b.ToTable("Videos");
-                });
-
-            modelBuilder.Entity("TeamManiacs.Core.Models.VideoRating", b =>
-                {
-                    b.Property<string>("Category")
-                        .HasColumnType("varchar(255)");
-
-                    b.Property<string>("Judge")
-                        .IsRequired()
-                        .HasColumnType("longtext");
-
-                    b.Property<int>("Rating")
+                    b.Property<int>("Privileges")
                         .HasColumnType("int");
 
-                    b.Property<int?>("VideoID")
-                        .HasColumnType("int");
-
-                    b.HasKey("Category");
-
-                    b.HasIndex("VideoID");
-
-                    b.ToTable("VideoRating");
-                });
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .IsUnicode(false)
+                        .HasColumnType("varchar(200)");
 
             modelBuilder.Entity("TeamManiacs.Core.Models.VideoRating", b =>
                 {

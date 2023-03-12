@@ -12,6 +12,10 @@ using System.IO;
 using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
 using System.Security.Claims;
+using NuGet.Protocol;
+using System.Drawing.Drawing2D;
+using System.Text;
+using System.Security.Principal;
 
 namespace ASP.Back.Controllers
 {
@@ -20,194 +24,210 @@ namespace ASP.Back.Controllers
     [ApiController]
     public class VideoController : ControllerBase
     {
+        ///<Summary>
+        /// Gets the answer
+        ///</Summary>
         private readonly IWebHostEnvironment hostEnvironment;
         private readonly TeamManiacsDbContext _context;
 
+
+        ///<Summary>
+        /// Gets the answer
+        ///</Summary>
         public VideoController(IWebHostEnvironment hostEnvironment, TeamManiacsDbContext context)
         {
             this.hostEnvironment = hostEnvironment;
             this._context = context;
         }
-        private async Task<Users?> GetUserById(int id)
-        {
-            return await _context.UserModels.FindAsync(id);
-        }
 
+        ///<Summary>
+        /// Gets the answer
+        ///</Summary>
         [HttpGet("{id}")]
         [Authorize]
-        public async Task<ActionResult<IEnumerable<Video>>> Get(int id)
+        public async Task<ActionResult<IAsyncEnumerable<Video>>> Get(int id)
         {
-            List<Video>? result = null;
+           
             try
             {
-                var user = await GetUserById(id);
+                var user = await ControllerHelpers.GetUserById(id, _context);
                 if (user != null)
                 {
                     var videos = await GetVideosByUser(user);
                     if(videos != null)
                     {
-                       return Ok(videos);
+                       
+                        return Ok(videos);
                     }
                     
                 }
             }
             catch (Exception ex) {
-                return BadRequest($"Video.Get: " + ex.Message);
+                return BadRequest($"Video.GET: " + ex.Message);
             }
-            return BadRequest($"Video.Get: No Videos");
+            return BadRequest($"Video.GET: No Videos");
         }
-
+        ///<Summary>
+        /// Returns the Requested Video
+        ///</Summary>
+        /// <response code="200">Returns the Requested Video</response>
+        /// <response code="400">If the item is null</response>
         [HttpGet("play/{id}")]
         [Authorize]
-        public async Task<ActionResult<string?>> GetPlay(int id)
+        public async Task GetPlay(int id)
         {
             try
             {
                 var videoIn = await _context.Videos.FindAsync(id);
                 if (videoIn != null)
                 {
-                    using (FileStream video = GetVideoFromMediaFolder(videoIn))
+                    var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
+                    if (userId != null)
                     {
-                        if (video != null)
+                        if(videoIn.isPrivate)
                         {
-                            using (MemoryStream ms = new MemoryStream())
+                            //if (userId != videoIn.Uploader)
+                            //    return BadRequest($"Video.GET: Video is Private");
+                        }
+
+                        using (FileStream? video = GetVideoFromMediaFolder(videoIn))
+                        {
+                            if (video != null)
+                            {
+
+                                Response.StatusCode = 200;
+                                byte[] buffer = new byte[1024*10];
+                                int bytesRead = 0;
+                                while ((bytesRead = video.Read(buffer, 0, buffer.Length - 1)) > 0)
+                                {
+                                    //string base64Video = Convert.ToBase64String(buffer, 0, bytesRead, Base64FormattingOptions.None);
+                                    await Response.Body.WriteAsync(buffer, 0, bytesRead);
+
+                                }
+                                
+                                await Response.Body.FlushAsync();
+                                return;
+                            }
+                            else
                             {
                                
-                                await video.CopyToAsync(ms);
-                                string base64Video = Convert.ToBase64String(ms.ToArray(), 0, (int)ms.Length, Base64FormattingOptions.None);
-                                return Ok(base64Video);
+                                Response.StatusCode = 400;
+                                var str1 = Encoding.UTF8.GetBytes($"Video.GET: User was Null ");
+                                await Response.Body.WriteAsync(str1, 0 ,str1.Length);
+                                return;
                             }
                         }
-                        else
-                            return BadRequest($"Video.Get: Video was Null ");
-                    }
-                        
+                }
+                    Response.StatusCode = 400;
+                    var str2 = Encoding.UTF8.GetBytes($"Video.GET: User was Null ");
+                    await Response.Body.WriteAsync(str2, 0, str2.Length);
+                    return;
 
                 }
+                Response.StatusCode = 400;
+                var str = Encoding.UTF8.GetBytes($"Video.GET: Video Does not Exist on DB ");
+                await Response.Body.WriteAsync(str, 0, str.Length);
+                return;
             }
             catch (Exception ex)
             {
-                return BadRequest($"Video.Get: " + ex.Message);
-            }
-            return BadRequest($"Video.Get: ");
-        }
+                Response.StatusCode = 400;
+                var str = Encoding.UTF8.GetBytes($"Video.GET: " + ex.Message);
+                await Response.Body.WriteAsync(str, 0, str.Length);
+                return;
 
-        private async Task<IEnumerable<Video>?> GetVideosByUser(Users user)
-        {
-            List<Video>? result = null;
-            if (user.Videos?.Count > 0)
-            {
-                int storedVideoCount = user.Videos.Count;
-                var ID = GetVideosByIDs(user.Videos);
-                if (storedVideoCount > ID.Count)
-                {
-                    //if(ID.Count == 0)
-                    //{
-                    //    user.Videos.Clear();
-                    //}
-                    _context.Entry(user).State = EntityState.Modified;
-                    await _context.SaveChangesAsync();
-                }
-                if (ID?.Count > 0)
-                    return ID;
-            }
-            return result;
-        }
 
+            }
+        }
+        ///<Summary>
+        /// Returns the Uploaded Video Id
+        /// <response code="200">Returns the Uploaded Video Id</response>
+        /// <response code="400">If the item is null</response>
+        ///</Summary>
         [HttpPost]
         [Authorize]
         [DisableRequestSizeLimit]
-        public async Task<ActionResult<int>> Post( [FromForm]VideoUpload videoIn)
+        public async Task<ActionResult<int>> Post([FromForm] VideoUpload videoIn)
         {
             try
             {
                 if (videoIn.File.Length / 1024 / 1024 <= 100)
                 {
-                    //TODO!!!//
-                    //will need to validate user better before actually posting videos. need another abstract layer?
-                    //https://stackoverflow.com/questions/44783744/how-to-authorize-a-user-to-only-see-his-own-records-with-asp-net-identity-2-0
-                    //https://stackoverflow.com/questions/30701006/how-to-get-the-current-logged-in-user-id-in-asp-net-core?fbclid=IwAR3MSdxk2CyVvlzRoHfBV2BiY-WC9CefVTtNkH0YAuwEHh5uzAD1nWaGN_8
-                    
-                    
-                    var user = GetUserByUsername(videoIn.Username);
-                    if (user != null)
+
+                    var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
+                    if (userId != null)
                     {
-                        int? ID = null;
-                        if (user.Videos == null || user.Videos.Count <= 0)
+                        var user = await ControllerHelpers.GetUserById((int)userId, _context);
+                        if (user != null)
                         {
-                            ID = await AddVideoToDB(videoIn);
-                            user.Videos = new List<int>();
-                            if (ID != null)
+                            int? ID = null;
+                            if (user.Videos == null || user.Videos.Count <= 0)
                             {
-                                user.Videos.Add((int)ID);
-                                _context.Entry(user).State = EntityState.Modified;
-                                await _context.SaveChangesAsync();
-                            }
-                            
-                        }
-                        else
-                        {
+                                ID = await AddVideoToDB(videoIn);
+                                user.Videos = new List<int>();
+                                if (ID != null)
+                                {
+                                    user.Videos.Add((int)ID);
+                                    _context.Entry(user).State = EntityState.Modified;
+                                    await _context.SaveChangesAsync();
+                                }
 
-                            ID = await AddVideoToDB(videoIn);
-                            if (ID != null)
+                            }
+                            else
                             {
-                                user.Videos.Add((int)ID);
-                                _context.Entry(user).State = EntityState.Modified;
-                                await _context.SaveChangesAsync();
-                            }
-                        }
 
+                                ID = await AddVideoToDB(videoIn);
+                                if (ID != null)
+                                {
+                                    user.Videos.Add((int)ID);
+                                    _context.Entry(user).State = EntityState.Modified;
+                                    await _context.SaveChangesAsync();
+                                }
+                            }
                             return Ok(ID);
-                   }
+                        }
+                    }
                 }
                 return BadRequest();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 return BadRequest(ex);
             }
 
         }
-        private async Task<int?> AddVideoToDB(VideoUpload videoIn)
+        private async Task<int> AddVideoToDB(VideoUpload videoIn)
         {
-
-          
-            var claimsIdentity = this.User.Identity as ClaimsIdentity;
-            var userId = claimsIdentity?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (userId?.Length > 0)
+            var uniqueFileName = GetUniqueFileName(videoIn.File.FileName);
+            SaveVideoToMediaFolder(videoIn, uniqueFileName);
+            Video video = new Video(videoIn, uniqueFileName);
+            try
             {
-
-                var uniqueFileName = GetUniqueFileName(videoIn.File.FileName);
-                Video video = new Video(videoIn,userId, uniqueFileName);
-                try
-                {
-                    _context.Videos.Add(video);
-                    await _context.SaveChangesAsync();
-                    SaveVideoToMediaFolder(videoIn, uniqueFileName);
-
-                }
-                catch (Exception ex)
-                {
-
-                }
-                return video.ID;
+                _context.Videos.Add(video);
+                await _context.SaveChangesAsync();
             }
-            return null;
+            catch(Exception ex)
+            {
+              
+            }
+            return video.ID;
         }
         private FileStream GetVideoFromMediaFolder(Video videoIn)
         {
-           
-            FileStream fileStream = new FileStream(GetUploadsFolder(videoIn.FileName), FileMode.Open);
+
+
+            FileStream? fileStream = new FileStream(GetUploadsFolder(videoIn.FileName), FileMode.Open, FileAccess.Read);
             return fileStream;
+
         }
         private void SaveVideoToMediaFolder(VideoUpload videoIn, string filePath = "")
         {
-            if(filePath == "")
+            if (filePath == "")
             {
-                filePath = GetUniqueFileName(videoIn.File.FileName);
+                filePath = ControllerHelpers.GetUniqueFileName(videoIn.File.FileName);
             }
             FileStream fileStream = new FileStream(GetUploadsFolder(filePath), FileMode.Create);
-           videoIn.File.CopyTo(fileStream);
+            await videoIn.File.CopyToAsync(fileStream);
             fileStream.Close();
         }
         private string GetUploadsFolder(string fileName)
@@ -219,16 +239,26 @@ namespace ASP.Back.Controllers
 
         private List<Video>? GetVideosByIDs(List<int> IDs)
         {
-            
+
             List<Video>? videos = new List<Video>();
             List<int> badIds = new List<int>();
-            foreach (int ID in IDs) {
+            var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
+            foreach (int ID in IDs)
+            {
                 var video = _context.Videos.FirstOrDefault(x =>
                                                    x.ID == ID);
-                if (video != null) {
+                if (video != null)
+                {
+
+                    if (video.isPrivate && userId != null && userId != video.Uploader)
+                    {
+                        //we can't verify if this is users own private video so we will skip this private video.
+                        continue;
+                    }
+
                     if (video.FileName != "")
                     {
-                        var vid = GetVideoByFileName(video.FileName);
+                        var vid = GetFileFromVideo(video);
                         if (vid != null)
                             videos.Add(video);
 #if !DEBUG //we don't want to delete not found on disk videos if we are in dev environment
@@ -242,25 +272,21 @@ namespace ASP.Back.Controllers
                 }
                 else
                     badIds.Add(ID);
-                
+
             }
-            foreach(int ID in badIds)
+            foreach (int ID in badIds)
             {
                 IDs.Remove(ID);
             }
-            
+
             return videos;
         }
-        private Users? GetUserByUsername(string username)
-        {
-            return _context.UserModels.FirstOrDefault(x =>
-                                                   x.Username.ToLower() == username.ToLower());
-        }
+
 
 
         private List<int>? GetVideoIDsByUsername(string username)
         {
-            var user = GetUserByUsername(username);
+            var user = ControllerHelpers.GetUserByUsername(username, _context);
             if (user != null)
             {
                 if (user.Videos != null)
@@ -273,15 +299,34 @@ namespace ASP.Back.Controllers
                 return null;
 
         }
-        
+        private FileResult? GetFileFromVideo(Video video)
+        {
+            try
+            {
+                var fullFilePath = GetUploadsFolder(video.FileName);
+                if (System.IO.File.Exists(fullFilePath))
+                {
+                    return File(video.FileName, video.ContentType, video.FileName);
+                }
+                //return BadRequest($"Video.GetVideoByFileName:  Failed to Open File");
+
+                // return BadRequest($"Video.GetVideoByFileName:  Failed to Find Video in DB");
+            }
+            catch (Exception ex)
+            {
+                return null;
+                // return BadRequest($"Video.GetVideoByFileName: " + ex);
+            }
+            return null;
+        }
         private FileResult? GetVideoByFileName(string fileName)
         {
             try
             {
                 Video? video = null;
-               
-                    video = _context.Videos.FirstOrDefault(x =>
-                                              x.FileName.ToLower() == fileName.ToLower());
+
+                video = _context.Videos.FirstOrDefault(x =>
+                                          x.FileName.ToLower() == fileName.ToLower());
 
                 if (video != null)
                 {
@@ -290,61 +335,18 @@ namespace ASP.Back.Controllers
                     {
                         return File(fileName, video.ContentType, video.FileName);
                     }
-                   //return BadRequest($"Video.GetVideoByFileName:  Failed to Open File");
+                    //return BadRequest($"Video.GetVideoByFileName:  Failed to Open File");
                 }
                 return null;
                 // return BadRequest($"Video.GetVideoByFileName:  Failed to Find Video in DB");
             }
-            catch(Exception ex) {
+            catch (Exception ex)
+            {
                 return null;
                 // return BadRequest($"Video.GetVideoByFileName: " + ex);
             }
-           
+
         }
 
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
-
-        [HttpDelete("{id}")]
-        [Authorize]
-        public void Delete(int id)
-        {
-            try
-            {
-                Video? video = _context.Videos.Find(id);
-                if (video != null)
-                {
-
-                    _context.Videos.Remove(video);
-                    _context.SaveChanges();
-                    var fullFilePath = GetUploadsFolder(video.FileName);
-                    if (System.IO.File.Exists(fullFilePath))
-                    {
-                        System.IO.File.Delete(fullFilePath);
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-
-            }
-        }
-        //private async Task<Video?> GetVideoById(int id)
-        //{
-
-        //    var video = 
-
-        //    return video;
-        //}
-        private string GetUniqueFileName(string fileName)
-        {
-            fileName = Path.GetFileName(fileName);
-            return Path.GetFileNameWithoutExtension(fileName)
-                + "_"
-                + Guid.NewGuid().ToString().Substring(0, 4)
-                + Path.GetExtension(fileName);
-        }
     }
 }

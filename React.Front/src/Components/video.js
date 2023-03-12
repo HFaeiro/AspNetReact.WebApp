@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
 import { Table } from 'react-bootstrap'
 import VideoTable from './Functions/VideoTable'
-import { Navigate } from 'react-router-dom';
-
-export class Videos extends Component {
+import { Navigate, useParams } from 'react-router-dom';
+import { withRouter } from '../Utils/withRouter'
+ export class Videos extends Component {
     constructor(props) {
         super(props);
         this.onPlay = this.onPlay.bind(this);
@@ -18,15 +18,14 @@ export class Videos extends Component {
             },
             updateVideos: false,
             showPlayer: false,
-            user: null
         }
         
     }
     
     componentDidMount() {
-        if (this.props.user) {
             this.getVideos();
         }
+
     }
     onPlay(video) {
         this.state.showPlayer && this.state.fetchedVideo.id != video.id
@@ -35,32 +34,51 @@ export class Videos extends Component {
         if (this.state.fetchedVideo.id != video.id)
             this.getVideo(video.id);
     }
+     loadVideo = file => new Promise((resolve, reject) => {
+         try {
+             var video = document.createElement('video');
+             video.preload = 'metadata';
+             window.URL = window.URL || window.webkitURL;
+             video.onloadedmetadata = function () {
+                 
+                 //if (video.duration > 90) {
 
+                 //    reject("Invalid Video! Max Video Length is 1:30s");
+                 //}
+                 resolve(this);
+             }
+             video.onerror = function () {
+                 reject("Invalid File Type - Please upload a video file")
+             }
+             video.src = URL.createObjectURL(file)
+         }
+         catch (e) {
+             reject(e);
+         }
+     })
     getVideo = async (e) => {
         return await new Promise(resolve => {
             fetch(process.env.REACT_APP_API + 'video/play/' + e, {
                 headers: {
-                    'Accept': 'application/json',
-                    'Authorization': 'Bearer ' + this.props.token,
-                    'Content-Type': 'application/json'
                 }
 
             })
                 .then(res => {
                     if (res.status == 200)
-                        return res.json()
                     else
                         return;
 
 
                 })
                 .then(data => {
+                    
+                    var video = URL.createObjectURL(data);
+                    
                     this.setState(
                         ({
                             fetchedVideo:
                             {
                                 id: e,
-                                video: data
                             }
                         }));
                     resolve(data);
@@ -78,12 +96,9 @@ export class Videos extends Component {
 
     getVideos = async () => {
         return await new Promise(resolve => {
-            
-                fetch(process.env.REACT_APP_API + 'video/' + this.props.user.userId, {
                     headers: {
 
                         'Accept': 'application/json',
-                        'Authorization': 'Bearer ' + this.props.token,
                         'Content-Type': 'application/json'
                     }
 
@@ -132,8 +147,6 @@ export class Videos extends Component {
 
         let video = this.state.fetchedVideo.video && this.state.showPlayer ?
             <><video className="VideoPlayer" autoPlay controls muted
-                src={"data:video/mp4;base64," + this.state.fetchedVideo.video} >
-            </video> : {null}</> : <></>
 
 
 
@@ -147,4 +160,3 @@ export class Videos extends Component {
 
         );
     }
-}

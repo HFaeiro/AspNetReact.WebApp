@@ -109,7 +109,7 @@ export class Login extends Component {
                 </>
             );
         }
-        //else redirect to users page
+        //else redirect to home page
         else
             return (
                 <div>

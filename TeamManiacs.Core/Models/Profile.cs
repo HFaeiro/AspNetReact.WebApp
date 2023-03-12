@@ -28,6 +28,7 @@ namespace TeamManiacs.Core.Models
             Username = user.Username;
             Privileges= user.Privileges;
             Videos = user.Videos?.Count > 0 ? user.Videos : new List<int>();
+            Token = "";
         }
 
 

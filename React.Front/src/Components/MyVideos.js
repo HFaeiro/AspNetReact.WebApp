@@ -4,7 +4,10 @@ import { Navigate, Link } from 'react-router-dom';
 import { useRef } from 'react';
 import './MyVideos.css';
 import { UploadVideo } from './UploadVideo'
-import {Videos } from './video'
+import { Videos } from './video'
+
+import { EditVideosModal } from './EditVideosModal'
+
 export class MyVideos extends Component {
     state =
         {
@@ -20,14 +23,10 @@ export class MyVideos extends Component {
 
         }
     componentDidMount() {
-        //if (this.props.profile.videos) {
-        //    if (this.props.profile.videos.length > 0) {
-        //        this.getUsersVideos();
-        //    }
+        if (this.props.profile.videos)
+        if (this.props.profile.videos.length > 0)
+            this.getUsersVideos();
 
-        //    else if (this.props.profile.vidPollCount >= 2) {
-        //        this.getUsersVideos();
-        //        this.props.resetPollCount()
 
         //    }
         //    else {
@@ -46,14 +45,90 @@ export class MyVideos extends Component {
             }
 
         })
-       
-        var videoIndex = this.props.profile.videos.indexOf(parseInt(e.target.value));
-        if (videoIndex >= 0) {
-            var profile = this.props.profile;
-            profile.videos.splice(videoIndex, 1);
-            this.props.updateProfile(profile);
-        }
     }
+
+    playVideo = async (e) => {
+        return await new Promise(resolve => {
+            fetch(process.env.REACT_APP_API + 'video/play/' + e.id, {
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': 'Bearer ' + this.props.profile.token,
+                    'Content-Type': 'application/json'
+                }
+
+            })
+                .then(res => {
+                    if (res.status == 200)
+                        return res.json()
+                    else
+                        return;
+
+
+                })
+                .then(data => {
+                    this.setState(
+                        ({
+                            fetchedVideo:
+                            {
+                                id: e.id,
+                                video: data
+                            }
+                        }));
+                    resolve(data);
+                },
+                    (error) => {
+                        //alert(error);
+                        resolve(null);
+                    }).
+                catch((error) => {
+
+                    resolve(null);
+                })
+        })
+    }
+
+   getUsersVideos = async () => {
+        return await new Promise(resolve => {
+            if (this.props.profile.username) {
+                fetch(process.env.REACT_APP_API + 'video/' + this.props.profile.userId, {
+                    headers: {
+
+                        'Accept': 'application/json',
+                        'Authorization': 'Bearer ' + this.props.profile.token,
+                        'Content-Type': 'application/json'
+                    }
+
+                })
+                    .then(res => {
+                        if (res.status == 200)
+                            return res.json()
+                        else
+                            resolve(null);
+
+
+                    })
+                    .then(data => {
+                        if (data != undefined) {
+                            this.setState({ videos: data });
+                            resolve(data);
+
+                        }
+                    },
+                        (error) => {
+                            //alert(error);
+                            resolve(null);
+                        }).
+                    catch((error) => {
+
+                        resolve(null);
+                    })
+            }
+        })
+    }
+
+
+    
+
 
     render() {
         let uploadVideos = 
@@ -63,20 +138,9 @@ export class MyVideos extends Component {
                         profile={this.props.profile}
                         updateProfile={this.props.updateProfile }
                     />
-                    {
-                        this.props.profile.videos.length > 0 ? 
-                            <Videos
-                                user={this.props.profile}
-                                token={this.props.profile.token}>
-                                <button name="Id" className="btn btn-danger"
-                                    onClick={(e) => this.deleteVideo(e).then(() => window.location.reload())}>
-                                    Delete
-                                </button>
-                            </Videos> : <></>
-                    }
                 </div>
                 :
-                <></>
+                <>An Error Has Occured In Upload Component</>
         
         return (
             <div>
