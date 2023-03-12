@@ -67,7 +67,7 @@ export class UploadVideo extends Component {
                     this.setState({ video: video });
                 }
                 else {
-                    alert("File Too Powerful, Please upload a file smaller than 20MB");
+                    alert("File Too Powerful, Please upload a file smaller than 100MB");
                     document.getElementById("formFile").value = "";
                     window.URL.revokeObjectURL(video.src);
 
