@@ -94,6 +94,7 @@ export class Users extends Component {
                                     {/* if admin == true show edit 
                                       and delete users modal buttons */ }
                                     {isAdmin ? <> <EditUsersModal
+                                        myId={klass.props.profile.userId }
                                         uId={p.userId}
                                         uName={p.username}
                                         uPass={p.password}
