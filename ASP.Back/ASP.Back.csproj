@@ -6,7 +6,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <SpaRoot>..\React.Front\</SpaRoot>
   </PropertyGroup>
-
+  <PropertyGroup>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PlatformTarget>x64</PlatformTarget>
+  </PropertyGroup>
   <ItemGroup>
     <Compile Remove="wwwroot\uploads\**" />
     <Content Remove="wwwroot\uploads\**" />

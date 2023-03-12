@@ -69,8 +69,8 @@ export class MyVideos extends Component {
                         profile={this.props.profile}
                         updateProfile={this.props.updateProfile }
                     />
-                    {
-                        this.props.profile.videos.length > 0 ? 
+                    
+                       
                             <Videos
                                 userId={this.props.profile.userId}
                                 token={this.props.profile.token}>
@@ -81,12 +81,12 @@ export class MyVideos extends Component {
                                     onClick={(e) => this.deleteVideo(e).then(() => window.location.reload())}>
                                     Delete
                                 </button>
-                            </Videos> : <>An Error Has Occured In Upload Component</>
+                            </Videos>
 
-                    }
+                    
                 </div>
                 :
-                <></>
+                <>An Error Has Occured In Upload Component</>
         
         return (
             <div>

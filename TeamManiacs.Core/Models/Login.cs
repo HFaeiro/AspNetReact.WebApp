@@ -21,4 +21,5 @@ public partial class Login
     [StringLength(200)]
     [Unicode(false)]
     public string Password { get; set; }
+
 }
