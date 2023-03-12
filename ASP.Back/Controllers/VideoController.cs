@@ -47,22 +47,23 @@ namespace ASP.Back.Controllers
         [Authorize]
         public async Task<ActionResult<IAsyncEnumerable<Video>>> Get(int id)
         {
-           
+
             try
             {
                 var user = await ControllerHelpers.GetUserById(id, _context);
                 if (user != null)
                 {
                     var videos = await GetVideosByUser(user);
-                    if(videos != null)
+                    if (videos != null)
                     {
-                       
+
                         return Ok(videos);
                     }
-                    
+
                 }
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 return BadRequest($"Video.GET: " + ex.Message);
             }
             return BadRequest($"Video.GET: No Videos");
@@ -84,7 +85,7 @@ namespace ASP.Back.Controllers
                     var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
                     if (userId != null)
                     {
-                        if(videoIn.isPrivate)
+                        if (videoIn.isPrivate)
                         {
                             //if (userId != videoIn.Uploader)
                             //    return BadRequest($"Video.GET: Video is Private");
@@ -96,7 +97,7 @@ namespace ASP.Back.Controllers
                             {
 
                                 Response.StatusCode = 200;
-                                byte[] buffer = new byte[1024*10];
+                                byte[] buffer = new byte[1024 * 10];
                                 int bytesRead = 0;
                                 while ((bytesRead = video.Read(buffer, 0, buffer.Length - 1)) > 0)
                                 {
@@ -104,20 +105,20 @@ namespace ASP.Back.Controllers
                                     await Response.Body.WriteAsync(buffer, 0, bytesRead);
 
                                 }
-                                
+
                                 await Response.Body.FlushAsync();
                                 return;
                             }
                             else
                             {
-                               
+
                                 Response.StatusCode = 400;
                                 var str1 = Encoding.UTF8.GetBytes($"Video.GET: User was Null ");
-                                await Response.Body.WriteAsync(str1, 0 ,str1.Length);
+                                await Response.Body.WriteAsync(str1, 0, str1.Length);
                                 return;
                             }
                         }
-                }
+                    }
                     Response.StatusCode = 400;
                     var str2 = Encoding.UTF8.GetBytes($"Video.GET: User was Null ");
                     await Response.Body.WriteAsync(str2, 0, str2.Length);
@@ -198,21 +199,127 @@ namespace ASP.Back.Controllers
         }
         private async Task<int> AddVideoToDB(VideoUpload videoIn)
         {
-            var uniqueFileName = GetUniqueFileName(videoIn.File.FileName);
-            SaveVideoToMediaFolder(videoIn, uniqueFileName);
-            Video video = new Video(videoIn, uniqueFileName);
+
+            var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
+            if (userId != null)
+            {
+                if (videoIn.Id > 0)
+                {
+                    Video? video = GetVideoById(videoIn.Id);
+                    if (video != null)
+                    {
+                        if (video.Uploader == userId)
+                        {
+                            video.isPrivate = videoIn.IsPrivate;
+                            video.Description = videoIn.Description;
+                            //video.Ratings = videoIn.Ratings;
+                            video.Title = videoIn.Title;
+
+                            _context.Entry(video).State = EntityState.Modified;
+                            try
+                            {
+                                await _context.SaveChangesAsync();
+                            }
+                            catch (DbUpdateConcurrencyException)
+                            {
+
+                                {
+                                    throw;
+                                }
+                            }
+                            return Ok($"Video Edited Successfully");
+                        }
+
+                    }
+                }
+
+            }
+            return BadRequest($"Video.PUT");
+        }
+
+        private Video? GetVideoById(int id)
+        {
+
+            return _context.Videos.Find(id);
+
+        }
+        ///<Summary>
+        /// Deletes the Video by Id
+        ///</Summary>
+        [HttpDelete("{id}")]
+        [Authorize]
+        public void Delete(int id)
+        {
             try
             {
-                _context.Videos.Add(video);
-                await _context.SaveChangesAsync();
+                Video? video = GetVideoById(id);
+                if (video != null)
+                {
+
+                    _context.Videos.Remove(video);
+                    _context.SaveChanges();
+                    var fullFilePath = GetUploadsFolder(video.FileName);
+                    if (System.IO.File.Exists(fullFilePath))
+                    {
+                        System.IO.File.Delete(fullFilePath);
+                    }
+                }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-              
+
             }
-            return video.ID;
         }
-        private FileStream GetVideoFromMediaFolder(Video videoIn)
+
+        private async Task<IEnumerable<Video>?> GetVideosByUser(Users user)
+        {
+            List<Video>? result = null;
+            if (user.Videos?.Count > 0)
+            {
+                int storedVideoCount = user.Videos.Count;
+                var ID = GetVideosByIDs(user.Videos);
+#if !DEBUG //we don't want to delete not found on disk videos if we are in dev environment
+
+                if (storedVideoCount > ID.Count)
+                {
+                    //if(ID.Count == 0)
+                    //{
+                    //    user.Videos.Clear();
+                    //}
+
+                    _context.Entry(user).State = EntityState.Modified;
+                    await _context.SaveChangesAsync();
+                }
+#endif
+                if (ID?.Count > 0)
+                    return ID;
+            }
+            return result;
+        }
+        private async Task<int?> AddVideoToDB(VideoUpload videoIn)
+        {
+
+            var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
+            if (userId != null)
+            {
+                var uniqueFileName = ControllerHelpers.GetUniqueFileName(videoIn.File.FileName);
+                Video video = new Video(videoIn, (int)userId, uniqueFileName);
+                try
+                {
+                    _context.Videos.Add(video);
+                    await _context.SaveChangesAsync();
+                    SaveVideoToMediaFolder(videoIn, uniqueFileName);
+
+                }
+                catch (Exception ex)
+                {
+
+                }
+                return video.ID;
+            }
+            return null;
+        }
+        private FileStream? GetVideoFromMediaFolder(Video videoIn)
         {
 
 
