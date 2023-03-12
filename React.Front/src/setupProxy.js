@@ -9,10 +9,10 @@ module.exports = function (app) {
         target: 'https://localhost:7025',
         secure: false
     });
-
-    app.use(appProxy);
     app.use(bodyParser.json({
         limit: '100000kb',
         type: 'application/json'
     }));
+    app.use(appProxy);
+    
 };
