@@ -47,22 +47,23 @@ namespace ASP.Back.Controllers
         [Authorize]
         public async Task<ActionResult<IAsyncEnumerable<Video>>> Get(int id)
         {
-           
+
             try
             {
                 var user = await ControllerHelpers.GetUserById(id, _context);
                 if (user != null)
                 {
                     var videos = await GetVideosByUser(user);
-                    if(videos != null)
+                    if (videos != null)
                     {
-                       
+
                         return Ok(videos);
                     }
-                    
+
                 }
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 return BadRequest($"Video.GET: " + ex.Message);
             }
             return BadRequest($"Video.GET: No Videos");
@@ -84,7 +85,7 @@ namespace ASP.Back.Controllers
                     var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
                     if (userId != null)
                     {
-                        if(videoIn.isPrivate)
+                        if (videoIn.isPrivate)
                         {
                             //if (userId != videoIn.Uploader)
                             //    return BadRequest($"Video.GET: Video is Private");
@@ -96,7 +97,7 @@ namespace ASP.Back.Controllers
                             {
 
                                 Response.StatusCode = 200;
-                                byte[] buffer = new byte[1024*10];
+                                byte[] buffer = new byte[1024 * 10];
                                 int bytesRead = 0;
                                 while ((bytesRead = video.Read(buffer, 0, buffer.Length - 1)) > 0)
                                 {
@@ -104,20 +105,20 @@ namespace ASP.Back.Controllers
                                     await Response.Body.WriteAsync(buffer, 0, bytesRead);
 
                                 }
-                                
+
                                 await Response.Body.FlushAsync();
                                 return;
                             }
                             else
                             {
-                               
+
                                 Response.StatusCode = 400;
                                 var str1 = Encoding.UTF8.GetBytes($"Video.GET: User was Null ");
-                                await Response.Body.WriteAsync(str1, 0 ,str1.Length);
+                                await Response.Body.WriteAsync(str1, 0, str1.Length);
                                 return;
                             }
                         }
-                }
+                    }
                     Response.StatusCode = 400;
                     var str2 = Encoding.UTF8.GetBytes($"Video.GET: User was Null ");
                     await Response.Body.WriteAsync(str2, 0, str2.Length);
@@ -137,11 +138,6 @@ namespace ASP.Back.Controllers
                 return;
 
 
-                    _context.Entry(user).State = EntityState.Modified;
-                    await _context.SaveChangesAsync();
-                }
-                if (ID?.Count > 0)
-                    return ID;
             }
         }
         ///<Summary>
@@ -224,7 +220,7 @@ namespace ASP.Back.Controllers
                             video.Description = videoIn.Description;
                             //video.Ratings = videoIn.Ratings;
                             video.Title = videoIn.Title;
-                            
+
                             _context.Entry(video).State = EntityState.Modified;
                             try
                             {
@@ -232,7 +228,7 @@ namespace ASP.Back.Controllers
                             }
                             catch (DbUpdateConcurrencyException)
                             {
-                                
+
                                 {
                                     throw;
                                 }
@@ -251,7 +247,7 @@ namespace ASP.Back.Controllers
         {
 
             return _context.Videos.Find(id);
-            
+
         }
         ///<Summary>
         /// Deletes the Video by Id
@@ -416,8 +412,7 @@ namespace ASP.Back.Controllers
                 return null;
 
         }
-        
-        private FileResult? GetVideoByFileName(string fileName)
+        private FileResult? GetFileFromVideo(Video video)
         {
             try
             {
