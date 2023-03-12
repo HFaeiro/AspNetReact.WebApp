@@ -35,11 +35,10 @@ export class EditUsersModal extends Component {
                 .then(res => {
                     if (res.status == 200) {
                         
-                        if (this.props.uId == event.target.Id.value) {
+                        if (this.props.myId == event.target.Id.value) {
                             var profile =
                             {
                                 username: this.props.uName,
-                                password: this.props.uPass,
                                 privileges: this.props.uPriv
                             }
 
@@ -48,10 +47,7 @@ export class EditUsersModal extends Component {
                                 profile.username = event.target.Username.value;
                                 areEdits = true;
                             }
-                            if (event.target.Password.value != '' && event.target.Password.value != profile.Password) {
-                                profile.password = event.target.Password.value
-                                areEdits = true;
-                            }
+
                             if (event.target.Privileges.value != '' && event.target.Privileges.value != profile.Privileges) {
                                 profile.privileges = event.target.Privileges.value
                                 areEdits = true;
