@@ -47,22 +47,23 @@ namespace ASP.Back.Controllers
         [Authorize]
         public async Task<ActionResult<IAsyncEnumerable<Video>>> Get(int id)
         {
-           
+
             try
             {
                 var user = await ControllerHelpers.GetUserById(id, _context);
                 if (user != null)
                 {
                     var videos = await GetVideosByUser(user);
-                    if(videos != null)
+                    if (videos != null)
                     {
-                       
+
                         return Ok(videos);
                     }
-                    
+
                 }
             }
-            catch (Exception ex) {
+            catch (Exception ex)
+            {
                 return BadRequest($"Video.GET: " + ex.Message);
             }
             return BadRequest($"Video.GET: No Videos");
@@ -82,7 +83,7 @@ namespace ASP.Back.Controllers
                 if (videoIn != null)
                 {
                     var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
-                    
+
                         if(videoIn.isPrivate)
                         {
                             if (userId != videoIn.Uploader)
@@ -101,7 +102,7 @@ namespace ASP.Back.Controllers
                             {
 
                                 Response.StatusCode = 200;
-                                byte[] buffer = new byte[1024*10];
+                                byte[] buffer = new byte[1024 * 10];
                                 int bytesRead = 0;
                                 while ((bytesRead = video.Read(buffer, 0, buffer.Length - 1)) > 0)
                                 {
@@ -109,21 +110,19 @@ namespace ASP.Back.Controllers
                                     await Response.Body.WriteAsync(buffer, 0, bytesRead);
 
                                 }
-                                
+
                                 await Response.Body.FlushAsync();
                                 return;
                             }
                             else
                             {
-                               
+
                                 Response.StatusCode = 400;
-                                str = Encoding.UTF8.GetBytes($"Video.GET: User was Null ");
+                                str = Encoding.UTF8.GetBytes($"Video.GET: Video is Null ");
                                 await Response.Body.WriteAsync(str, 0 ,str.Length);
                                 return;
                             }
                         }
-                
-
                 }
                 Response.StatusCode = 400;
                  str = Encoding.UTF8.GetBytes($"Video.GET: Video Does not Exist on DB ");
@@ -220,7 +219,7 @@ namespace ASP.Back.Controllers
                             video.Description = videoIn.Description;
                             //video.Ratings = videoIn.Ratings;
                             video.Title = videoIn.Title;
-                            
+
                             _context.Entry(video).State = EntityState.Modified;
                             try
                             {
@@ -228,7 +227,7 @@ namespace ASP.Back.Controllers
                             }
                             catch (DbUpdateConcurrencyException)
                             {
-                                
+
                                 {
                                     throw;
                                 }
@@ -247,7 +246,7 @@ namespace ASP.Back.Controllers
         {
 
             return _context.Videos.Find(id);
-            
+
         }
         ///<Summary>
         /// Deletes the Video by Id
