@@ -73,21 +73,26 @@ namespace ASP.Back.Controllers
         /// <response code="200">Returns the Requested Video</response>
         /// <response code="400">If the item is null</response>
         [HttpGet("play/{id}")]
-        [Authorize]
         public async Task GetPlay(int id)
         {
+            byte[]? str = null;
             try
             {
                 var videoIn = await _context.Videos.FindAsync(id);
                 if (videoIn != null)
                 {
                     var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
-                    if (userId != null)
-                    {
+                    
                         if(videoIn.isPrivate)
                         {
-                            //if (userId != videoIn.Uploader)
-                            //    return BadRequest($"Video.GET: Video is Private");
+                            if (userId != videoIn.Uploader)
+                            {
+                                Response.StatusCode = 400;
+                                 str = Encoding.UTF8.GetBytes($"Video.GET: Video is Private");
+                                await Response.Body.WriteAsync(str, 0, str.Length);
+                                return;
+                            }
+                               
                         }
 
                         using (FileStream? video = GetVideoFromMediaFolder(videoIn))
@@ -112,27 +117,23 @@ namespace ASP.Back.Controllers
                             {
                                
                                 Response.StatusCode = 400;
-                                var str1 = Encoding.UTF8.GetBytes($"Video.GET: User was Null ");
-                                await Response.Body.WriteAsync(str1, 0 ,str1.Length);
+                                str = Encoding.UTF8.GetBytes($"Video.GET: User was Null ");
+                                await Response.Body.WriteAsync(str, 0 ,str.Length);
                                 return;
                             }
                         }
-                }
-                    Response.StatusCode = 400;
-                    var str2 = Encoding.UTF8.GetBytes($"Video.GET: User was Null ");
-                    await Response.Body.WriteAsync(str2, 0, str2.Length);
-                    return;
+                
 
                 }
                 Response.StatusCode = 400;
-                var str = Encoding.UTF8.GetBytes($"Video.GET: Video Does not Exist on DB ");
+                 str = Encoding.UTF8.GetBytes($"Video.GET: Video Does not Exist on DB ");
                 await Response.Body.WriteAsync(str, 0, str.Length);
                 return;
             }
             catch (Exception ex)
             {
                 Response.StatusCode = 400;
-                var str = Encoding.UTF8.GetBytes($"Video.GET: " + ex.Message);
+                str = Encoding.UTF8.GetBytes($"Video.GET: " + ex.Message);
                 await Response.Body.WriteAsync(str, 0, str.Length);
                 return;
 
