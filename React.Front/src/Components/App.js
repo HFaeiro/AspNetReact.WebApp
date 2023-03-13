@@ -152,7 +152,9 @@ export default class App extends Component {
                         <Route path="/videos" element={<VideoRoute
                             token={profile.token}
                         />} />
-                            
+                        <Route path="/play/:id" element={<VideoRoute
+                            token={profile.token}
+                        />} />
 
                     </Routes>
                 </div>

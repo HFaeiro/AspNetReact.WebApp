@@ -24,9 +24,15 @@ import { withRouter } from '../Utils/withRouter'
         
     }
     
-    componentDidMount() {
+    async componentDidMount() {
         if (this.state.userId) {
             this.getVideos();
+        }
+        else if (this.state.fetchedVideo.video == null){
+            let vidId = parseInt(this.props.router.params.id);
+            if (vidId) {
+               var res = this.getVideo(vidId);
+            }
         }
 
     }
@@ -61,9 +67,9 @@ import { withRouter } from '../Utils/withRouter'
      })
     getVideo = async (e) => {
         return await new Promise(resolve => {
-            fetch(process.env.REACT_APP_API + 'video/play/' + e, {
+            fetch('/' + process.env.REACT_APP_API + 'video/play/' + e, {
                 headers: {
-                   'Authorization': 'Bearer ' + this.state.token,
+                    'Authorization': 'Bearer ' + this.state.token,
                     'Accept' : '*/*',
                     'Accept-Encoding': 'gzip, deflate, br',
                     'Connection' : 'keep-alive'
@@ -93,11 +99,9 @@ import { withRouter } from '../Utils/withRouter'
                     resolve(data);
                 },
                     (error) => {
-                        //alert(error);
                         resolve(null);
                     }).
                 catch((error) => {
-
                     resolve(null);
                 })
         })
@@ -152,12 +156,12 @@ import { withRouter } from '../Utils/withRouter'
                 >{this.props.children }
                 </VideoTable>
 
-            </> : <>No Videos!
+            </> : <>{this.state.fetchedVideo.video && (this.state.showPlayer || this.props.router && this.props.router.params.id) ? <div><p></p></div> : <>No Videos! Please upload one.</>}
             </>}
             </div>
 
-        let video = this.state.fetchedVideo.video && this.state.showPlayer ?
-            <><video className="VideoPlayer" autoPlay controls muted
+        let video = this.state.fetchedVideo.video && (this.state.showPlayer || this.props.router && this.props.router.params.id) ?
+            <><video className="VideoPlayer" controls muted
                 src={this.state.fetchedVideo.video} >
             </video> </> : <></>
 
