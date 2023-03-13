@@ -372,3 +372,4 @@ FodyWeavers.xsd
 /ASP.Back/Properties/ServiceDependencies/portalmjr - Web Deploy
 /ASP.Back/Properties
 /React.Front/'/ASP.Back/wwwroot/'
+/ASP.Back/appsettings.json
