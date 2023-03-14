@@ -36,10 +36,17 @@ internal class Program
             x.MultipartBodyLengthLimit = int.MaxValue; // In case of multipart
         });
         //Add services to the container.
+#if !DEBUG
+                       string appsettings = "appsettings.Production.json";
+                
+#else
+        string appsettings = "appsettings.Development.json";
+#endif
         builder.Services.AddDbContext<TeamManiacsDbContext>(options =>
         {
+           
             IConfiguration config = new ConfigurationBuilder()
-                                        .AddJsonFile("appsettings.json", optional: false)
+                                        .AddJsonFile(appsettings, optional: false)
                                         .Build();
             //options.UseSqlServer(config.GetConnectionString("ASPBackContext"));
             var connectString = config.GetConnectionString("CleverCloudSQL");
