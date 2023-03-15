@@ -1,7 +1,7 @@
 
 
 .Bar {
-    position:  page ;
+    position:  relative ;
     display: inline-block;
     background-color: #212529;
     height: 60px;
@@ -39,7 +39,7 @@
     white-space: nowrap;
     margin-top: 0px;
     background-color: #212529;
-    transition: margin-top 1.0s;
+    transition: max-height  1.5s, margin-top 2s;
 }
 
     .Bar:hover .videoNavBar {

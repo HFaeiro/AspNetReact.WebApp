@@ -1,15 +1,12 @@
-.App{
-
-
-
+.App {
+    display: block;
 }
-
-.App .bannerLogo {
+.bannerLogo {
+    position: fixed;
     display: block;
     top: 0;
+    left: 60px;
     width: 100vw;
     height: 20vh;
-    margin-left: 28px;
-    position: absolute;
-    /*background-color: #212529;*/
+    margin: auto;
 }

@@ -15,7 +15,7 @@ export default function Navigation(props) {
     return (
        <>
           
-          <Navbar> 
+            <section className="sideWrapper">
                 <div className="sidebar">                
                     <Link className="navLink" to="/">
                         <div> Home</div>
@@ -38,8 +38,8 @@ export default function Navigation(props) {
 
 
                 </div>
-            </Navbar>
-       
+            
+            </section>
         </>
     );
 }

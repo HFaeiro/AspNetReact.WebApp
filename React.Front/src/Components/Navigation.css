@@ -4,7 +4,7 @@
 }
 .sidebar .navLink div {
     color: #212529;
-    padding: 25px 15px 25px;
+    padding: 2.5vh 1vh 2.5vh;
     text-decoration: none;
 }
     .sidebar .navLink div:hover {
@@ -13,13 +13,14 @@
         background-color: #0a090e;
         transition: .1s
     }
-
+.sideWrapper {
+    position: relative;
+    max-width: 200px;
+    height: 100vh;
+}
 
 .sidebar {
-    position: sticky;
-    top: 0;
-    margin: 10px;
-    float: left;
+    position: relative;
     width: auto;
     max-width: 60px;
     z-index: 100;
@@ -27,11 +28,10 @@
     white-space: nowrap;
     background-color: #212529;
     transition: 0.5s;
-    display: inline-block;
 }
     .sidebar:hover {
         max-width: 600px;
-        transition: .5s;
+        transition:  .5s;
     }
         .sidebar:hover .navLink div {
             color: aliceblue;

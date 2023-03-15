@@ -1,12 +1,10 @@
 
 .VideoApp {
-    
     position: relative;
     display: block;
-    top: 0;
     width: 50vw;
     margin: auto;
-    top: 20vh;
+    top: 0;
     left: 60px;
     /*background-color: #212529;*/
 }
