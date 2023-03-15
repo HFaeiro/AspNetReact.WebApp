@@ -1,6 +1,8 @@
 
 
 .Bar {
+    position:  page ;
+    display: inline-block;
     background-color: #212529;
     height: 60px;
     width: 100%;
@@ -33,7 +35,6 @@
     height: auto;
     max-height: 60px;
     width: auto;
-    z-index: 100;
     overflow: hidden;
     white-space: nowrap;
     margin-top: 0px;

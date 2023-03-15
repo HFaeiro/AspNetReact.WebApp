@@ -16,7 +16,7 @@ export class EditUsersModal extends Component {
     handleSubmit = async (event) => {
         const ret = await new Promise(resolve => {
             event.preventDefault();
-            fetch(process.env.REACT_APP_API + 'users/' + event.target.Id.value, {
+            fetch('/' +process.env.REACT_APP_API + 'users/' + event.target.Id.value, {
                 method: 'PUT',
                 headers: {
                     'Accept': 'application/json',

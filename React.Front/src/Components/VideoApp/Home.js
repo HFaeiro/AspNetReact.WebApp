@@ -19,7 +19,7 @@ export class Home extends Component {
    
 
     async getDummyUserInfo() {
-        fetch(process.env.REACT_APP_API + 'users/' + '1', {
+        fetch('/' +process.env.REACT_APP_API + 'users/' + '1', {
             method: 'Get',
             headers: {
                 'Accept': 'application/json',

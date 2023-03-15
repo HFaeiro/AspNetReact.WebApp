@@ -23,7 +23,7 @@ export class Users extends Component {
     refreshList = async () => {
         //returns promise as the profile[] or null. with token. 
         return await new Promise(resolve => {
-            fetch('../' + process.env.REACT_APP_API + 'users', {
+            fetch('/' + process.env.REACT_APP_API + 'users', {
                 headers:
                 {
                     'Accept': 'application/json',

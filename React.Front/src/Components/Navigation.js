@@ -29,6 +29,9 @@ export default function Navigation(props) {
                     <Link className="navLink" to="/youtube">
                         <div>Youtube</div>
                     </Link>
+                    <Link className="navLink" to="/downloads">
+                        <div>Downloads</div>
+                    </Link>
                     <Link className="navLink" to="/friends">
                         <div>My Friends</div>
                     </Link>

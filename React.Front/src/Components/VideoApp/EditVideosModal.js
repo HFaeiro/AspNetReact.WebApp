@@ -17,7 +17,7 @@ export class EditVideosModal extends Component {
         const ret = await new Promise(resolve => {
             event.preventDefault();
             try {
-                fetch(process.env.REACT_APP_API + 'video/', {
+                fetch('/' +process.env.REACT_APP_API + 'video/', {
                     method: 'PUT',
                     headers: {
                         'Accept': 'application/json',

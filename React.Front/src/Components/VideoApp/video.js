@@ -109,7 +109,7 @@ import { withRouter } from '../../Utils/withRouter'
 
     getVideos = async () => {
         return await new Promise(resolve => {
-                fetch(process.env.REACT_APP_API + 'video/' + this.state.userId , {
+            fetch('/' +process.env.REACT_APP_API + 'video/' + this.state.userId , {
                     headers: {
 
                         'Accept': 'application/json',
