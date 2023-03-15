@@ -2,11 +2,11 @@
     display: block;
 }
 .bannerLogo {
-    position: fixed;
+    position: relative;
     display: block;
-    top: 0;
-    left: 60px;
     width: 100vw;
     height: 20vh;
     margin: auto;
+    top: 0;
+    left: 60px;
 }

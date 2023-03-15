@@ -43,14 +43,14 @@ export default function Navigation(props) {
 
     //fill navbar with links and dynamic content. 
     return (
-        <Navbar className="Bar" >
+        <section className="Bar" >
             <div className="videoNavBar">
                 <Link className="navLink" to="/videoapp/">
                        <div> Home</div>
                     </Link>
                     {NavLog}
                 </div>
-        </Navbar>
+        </section>
 
     );
 }

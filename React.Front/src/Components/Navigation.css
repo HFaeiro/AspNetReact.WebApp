@@ -14,9 +14,8 @@
         transition: .1s
     }
 .sideWrapper {
-    position: relative;
+    position:  fixed;
     max-width: 200px;
-    height: 100vh;
 }
 
 .sidebar {
@@ -31,7 +30,7 @@
 }
     .sidebar:hover {
         max-width: 600px;
-        transition:  .5s;
+        transition:  1.5s;
     }
         .sidebar:hover .navLink div {
             color: aliceblue;
