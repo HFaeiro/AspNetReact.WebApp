@@ -18,7 +18,7 @@
     <None Remove="src\App.test.js" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="src\Components\Functions\" />
+    <Folder Include="src\Components\VideoApp\Functions\" />
     <Folder Include="src\Utils\" />
   </ItemGroup>
 </Project>

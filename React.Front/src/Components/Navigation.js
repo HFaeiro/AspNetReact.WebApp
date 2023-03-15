@@ -8,55 +8,36 @@ export default function Navigation(props) {
 
 
     //if user is logged in we will show logout instead of login
-    let NavLog = props.isLoggedIn === 'false' ? (
-        <>
-            <NavLink className="d-inline p-2 bg-dark text-white" to="/login">
-                Login
-            </NavLink>
-            <NavLink className="d-inline p-2 bg-dark text-white" to="/create">
-                Create an Account
-            </NavLink>
-        </>
-    ) : (
-
-        <>
-                 <NavLink className="d-inline p-2 bg-dark text-white" to="/logout">
-                Logout
-                </NavLink>
-                <NavLink className="d-inline p-2 bg-dark text-white" to="/myvideos">
-                    My Videos
-                </NavLink>
-                {/*props.profile.privileges == 'Admin' ?*/ /*// if user is admin we will show Users link.*/
-                    <> <NavLink className="d-inline p-2 bg-dark text-white" to="/users">
-                    Users
-                </NavLink>
-
-        </>
-                 
-                     }
-        </>
-
-
-        )
 
 
 
     //fill navbar with links and dynamic content. 
     return (
-        <Navbar className="mainNavbar" bg="dark" expand="lg">
-            <Navbar.Toggle aria-controls="basic-navbar-nav"></Navbar.Toggle>
-            <Navbar.Collapse id="basic-navbar-nav">
-                <Nav className="ml-auto">
-                    <NavLink className="d-inline p-2 bg-dark text-white" to="/">
-                        Home
-                    </NavLink>
-                    {NavLog}
+       <>
+          
+          <Navbar> 
+                <div className="sidebar">                
+                    <Link className="navLink" to="/">
+                        <div> Home</div>
+                    </Link>
+                    <Link className="navLink" to="/videoapp">
+                        <div>Video App</div>
+                    </Link>
+                    <Link className="navLink" to="/github">
+                        <div>Github</div>
+                    </Link>
+                    <Link className="navLink" to="/youtube">
+                        <div>Youtube</div>
+                    </Link>
+                    <Link className="navLink" to="/friends">
+                        <div>My Friends</div>
+                    </Link>
 
 
-                </Nav>
-            </Navbar.Collapse>
-        </Navbar>
-
+                </div>
+            </Navbar>
+       
+        </>
     );
 }
 

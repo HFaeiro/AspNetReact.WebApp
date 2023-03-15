@@ -5,7 +5,7 @@ import { DeleteUsersModal } from './DeleteUsersModal';
 import { Navigate, Link, useNavigate } from 'react-router-dom';
 import { Routes, Route } from 'react-router';
 import { VideoRoute } from './video'
-import { withRouter } from '../Utils/withRouter'
+import { withRouter } from '../../Utils/withRouter'
 export class Users extends Component {
     constructor(props) {
         super(props);

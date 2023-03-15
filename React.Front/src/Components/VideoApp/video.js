@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import { Table } from 'react-bootstrap'
 import VideoTable from './Functions/VideoTable'
 import { Navigate, useParams } from 'react-router-dom';
-import { withRouter } from '../Utils/withRouter'
+import { withRouter } from '../../Utils/withRouter'
  export class Videos extends Component {
     constructor(props) {
         super(props);

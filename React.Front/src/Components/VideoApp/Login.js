@@ -13,7 +13,7 @@ export class Login extends Component {
     //attempt to get profile data back from server with login data
     getPostResponse = async (event) => {
         return await new Promise(resolve => {
-            fetch(process.env.REACT_APP_API + 'login', {
+            fetch('/' +process.env.REACT_APP_API + 'login', {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
@@ -113,7 +113,7 @@ export class Login extends Component {
         else
             return (
                 <div>
-                    <Navigate to={"/"} />
+                    <Navigate to={"/videoapp/myvideos"} />
 
                 </div>
 
