@@ -1,10 +1,11 @@
 
 
 .Bar {
-    position:  relative ;
+    position: relative;
     background-color: #212529;
     height: 60px;
     width: 100%;
+    z-index: 99;
 }
 
     .videoNavBar .navLink {
@@ -32,7 +33,6 @@
     right: 0;
     height: auto;
     max-height: 60px;
-    z-index: 100;
     width: auto;
     overflow: hidden;
     white-space: nowrap;

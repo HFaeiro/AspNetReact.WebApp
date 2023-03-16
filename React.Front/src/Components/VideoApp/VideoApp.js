@@ -95,12 +95,7 @@ export class VideoApp extends Component {
         //setup routes and send props
         return (
             <section className="VideoApp">
-                
-                    <h3 className="m-3 d-flex justify-content-center">
-                       Video Application
-                    </h3>
-
-                    
+                   
                     {profile.username ?
                         <>
                             <h3>Hello, {profile.username}!</h3>

@@ -57,7 +57,7 @@ export class Users extends Component {
     }
     componentDidUpdate(prevprops, prevState) {
         if (!prevState.friend && this.state.friend) {
-            this.props.router.navigate('/videos', { state: { userId: this.state.friend.userId } })
+            this.props.router.navigate('/videoapp/videos', { state: { userId: this.state.friend.userId } })
         }
     }
 

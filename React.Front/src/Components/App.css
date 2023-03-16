@@ -3,10 +3,10 @@
 }
 .bannerLogo {
     position: relative;
-    display: block;
-    width: 100vw;
+    display: inline-block;
+    width: calc(100vw - 60px);
     height: 20vh;
     margin: auto;
     top: 0;
-    left: 60px;
+    left: 5vw;
 }
