@@ -20,7 +20,7 @@ export class AddUsersModal extends Component {
     handleSubmit = async (event) => {
          const ret = await new Promise(resolve => {
             event.preventDefault();
-            fetch(process.env.REACT_APP_API + 'users', {
+             fetch('/' +process.env.REACT_APP_API + 'users', {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',

@@ -42,7 +42,7 @@ export class MyVideos extends Component {
 
     }
     deleteVideo = async (e) => {
-        fetch(process.env.REACT_APP_API + 'video/' + e.target.value, {
+        fetch('/' +process.env.REACT_APP_API + 'video/' + e.target.value, {
             method: 'Delete',
             headers: {
 

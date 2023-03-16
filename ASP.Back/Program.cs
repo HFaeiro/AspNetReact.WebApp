@@ -36,10 +36,17 @@ internal class Program
             x.MultipartBodyLengthLimit = int.MaxValue; // In case of multipart
         });
         //Add services to the container.
+#if !DEBUG
+                       string appsettings = "appsettings.Production.json";
+                
+#else
+        string appsettings = "appsettings.Development.json";
+#endif
         builder.Services.AddDbContext<TeamManiacsDbContext>(options =>
         {
+           
             IConfiguration config = new ConfigurationBuilder()
-                                        .AddJsonFile("appsettings.json", optional: false)
+                                        .AddJsonFile(appsettings, optional: false)
                                         .Build();
             //options.UseSqlServer(config.GetConnectionString("ASPBackContext"));
             var connectString = config.GetConnectionString("CleverCloudSQL");
@@ -117,11 +124,17 @@ internal class Program
 
         var app = builder.Build();
         // Configure the HTTP request pipeline.
-        //if (app.Environment.IsDevelopment())
-        //{
+        if (app.Environment.IsDevelopment())
+        {
             app.UseSwagger();
             app.UseSwaggerUI();
-        // }
+            
+         }
+        else
+        {
+            app.UseHsts();
+        }
+        app.UseHttpsRedirection();
         app.UseResponseCompression();
         app.UseStaticFiles();
         app.UseRouting();

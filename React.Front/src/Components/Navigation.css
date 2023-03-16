@@ -1,11 +1,55 @@
 
-
-
-.mainNavbar {
-    flex-direction: column;
-    position: relative;
-    display: flex;
-    flex-wrap: nowrap;
-    align-items: flex-end;
-    justify-content: space-evenly;
+.sidebar .navLink {
+    text-decoration: none;
 }
+.sidebar .navLink div {
+    color: #212529;
+    padding: 2.5vh 1vh 2.5vh;
+    text-decoration: none;
+}
+    .sidebar .navLink div:hover {
+        cursor: pointer;
+        opacity: .7;
+        background-color: #0a090e;
+        transition: .1s
+    }
+.sideWrapper {
+    position: fixed;
+    max-width: 200px;
+    background-color: #212529;
+    z-index: 100;
+}
+.sidebarButton {
+    position: fixed;
+    cursor: pointer;
+    height: 5vh;
+    width: 5vw;
+    margin: auto;
+    padding: 0.6vh 0.4vh 0.6vh;
+    transition: 0.5s;
+}
+.sideWrapper:hover .sidebarButton {
+    visibility: hidden;
+    transition: 0s;
+}
+.sidebar {
+    position: relative;
+    width: auto;
+    max-width: 5vw;
+    overflow: hidden;
+    white-space: nowrap;
+    background-color: #212529;
+    transition: 0.5s;
+}
+.sideWrapper:hover .sidebar {
+    max-width: 600px;
+    transition: 1.5s;
+}
+.sideWrapper:hover .sidebar .navLink div {
+    color: aliceblue;
+    transition: color 1.5s;
+    transition: background-color .5s;
+}
+
+
+

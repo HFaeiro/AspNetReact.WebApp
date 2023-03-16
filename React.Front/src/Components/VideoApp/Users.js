@@ -5,7 +5,7 @@ import { DeleteUsersModal } from './DeleteUsersModal';
 import { Navigate, Link, useNavigate } from 'react-router-dom';
 import { Routes, Route } from 'react-router';
 import { VideoRoute } from './video'
-import { withRouter } from '../Utils/withRouter'
+import { withRouter } from '../../Utils/withRouter'
 export class Users extends Component {
     constructor(props) {
         super(props);
@@ -23,7 +23,7 @@ export class Users extends Component {
     refreshList = async () => {
         //returns promise as the profile[] or null. with token. 
         return await new Promise(resolve => {
-            fetch('../' + process.env.REACT_APP_API + 'users', {
+            fetch('/' + process.env.REACT_APP_API + 'users', {
                 headers:
                 {
                     'Accept': 'application/json',
@@ -57,7 +57,7 @@ export class Users extends Component {
     }
     componentDidUpdate(prevprops, prevState) {
         if (!prevState.friend && this.state.friend) {
-            this.props.router.navigate('/videos', { state: { userId: this.state.friend.userId } })
+            this.props.router.navigate('/videoapp/videos', { state: { userId: this.state.friend.userId } })
         }
     }
 

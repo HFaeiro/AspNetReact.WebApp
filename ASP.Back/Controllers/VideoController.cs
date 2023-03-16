@@ -1,21 +1,10 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Microsoft.EntityFrameworkCore.Query.Internal;
-using Microsoft.Extensions.FileProviders;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Data;
-using System.Runtime.CompilerServices;
-using System.IO;
 using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
-using System.Security.Claims;
-using NuGet.Protocol;
-using System.Drawing.Drawing2D;
 using System.Text;
-using System.Security.Principal;
+
 
 namespace ASP.Back.Controllers
 {

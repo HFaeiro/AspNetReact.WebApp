@@ -1,62 +1,63 @@
 import React, { Component, Profiler, useEffect } from 'react';
-
-import { Navbar, Nav } from 'react-bootstrap';
-import { NavLink, Link, useLocation } from 'react-router-dom'
+import { Link,} from 'react-router-dom'
 import './Navigation.css';
+import { ReactComponent as Logo } from '../images/AeiroSoftLogoInitials.svg'
+import { ReactComponent as HomeButton } from '../images/Home.svg'
+import { ReactComponent as VideoButton } from '../images/play.svg'
+import { ReactComponent as DownloadsButton } from '../images/downloads.svg'
+import { ReactComponent as YoutubeButton } from '../images/Youtube.svg'
+import { ReactComponent as GithubButton } from '../images/Github.svg'
+import { ReactComponent as FriendsButton } from '../images/Friends.svg'
 export default function Navigation(props) {
 
 
 
     //if user is logged in we will show logout instead of login
-    let NavLog = props.isLoggedIn === 'false' ? (
-        <>
-            <NavLink className="d-inline p-2 bg-dark text-white" to="/login">
-                Login
-            </NavLink>
-            <NavLink className="d-inline p-2 bg-dark text-white" to="/create">
-                Create an Account
-            </NavLink>
-        </>
-    ) : (
-
-        <>
-                 <NavLink className="d-inline p-2 bg-dark text-white" to="/logout">
-                Logout
-                </NavLink>
-                <NavLink className="d-inline p-2 bg-dark text-white" to="/myvideos">
-                    My Videos
-                </NavLink>
-                {/*props.profile.privileges == 'Admin' ?*/ /*// if user is admin we will show Users link.*/
-                    <> <NavLink className="d-inline p-2 bg-dark text-white" to="/users">
-                    Users
-                </NavLink>
-
-        </>
-                 
-                     }
-        </>
-
-
-        )
 
 
 
     //fill navbar with links and dynamic content. 
     return (
-        <Navbar className="mainNavbar" bg="dark" expand="lg">
-            <Navbar.Toggle aria-controls="basic-navbar-nav"></Navbar.Toggle>
-            <Navbar.Collapse id="basic-navbar-nav">
-                <Nav className="ml-auto">
-                    <NavLink className="d-inline p-2 bg-dark text-white" to="/">
-                        Home
-                    </NavLink>
-                    {NavLog}
+       <>
+          
+            <section className="sideWrapper">
+                <div className="sidebar">      
+                    
+                    <Link className="navLink" to="/">
+                        <HomeButton className="sidebarButton" />
+                        <div> Home</div>
+                    </Link>
+                    <Link className="navLink" to="/videoapp">
+
+                        <VideoButton className="sidebarButton" />
+                        <div>Video App</div>
+                    </Link>
+                    <Link className="navLink" to="/github">
+
+                        <GithubButton className="sidebarButton" />
+                        <div>Github</div>
+                    </Link>
+                    <Link className="navLink" to="http://mikedrones.org">
+
+                        <YoutubeButton className="sidebarButton" />
+                        <div>Youtube</div>
+                    </Link>
+                    <Link className="navLink" to="/downloads">
+
+                        <DownloadsButton className="sidebarButton" />
+                        <div>Downloads</div>
+                    </Link>
+                    <Link className="navLink" to="/friends">
+
+                        <FriendsButton className="sidebarButton" />
+                        <div>My Friends</div>
+                    </Link>
 
 
-                </Nav>
-            </Navbar.Collapse>
-        </Navbar>
-
+                </div>
+            
+            </section>
+        </>
     );
 }
 

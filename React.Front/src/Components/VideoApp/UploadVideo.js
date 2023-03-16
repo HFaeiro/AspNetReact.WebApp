@@ -95,7 +95,7 @@ export class UploadVideo extends Component {
         formData.append("Username", this.props.profile.username);
         formData.append("File", this.state.file);
         try {
-            await fetch(process.env.REACT_APP_API + 'video/', {
+            await fetch('/' +process.env.REACT_APP_API + 'video/', {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
