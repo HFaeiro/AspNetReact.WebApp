@@ -4,7 +4,7 @@ import { Navigate, Link } from 'react-router-dom';
 import { useRef } from 'react';
 import './MyVideos.css';
 import { UploadVideo } from './UploadVideo'
-import { Videos } from './video'
+import { Videos } from './Video'
 
 import { EditVideosModal } from './EditVideosModal'
 

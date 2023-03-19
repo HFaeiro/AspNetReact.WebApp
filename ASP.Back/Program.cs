@@ -13,6 +13,7 @@ using Microsoft.OpenApi.Models;
 using System.Reflection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.ResponseCompression;
+using System.Net.WebSockets;
 
 internal class Program
 {
@@ -136,6 +137,8 @@ internal class Program
         }
         app.UseHttpsRedirection();
         app.UseResponseCompression();
+        
+
         app.UseStaticFiles();
         app.UseRouting();
         app.UseDefaultFiles();
@@ -148,16 +151,33 @@ internal class Program
 
         app.UseEndpoints(endpoints =>
         {
-            endpoints.MapControllers();
-            endpoints.MapFallbackToController("Index", "Fallback");
+            endpoints.MapControllerRoute(
+                    name: "default",
+                    pattern: "{controller=Fallback}/{action=Index}/{id?}")
+                    .WithDisplayName("Default Controller Route")
+                    .WithMetadata("Custom.. but default metadata"); ;
+
+            endpoints.MapFallbackToController("Index", "Fallback")
+                .WithDisplayName("Fallback route")
+                .WithMetadata("Custom metadata");
         });
-  
- 
-       app.MapControllers();
 
-        app.UseHttpsRedirection();
- 
 
+        app.MapControllers();
+
+
+        //app.MapWhen(x => !x.Request.Path.Value.StartsWith("/api"), builder =>
+        //{
+        //    builder.Run(async context => {
+        //       var index =  Path.Combine(Directory.GetCurrentDirectory(),
+        //        "wwwroot", "index.html");
+
+        //        await context.Response.WriteAsync("Not API call");
+        //    }
+        //    );
+
+       
+        //});
 
 
 

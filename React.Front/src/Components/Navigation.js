@@ -32,7 +32,7 @@ export default function Navigation(props) {
                         <VideoButton className="sidebarButton" />
                         <div>Video App</div>
                     </Link>
-                    <Link className="navLink" to="/github">
+                    <Link className="navLink" to="https://github.com/HFaeiro/">
 
                         <GithubButton className="sidebarButton" />
                         <div>Github</div>
@@ -42,7 +42,7 @@ export default function Navigation(props) {
                         <YoutubeButton className="sidebarButton" />
                         <div>Youtube</div>
                     </Link>
-                    <Link className="navLink" to="/downloads">
+                    <Link className="navLink" to="https://aeirosoft.itch.io/aim-trainer">
 
                         <DownloadsButton className="sidebarButton" />
                         <div>Downloads</div>

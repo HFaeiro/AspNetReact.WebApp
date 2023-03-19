@@ -9,10 +9,3 @@
     align-items: center;
 
 }
-.buttons {
-    flex-direction: column;
-    position: relative;
-    display: flex;
-    flex-wrap: wrap;
-    align-content: space-around;
-}

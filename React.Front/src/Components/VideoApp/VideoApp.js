@@ -7,7 +7,7 @@ import { Routes, Route } from 'react-router';
 import  Logout  from './Logout';
 import {AddUsersModal} from './AddUsersModal'
 import { MyVideos } from './MyVideos'
-import { Videos, VideoRoute } from './video'
+import { Videos, VideoRoute } from './Video'
 import './VideoApp.css'
 export class VideoApp extends Component {
     constructor(props) {
@@ -147,7 +147,7 @@ export class VideoApp extends Component {
                         <Route path="/videos" element={<VideoRoute
                             token={profile.token}
                         />} />
-                        <Route path="/play/:id" element={<VideoRoute
+                    <Route path="/play/:id" element={<VideoRoute
                             token={profile.token}
                         />} />
 

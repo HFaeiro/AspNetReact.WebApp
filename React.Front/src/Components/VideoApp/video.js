@@ -2,8 +2,11 @@ import React, { Component } from 'react';
 import { Table } from 'react-bootstrap'
 import VideoTable from './Functions/VideoTable'
 import { Navigate, useParams } from 'react-router-dom';
-import { withRouter } from '../../Utils/withRouter'
- export class Videos extends Component {
+import { withRouter } from '../../Utils/withRouter';
+import { Helmet } from "react-helmet";
+import './Video.css';
+
+export class Videos extends Component {
     constructor(props) {
         super(props);
         this.onPlay = this.onPlay.bind(this);
@@ -156,23 +159,27 @@ import { withRouter } from '../../Utils/withRouter'
                 >{this.props.children }
                 </VideoTable>
 
-            </> : <>{this.state.fetchedVideo.video && (this.state.showPlayer || this.props.router && this.props.router.params.id) ? <div><p></p></div> : <>No Videos! Please upload one.</>}
+            </> : <>{this.state.fetchedVideo.video && (this.state.showPlayer || this.props.router && this.props.router.params.id)
+                    ?
+                    <div>
+                        
+                        <p><video className="VideoPlayer" controls muted
+                        src={this.state.fetchedVideo.video} >
+                    </video></p></div>
+                    : this.props.userId ? <>No Videos! Please upload one.</>
+                        : this.state.userId ? <>This Users Videos are Private!</>
+                            : <>This Video Does Not Exist! Please check your Link and Try Again!</>}
             </>}
             </div>
 
-        let video = this.state.fetchedVideo.video && (this.state.showPlayer || this.props.router && this.props.router.params.id) ?
-            <><video className="VideoPlayer" controls muted
-                src={this.state.fetchedVideo.video} >
-            </video> </> : <></>
+
 
 
 
         return (
             <div>
-
-                    {contents}
-                    {video}
-
+                 {contents}
+                
             </div>
 
         );
