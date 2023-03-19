@@ -1,11 +1,10 @@
-import React, { Component, useEffect } from 'react';
+import React, { Component } from 'react';
 import { AddUsersModal } from './AddUsersModal';
 import { EditUsersModal } from './EditUsersModal';
 import { DeleteUsersModal } from './DeleteUsersModal';
-import { Navigate, Link, useNavigate } from 'react-router-dom';
-import { Routes, Route } from 'react-router';
-import { VideoRoute } from './video'
 import { withRouter } from '../../Utils/withRouter'
+import './Users.css'
+import { ReactComponent as ThumbnailPlaceHolder } from '../../images/Friends.svg'
 export class Users extends Component {
     constructor(props) {
         super(props);
@@ -74,23 +73,17 @@ export class Users extends Component {
 
             <>
 
-                <table className='table table-striped'
-                    aria-labelledby="tabelLabel">
-                    <thead>
-                        <tr>
-                            <th>UserId</th>
-                            <th>Username</th>
-                            <th>Privileges</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+
+                <section className="UserSection">
 
                         {profile.map(p =>
-                            <tr key={p.userId}>
-                                <td>{p.userId}</td>
-                                <td>{p.username}</td>
-                                <td>{p.privileges}</td>
-                                <td>
+                            <div className="userObject" key={p.userId}>
+                                <div className="userName">{p.username}</div>
+                                <a href={'/videoapp/user/' + p.userId}><ThumbnailPlaceHolder className="thumbnail" /></a>
+                                <div className="userId">User Id: {p.userId}</div>
+                                
+                                <div className="userPrivs">User Privileges: {p.privileges}</div>
+                                <div className="buttons">
                                     {/* if admin == true show edit 
                                       and delete users modal buttons */ }
                                     {isAdmin ? <> <EditUsersModal
@@ -119,10 +112,9 @@ export class Users extends Component {
                                             Videos
                                         </button>
                                     </> : <></>}
-                                </td>
-                            </tr>)}
-                    </tbody>
-                </table>
+                                </div>
+                            </div>)}
+                    </section>
 
                 <AddUsersModal
                     token={klass.props.token}

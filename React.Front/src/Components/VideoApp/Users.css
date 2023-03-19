@@ -1,0 +1,50 @@
+.thumbnail {
+    width: 100%;
+    height: 12vh;
+    margin: auto;
+    padding: 0.6vh 0.4vh 0.6vh;
+}
+
+.UserSection {
+    display: grid;
+    grid-template-columns: repeat( auto-fit, minmax(90px, 1fr) );
+    column-gap: 1vw;
+    row-gap: 1vh;
+    padding: 0.6vh 0.4vh 0.6vh;
+    font-weight: bold;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+}
+
+.userObject {
+    border-radius: 5px;
+    border: 2px solid #212529;
+}
+
+.userName {
+    display: flex;
+    font-weight: bold;
+    justify-content: center;
+}
+
+.userId {
+    display: flex;
+    font-weight: bold;
+    justify-content: center;
+}
+.userPrivs {
+    display: flex;
+    font-weight: bold;
+    justify-content: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.buttons {
+    flex-direction: column;
+    /* position: relative; */
+    display: flex;
+    flex-wrap: wrap;
+    /* align-content: space-around;*/
+}

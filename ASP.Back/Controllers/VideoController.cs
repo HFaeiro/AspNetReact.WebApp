@@ -13,15 +13,15 @@ namespace ASP.Back.Controllers
     [ApiController]
     public class VideoController : ControllerBase
     {
-        ///<Summary>
-        /// Gets the answer
-        ///</Summary>
+
         private readonly IWebHostEnvironment hostEnvironment;
         private readonly TeamManiacsDbContext _context;
 
 
+
         ///<Summary>
-        /// Gets the answer
+        /// Constructor For Video Controller
+        /// Host Env , DB Context
         ///</Summary>
         public VideoController(IWebHostEnvironment hostEnvironment, TeamManiacsDbContext context)
         {
@@ -29,8 +29,10 @@ namespace ASP.Back.Controllers
             this._context = context;
         }
 
+
         ///<Summary>
-        /// Gets the answer
+        /// Gets the list of users videos
+        /// [INT]Id = Profile User ID
         ///</Summary>
         [HttpGet("{id}")]
         [Authorize]
@@ -60,6 +62,8 @@ namespace ASP.Back.Controllers
         ///<Summary>
         /// Returns the Requested Video
         ///</Summary>
+        ///[INT]Id = Video Id
+        ///if user sends token we can validate private video ownership
         /// <response code="200">Returns the Requested Video</response>
         /// <response code="400">If the item is null</response>
         [HttpGet("play/{id}")]
@@ -91,6 +95,7 @@ namespace ASP.Back.Controllers
                             {
 
                                 Response.StatusCode = 200;
+                                Response.ContentType = videoIn.ContentType;
                                 byte[] buffer = new byte[1024 * 10];
                                 int bytesRead = 0;
                                 while ((bytesRead = video.Read(buffer, 0, buffer.Length - 1)) > 0)
@@ -101,6 +106,7 @@ namespace ASP.Back.Controllers
                                 }
 
                                 await Response.Body.FlushAsync();
+                                video.Close();
                                 return;
                             }
                             else
@@ -109,6 +115,7 @@ namespace ASP.Back.Controllers
                                 Response.StatusCode = 400;
                                 str = Encoding.UTF8.GetBytes($"Video.GET: Video is Null ");
                                 await Response.Body.WriteAsync(str, 0 ,str.Length);
+
                                 return;
                             }
                         }
@@ -129,7 +136,8 @@ namespace ASP.Back.Controllers
             }
         }
         ///<Summary>
-        /// Returns the Uploaded Video Id
+        ///upload a video as json form data. 
+        /// Returns the Uploaded Video [INT]Id
         /// <response code="200">Returns the Uploaded Video Id</response>
         /// <response code="400">If the item is null</response>
         ///</Summary>
@@ -187,6 +195,15 @@ namespace ASP.Back.Controllers
         }
         ///<Summary>
         /// Edits Video Information
+        /// send values for every field. 
+        /// [Int]
+        /// Id
+        /// STR[MaxLength(255)]
+        /// Title
+        /// STR[MaxLength(255)]
+        /// Description
+        /// STR[MaxLength(255)]
+        /// IsPrivate
         ///</Summary>
         // <response code="200">Returns String</response>
         [HttpPut]
@@ -231,14 +248,15 @@ namespace ASP.Back.Controllers
             return BadRequest($"Video.PUT");
         }
 
-        private Video? GetVideoById(int id)
+        protected Video? GetVideoById(int id)
         {
 
             return _context.Videos.Find(id);
 
         }
         ///<Summary>
-        /// Deletes the Video by Id
+        /// Deletes the Video by [INT]Id
+        /// returns void
         ///</Summary>
         [HttpDelete("{id}")]
         [Authorize]
