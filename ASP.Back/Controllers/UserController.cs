@@ -17,7 +17,7 @@ namespace ASP.Back.Controllers
         {
              _context = context;
         }
-
+   
         // GET: api/Users
         [HttpGet]
         [Authorize]
@@ -72,7 +72,13 @@ namespace ASP.Back.Controllers
                 return NotFound();
             }
         }
-
+        [HttpGet("ping/")]
+        [Authorize]
+        public async Task<IActionResult> GetPing()
+        {
+            string expirationDate = ControllerHelpers.GetExpirationFromToken(User.Identity).ToString();
+            return Ok(expirationDate);
+        }
         // PUT: api/Users/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]

@@ -67,7 +67,7 @@ namespace ASP.Back.Controllers
                 _config["Jwt:Issuer"],
                 _config["Jwt:Audience"],
                 claims,
-                expires: DateTimeOffset.UtcNow.AddDays(15).DateTime,
+                expires: DateTimeOffset.UtcNow.AddSeconds(30).DateTime,
                 signingCredentials: credentials);
             string sToken = new JwtSecurityTokenHandler().WriteToken(token);
             return sToken;

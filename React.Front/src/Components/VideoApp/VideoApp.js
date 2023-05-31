@@ -3,7 +3,7 @@ import { Home } from './Home';
 import { UserRouter } from './Users';
 import { Login } from './Login';
 import  Navigation  from './Navigation';
-import { Routes, Route } from 'react-router';
+import { Routes, Route , Navigate} from 'react-router';
 import  Logout  from './Logout';
 import {AddUsersModal} from './AddUsersModal'
 import { MyVideos } from './MyVideos'
@@ -15,7 +15,15 @@ export class VideoApp extends Component {
         this.login = this.login.bind(this);
         this.logout = this.logout.bind(this);
         this.updateProfile = this.updateProfile.bind(this);
-        this.state = { loggedIn: 'false', logoutModal: true, myHistory: null };
+        this.state = {
+            loggedIn: 'false',
+            profile: {
+                userId: '',
+                token: '',
+                username: '',
+                privileges: '',
+                vidPollCount: 0
+            }, logoutModal: true, myHistory: null , expiration: null};
         
     }
     setStateAsync = async (state) => {
@@ -47,6 +55,35 @@ export class VideoApp extends Component {
         
 
     }
+    componentDidMount() {
+        var profile = this.getProfile();
+        var loggedIn = profile.token && profile.userId && profile.username && profile.privileges ? 'true' : 'false';
+        this.setState({ loggedIn: loggedIn });
+
+        if (loggedIn == 'true' && profile.token != '') {
+            const promise = this.pingServer(profile);
+            promise.then(value => {
+                if (value == null) {
+
+                    loggedIn = false;
+                    this.logout();
+                    
+                }
+                else {
+                    loggedIn = true;
+                }
+           } )
+        
+    }
+        //else if (this.state.fetchedVideo.video == null) {
+        //    let vidId = parseInt(this.props.router.params.id);
+        //    if (vidId) {
+        //        var res = this.getVideo(vidId);
+        //    }
+        //}
+
+    }
+
     //lets logout now....
     logout = () => {
         const l = JSON.parse(localStorage.profile);
@@ -87,11 +124,54 @@ export class VideoApp extends Component {
         return profile;
     }
 
+    async pingServer(profile) {
+        return await new Promise(resolve => {
+            fetch('/' + process.env.REACT_APP_API + 'users/ping' , {
+                headers: {
+                    'Authorization': 'Bearer ' + profile.token,
+                    'Accept': 'application/json',
+                    
+                }
+
+            })
+                .then(res => {
+                    if (res.status == 200) {
+                        return(res.json());
+                    }
+                    else if (res.status == 504)
+                    {
+                         resolve(null);
+                    }
+                    else
+                    {
+                        resolve(null);
+                    }
+
+                }).then(data =>
+                {
+                    if (data)
+                        resolve(data);
+                    else {
+                        resolve(null);
+                    }
+                },
+                    (error) => {
+                        resolve(null);
+                    }).
+                catch((error) => {
+                    resolve(null);
+                })
+        } )
+       
+
+    }
+    
+
     render() {
         //get our profile data
         var profile = this.getProfile();
         //lets determine if we're logged in. 
-        var loggedIn = profile.token && profile.userId && profile.username && profile.privileges ? 'true' : 'false'; 
+        var loggedIn = this.state.loggedIn;     
         //setup routes and send props
         return (
             <section className="VideoApp">

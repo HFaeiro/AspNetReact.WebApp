@@ -25,17 +25,20 @@ namespace ASP.Back.Controllers
 
             return null;
         }
-        static public DateTime? GetExpirationFromToken(IIdentity? identity)
-    {
-        var claimsPrinciple = identity as ClaimsPrincipal;
-        Claim? exp = claimsPrinciple?.FindFirst("exp");
-        if (exp != null)
+        static public DateTime GetExpirationFromToken(IIdentity? identity)
         {
-            var expiration = new DateTime(long.Parse(exp.Value));
-            return expiration;
+            var claimsIdentity = identity as ClaimsIdentity;
+            
+            
+            //or as DateTime:
+            Claim? exp = claimsIdentity?.FindFirst("exp");
+            if (exp != null)
+            {
+                var expiration = DateTimeOffset.FromUnixTimeSeconds(long.Parse(exp.Value));
+                return expiration.UtcDateTime;
+            }
+            else return DateTime.UtcNow;
         }
-        else return null;
-    }
 
         static public async Task<Users?> GetUserById(int id, TeamManiacsDbContext context)
         {
