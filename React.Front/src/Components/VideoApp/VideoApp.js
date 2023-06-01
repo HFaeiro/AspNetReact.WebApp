@@ -140,9 +140,9 @@ export class VideoApp extends Component {
                     }
                     else if (res.status == 504)
                     {
-                         resolve(null);
+                        resolve(this.pingServer(profile));
                     }
-                    else
+                    else if(res.status == 401)
                     {
                         resolve(null);
                     }
