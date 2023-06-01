@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
 using System.Text;
+using ASP.Back.Libraries;
 
 
 namespace ASP.Back.Controllers
@@ -339,15 +340,27 @@ namespace ASP.Back.Controllers
             return fileStream;
 
         }
-        private void SaveVideoToMediaFolder(VideoUpload videoIn, string filePath = "")
+        private async void SaveVideoToMediaFolder(VideoUpload videoIn, string filePath = "")
+        {
+            try
         {
             if (filePath == "")
             {
                 filePath = ControllerHelpers.GetUniqueFileName(videoIn.File.FileName);
             }
-            FileStream fileStream = new FileStream(GetUploadsFolder(filePath), FileMode.Create);
-            videoIn.File.CopyTo(fileStream);
-            fileStream.Close();
+                Stream videoStream = videoIn.File.OpenReadStream();
+                
+                FFMPEG ffmpeg = new FFMPEG(videoStream, GetUploadsFolder(filePath), new[] { "1920:1080" , "1280:720", "720:480"});
+
+                
+                videoStream?.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+
+
         }
         private string GetUploadsFolder(string fileName)
         {
