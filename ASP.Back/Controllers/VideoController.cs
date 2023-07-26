@@ -5,7 +5,8 @@ using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
 using System.Text;
 using ASP.Back.Libraries;
-
+using static ASP.Back.Libraries.FFMPEG;
+using TeamManiacs.Core.Convertors;
 
 namespace ASP.Back.Controllers
 {
@@ -48,7 +49,6 @@ namespace ASP.Back.Controllers
                     var videos = await GetVideosByUser(user);
                     if (videos != null)
                     {
-
                         return Ok(videos);
                     }
 
@@ -90,16 +90,16 @@ namespace ASP.Back.Controllers
                                
                         }
 
-                        using (FileStream? video = GetVideoFromMediaFolder(videoIn))
+                        using (Stream? master = GetMasterFile(videoIn))
                         {
-                            if (video != null)
+                            if (master != null && master.Length > 0)
                             {
 
                                 Response.StatusCode = 200;
                                 Response.ContentType = videoIn.ContentType;
                                 byte[] buffer = new byte[1024 * 10];
                                 int bytesRead = 0;
-                                while ((bytesRead = video.Read(buffer, 0, buffer.Length - 1)) > 0)
+                                while ((bytesRead = master.Read(buffer, 0, buffer.Length - 1)) > 0)
                                 {
                                     //string base64Video = Convert.ToBase64String(buffer, 0, bytesRead, Base64FormattingOptions.None);
                                     await Response.Body.WriteAsync(buffer, 0, bytesRead);
@@ -107,7 +107,7 @@ namespace ASP.Back.Controllers
                                 }
 
                                 await Response.Body.FlushAsync();
-                                video.Close();
+                                master.Close();
                                 return;
                             }
                             else
@@ -149,7 +149,7 @@ namespace ASP.Back.Controllers
         {
             try
             {
-                if (videoIn.File.Length / 1024 / 1024 <= 100)
+                if (videoIn.File.Length / 1024 / 1024 <= 4000)
                 {
 
                     var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
@@ -319,9 +319,13 @@ namespace ASP.Back.Controllers
                 Video video = new Video(videoIn, (int)userId, uniqueFileName);
                 try
                 {
-                    _context.Videos.Add(video);
-                    await _context.SaveChangesAsync();
-                    SaveVideoToMediaFolder(videoIn, uniqueFileName);
+                    
+                    
+                    if(SaveVideoToMediaFolder(videoIn, uniqueFileName))
+                    {
+                        _context.Videos.Add(video);
+                        await _context.SaveChangesAsync();
+                    }
 
                 }
                 catch (Exception ex)
@@ -332,32 +336,58 @@ namespace ASP.Back.Controllers
             }
             return null;
         }
-        private FileStream? GetVideoFromMediaFolder(Video videoIn)
+        private Stream? GetMasterFile(Video videoIn)
         {
-
-
-            FileStream? fileStream = new FileStream(GetUploadsFolder(videoIn.FileName), FileMode.Open, FileAccess.Read);
-            return fileStream;
-
+            var fileName = Path.GetFileNameWithoutExtension(videoIn.FileName);
+            var fullFilePath = GetUploadsFolder(fileName) + '\\' + fileName + "_master.m3u8";
+            FileStream? fileStream = new FileStream(fullFilePath, FileMode.Open, FileAccess.Read);
+            if (fileStream != null)
+            {
+                return fileStream;
+            }
+            else
+            {
+                return null;
+            }
         }
-        private async void SaveVideoToMediaFolder(VideoUpload videoIn, string filePath = "")
+        //private Stream? GetVideoFromMediaFolder(Video videoIn)
+        //{
+
+        //    var fileName = Path.GetFileNameWithoutExtension(videoIn.FileName);
+        //    var fullFilePath = GetUploadsFolder(fileName) + '\\' + "stream_0\\data000000.ts";
+        //    FFMPEG video = new FFMPEG(fullFilePath, new[] { "1920:1080"/*, "1280:720", "720:480"*/ });
+        //    if (video.success)
+        //    {
+        //        //FileStream? fileStream = new FileStream(file, FileMode.Open, FileAccess.Read);
+        //        //return fileStream;
+        //        // return video.Video.stream;
+        //        return video.GetWebmStream(new[] { "1920:1080" });
+        //    }
+        //    else
+        //        return null;
+        //}
+        
+        private bool SaveVideoToMediaFolder(VideoUpload videoIn, string filePath = "")
         {
             try
-        {
-            if (filePath == "")
             {
-                filePath = ControllerHelpers.GetUniqueFileName(videoIn.File.FileName);
-            }
+                if (filePath == "")
+                {
+                    filePath = ControllerHelpers.GetUniqueFileName(videoIn.File.FileName);
+                }
                 Stream videoStream = videoIn.File.OpenReadStream();
                 
-                FFMPEG ffmpeg = new FFMPEG(videoStream, GetUploadsFolder(filePath), new[] { "1920:1080" , "1280:720", "720:480"});
-
+                FFMPEG ffmpeg = new FFMPEG(videoStream, GetUploadsFolder(filePath), new List<string> { "1920x1080" , "1280x720", "720x480"});
+                
                 
                 videoStream?.Dispose();
+
+                return ffmpeg.success;
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
+                return false;
             }
 
 
@@ -435,10 +465,11 @@ namespace ASP.Back.Controllers
         {
             try
             {
-                var fullFilePath = GetUploadsFolder(video.FileName);
+                var fileName = Path.GetFileNameWithoutExtension(video.FileName);
+                var fullFilePath = GetUploadsFolder(fileName) + '\\' + fileName + "_master.m3u8";
                 if (System.IO.File.Exists(fullFilePath))
                 {
-                    return File(video.FileName, video.ContentType, video.FileName);
+                    return File(fullFilePath, video.ContentType, fullFilePath);
                 }
                 //return BadRequest($"Video.GetVideoByFileName:  Failed to Open File");
 

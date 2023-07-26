@@ -25,7 +25,7 @@ export class UploadVideo extends Component {
             window.URL = window.URL || window.webkitURL;
             video.onloadedmetadata = function () {
 
-                if (video.duration > 90) {
+                if (video.duration > 900) {
 
                     reject("Invalid Video! Max Video Length is 1:30s");
                     window.URL.revokeObjectURL(video.src);
@@ -62,16 +62,16 @@ export class UploadVideo extends Component {
             try {
                 let video = await this.loadVideo(file);
 
-                if (video && fileInMB <= 100) {
+                //if (video && fileInMB <= 100) {
                     this.setState({ file: file });
                     this.setState({ video: video });
-                }
-                else {
-                    alert("File Too Powerful, Please upload a file smaller than 100MB");
-                    document.getElementById("formFile").value = "";
-                    window.URL.revokeObjectURL(video.src);
+                //}
+                //else {
+                    //alert("File Too Powerful, Please upload a file smaller than 100MB");
+                    //document.getElementById("formFile").value = "";
+                    //window.URL.revokeObjectURL(video.src);
 
-                }
+                //}
             }
             catch (e) {
                 alert(e);
@@ -109,8 +109,10 @@ export class UploadVideo extends Component {
                     if (response.status == 200) {
                         return response.json()
                     }
-
-                   
+                    else if 
+                        (response.status == 400) {
+                        throw("Failed to Upload, Please Try Again!")
+                    }
                 })
                 .then(data => {// if the response is a JSON object
                     if (data) {

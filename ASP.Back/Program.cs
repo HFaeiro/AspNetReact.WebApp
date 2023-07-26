@@ -14,6 +14,7 @@ using System.Reflection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.ResponseCompression;
 using System.Net.WebSockets;
+using TeamManiacs.Core.Models;
 
 internal class Program
 {
@@ -22,6 +23,7 @@ internal class Program
         var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
         var builder = WebApplication.CreateBuilder(args);
+            
 
         builder.Services.AddCors(options =>
         {
@@ -50,7 +52,11 @@ internal class Program
                                         .AddJsonFile(appsettings, optional: false)
                                         .Build();
             //options.UseSqlServer(config.GetConnectionString("ASPBackContext"));
-            var connectString = config.GetConnectionString("CleverCloudSQL");
+#if !DEBUG
+                var connectString = config.GetConnectionString("CleverCloudSQL");
+#else
+            var connectString = config.GetConnectionString("DEVSQL1");
+#endif
             options.UseMySql(connectString, ServerVersion.AutoDetect(connectString));
 
         });
@@ -122,7 +128,7 @@ internal class Program
                                     Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
                             };
                         });
-
+        builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
         var app = builder.Build();
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
