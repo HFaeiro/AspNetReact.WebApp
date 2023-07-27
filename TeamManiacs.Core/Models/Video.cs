@@ -31,6 +31,7 @@ namespace TeamManiacs.Core.Models
 
         [Key]
         public int ID { get; set; }
+        public string GUID { get; set; }
         public int ContentSize { get; set; }
         public bool isPrivate { get; set; }
         public string FileName { get; set; }
@@ -39,6 +40,7 @@ namespace TeamManiacs.Core.Models
         public string ContentType { get; set; }
         public string ContentDisposition { get; set; }
         public int Uploader { get; set; }
+        public int VideoLength { get; set; }
         public ICollection<VideoRating>? Ratings { get; set; }
 
         public string ToJson()

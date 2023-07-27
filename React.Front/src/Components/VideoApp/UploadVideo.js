@@ -92,7 +92,7 @@ export class UploadVideo extends Component {
     async uploadFile() {
         var success = true;
         const formData = new FormData();
-        formData.append("Username", this.props.profile.username);
+        formData.append("VideoLength", this.state.video.duration);
         formData.append("File", this.state.file);
         try {
             await fetch('/' +process.env.REACT_APP_API + 'video/', {

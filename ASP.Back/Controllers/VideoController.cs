@@ -60,6 +60,7 @@ namespace ASP.Back.Controllers
             }
             return BadRequest($"Video.GET: No Videos");
         }
+
         ///<Summary>
         /// Returns the Requested Video
         ///</Summary>
@@ -67,7 +68,7 @@ namespace ASP.Back.Controllers
         ///if user sends token we can validate private video ownership
         /// <response code="200">Returns the Requested Video</response>
         /// <response code="400">If the item is null</response>
-        [HttpGet("play/{id}")]
+        [HttpGet("master/{id}")]
         public async Task GetPlay(int id)
         {
             byte[]? str = null;
@@ -78,51 +79,51 @@ namespace ASP.Back.Controllers
                 {
                     var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
 
-                        if(videoIn.isPrivate)
+                    if (videoIn.isPrivate)
+                    {
+                        if (userId != videoIn.Uploader)
                         {
-                            if (userId != videoIn.Uploader)
-                            {
-                                Response.StatusCode = 400;
-                                 str = Encoding.UTF8.GetBytes($"Video.GET: Video is Private");
-                                await Response.Body.WriteAsync(str, 0, str.Length);
-                                return;
-                            }
-                               
+                            Response.StatusCode = 400;
+                            str = Encoding.UTF8.GetBytes($"Video.GET: Video is Private");
+                            await Response.Body.WriteAsync(str, 0, str.Length);
+                            return;
                         }
 
-                        using (Stream? master = GetMasterFile(videoIn))
+                    }
+
+                    using (Stream? master = GetMasterFile(videoIn))
+                    {
+                        if (master != null && master.Length > 0)
                         {
-                            if (master != null && master.Length > 0)
+
+                            Response.StatusCode = 200;
+                            Response.ContentType = videoIn.ContentType;
+                            byte[] buffer = new byte[1024 * 10];
+                            int bytesRead = 0;
+                            while ((bytesRead = master.Read(buffer, 0, buffer.Length - 1)) > 0)
                             {
+                                //string base64Video = Convert.ToBase64String(buffer, 0, bytesRead, Base64FormattingOptions.None);
+                                await Response.Body.WriteAsync(buffer, 0, bytesRead);
 
-                                Response.StatusCode = 200;
-                                Response.ContentType = videoIn.ContentType;
-                                byte[] buffer = new byte[1024 * 10];
-                                int bytesRead = 0;
-                                while ((bytesRead = master.Read(buffer, 0, buffer.Length - 1)) > 0)
-                                {
-                                    //string base64Video = Convert.ToBase64String(buffer, 0, bytesRead, Base64FormattingOptions.None);
-                                    await Response.Body.WriteAsync(buffer, 0, bytesRead);
-
-                                }
-
-                                await Response.Body.FlushAsync();
-                                master.Close();
-                                return;
                             }
-                            else
-                            {
 
-                                Response.StatusCode = 400;
-                                str = Encoding.UTF8.GetBytes($"Video.GET: Video is Null ");
-                                await Response.Body.WriteAsync(str, 0 ,str.Length);
-
-                                return;
-                            }
+                            await Response.Body.FlushAsync();
+                            master.Close();
+                            return;
                         }
+                        else
+                        {
+
+                            Response.StatusCode = 400;
+                            str = Encoding.UTF8.GetBytes($"Video.GET: Video is Null ");
+                            await Response.Body.WriteAsync(str, 0, str.Length);
+
+                            return;
+                        }
+                    }
                 }
                 Response.StatusCode = 400;
-                 str = Encoding.UTF8.GetBytes($"Video.GET: Video Does not Exist on DB ");
+                str = Encoding.UTF8.GetBytes($"Video.GET: Video Does not Exist on DB ");
                 await Response.Body.WriteAsync(str, 0, str.Length);
                 return;
             }
@@ -319,10 +320,15 @@ namespace ASP.Back.Controllers
                 Video video = new Video(videoIn, (int)userId, uniqueFileName);
                 try
                 {
-                    
-                    
-                    if(SaveVideoToMediaFolder(videoIn, uniqueFileName))
+
+                    FFVideo? videoOut = new FFVideo();
+                    if (SaveVideoToMediaFolder(videoIn,out videoOut, uniqueFileName))
                     {
+                        if(videoOut.HasValue) 
+                        { 
+                            video.GUID = videoOut.Value.GUID;
+                        }
+                        video.VideoLength = (int)videoIn.VideoLength;
                         _context.Videos.Add(video);
                         await _context.SaveChangesAsync();
                     }
@@ -366,8 +372,8 @@ namespace ASP.Back.Controllers
         //    else
         //        return null;
         //}
-        
-        private bool SaveVideoToMediaFolder(VideoUpload videoIn, string filePath = "")
+
+        private bool SaveVideoToMediaFolder(VideoUpload videoIn,  out FFVideo? videoOut, string filePath = "")
         {
             try
             {
@@ -376,17 +382,21 @@ namespace ASP.Back.Controllers
                     filePath = ControllerHelpers.GetUniqueFileName(videoIn.File.FileName);
                 }
                 Stream videoStream = videoIn.File.OpenReadStream();
-                
-                FFMPEG ffmpeg = new FFMPEG(videoStream, GetUploadsFolder(filePath), new List<string> { "1920x1080" , "1280x720", "720x480"});
-                
-                
-                videoStream?.Dispose();
 
-                return ffmpeg.success;
+                FFMPEG ffmpeg = new FFMPEG(videoStream, GetUploadsFolder(filePath), new List<string> { "1920x1080", "1280x720", "720x480" });
+                videoStream?.Dispose();
+                videoOut = ffmpeg.Video;
+                if (!ffmpeg.success)
+                {
+                    return false;
+                }
+               return ffmpeg.AppendLineMaster("#GUID=" + ffmpeg.Video.GUID, true);
+
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.ToString());
+                videoOut = null;
                 return false;
             }
 

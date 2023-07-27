@@ -25,7 +25,19 @@ namespace ASP.Back.Libraries
         }
         public struct FFVideo
         {
+            public FFVideo()
+            {
+                fileName = string.Empty;
+                videoName = string.Empty;
+                folder = string.Empty;
+                extention = string.Empty;
+                GUID = string.Empty;
+                stream = null;
+                master = new List<string>();
+                resolutions = new List<string>();
+                _codecs = new List<string>();
 
+            }
             public string fileName { get; set; }
             public string videoName { get; set; }
             public string folder { get; set; }
@@ -48,10 +60,19 @@ namespace ASP.Back.Libraries
 
                 }
             }
-            
+            public string GUID { get; set; }
             public Stream? stream { get; set; } 
+            public List<string> master {  get; set; }
+        }
+        private string masterPath
+        {
+            get
+            {
+                return currentDirectory + this.Video.fileName + "_master.m3u8";
+            }
         }
         private FFVideo _video { get; set; }
+        private string currentDirectory { get; set; }
         public FFVideo Video 
         {
             get 
@@ -60,6 +81,7 @@ namespace ASP.Back.Libraries
             }
         }
         public bool success { get; set; }
+
         private FFPipe? CreatePipe(PipeDirection direction)
         {
             try
@@ -94,7 +116,100 @@ namespace ASP.Back.Libraries
                 }
             };
         }
+        private bool LoadMaster()
+        {
+            try
+            {
+                if (!File.Exists(masterPath))
+                {
+                    return false;
+                }
 
+                StreamReader masterFile = File.OpenText(masterPath);
+                string line = string.Empty;
+                if (masterFile.Peek() <= 0)
+                {
+                    masterFile.Dispose();
+                    return false;
+                }
+                
+                while ((line = masterFile.ReadLine()) != null)
+                {
+                    this.Video.master.Add(line);
+                }
+
+                masterFile.Dispose();
+                return true;
+            }
+            catch(Exception ex)
+            { 
+                Console.WriteLine(ex.Message);
+               
+                return false;
+            }
+        }
+        private bool SaveMaster()
+        {
+            try
+            {
+                StreamWriter masterFile = null;
+                if (!File.Exists(masterPath))
+                {
+                    masterFile = File.CreateText(masterPath);
+                }
+                else
+                {
+                    masterFile = new StreamWriter(masterPath);
+                }
+                if (masterFile == null)
+                {
+                    return false;
+                }
+                
+                foreach (string line in this.Video.master)
+                {
+                    masterFile.Write(line + '\n');
+                }
+                masterFile.Flush();
+                masterFile.Dispose();
+                masterFile.Close();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return false;
+            }
+        }
+        //adds a line to the front or end of the master file
+        public bool AppendLineMaster(string newLine,bool atFront = false)
+        {
+
+            if(this.Video.master == null || this.Video.master.Count == 0)
+            {
+                if (LoadMaster())
+                {
+                    return AppendLineMaster(newLine, atFront);
+                }
+                else
+                {
+                    return false;
+                }
+                    
+            }
+            if(atFront)
+            {
+                this.Video.master.Insert(0, newLine);
+                
+            }
+            else
+            {
+                this.Video.master.Add(newLine);
+                
+            }
+            return SaveMaster();
+
+        }
         public Stream? GetWebmStream(string[] resolutions)
         {
             try
@@ -102,7 +217,7 @@ namespace ASP.Back.Libraries
                 List<string> output = new List<string>();
                 List<string> error = new List<string>();
 
-                string currentDirectory = _video.folder;
+                currentDirectory = _video.folder;
 
                 Task[] tasks = new Task[resolutions.Length];
                 int taskIndex = 0;
@@ -296,7 +411,7 @@ namespace ASP.Back.Libraries
 
                 FFVideo video = fillFileStrings(fileOut);
 
-                string currentDirectory = video.folder + video.fileName;
+                currentDirectory = video.folder + video.fileName;
                 if (!Directory.Exists(currentDirectory))
                 {
                     Directory.CreateDirectory(currentDirectory);
@@ -319,7 +434,7 @@ namespace ASP.Back.Libraries
                 FFPipe? ffPipe = CreatePipe(PipeDirection.Out);
                 if (ffPipe?.npss == null)
                     return;
-
+                video.GUID = ffPipe.Value.pipeName;
                 string pipeNamesFFmpeg = $@"\\.\pipe\{ffPipe.Value.pipeName}";
                 var pipeBuilder = new List<string>();
                 var argumentBuilder = new List<string>();
@@ -331,6 +446,7 @@ namespace ASP.Back.Libraries
                 pipeBuilder.Add("-loglevel fatal -y -i");
                 pipeBuilder.Add(pipeNamesFFmpeg);
                 pipeBuilder.Add("-preset veryfast -sc_threshold 0");
+                pipeBuilder.Add("-metadata TITLE=\"" + ffPipe.Value.pipeName + "\"");
                 int index = 0;
                 foreach (string resolution in resolutions)
                 {
@@ -364,7 +480,7 @@ namespace ASP.Back.Libraries
                 argumentBuilder.Add('"'.ToString());
                 
                argumentBuilder.Add("-hls_segment_filename " + currentDirectory + "stream_%v\\data%06d.ts");
-                argumentBuilder.Add("-strftime_mkdir 1 ");
+                //argumentBuilder.Add("-strftime_mkdir 1 ");
                 argumentBuilder.Add('"' + currentDirectory + video.fileName + "_index_%v.m3u8" + '"');
                 
                 List<string> completeArgs = pipeBuilder.Concat(filterBuilder.Concat(resolutionBuilder.Concat(audioMapper.Concat(argumentBuilder)))).ToList();
@@ -436,7 +552,9 @@ namespace ASP.Back.Libraries
                 {
                     Console.WriteLine(err);
                 }
-                    return;
+                _video = video;
+                return;
+                
             }
             catch (Exception ex)
             {
