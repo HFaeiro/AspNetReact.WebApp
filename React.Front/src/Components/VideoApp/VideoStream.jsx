@@ -61,12 +61,16 @@ export class VideoStream extends Component {
             this.setState({
                 master:master
             })
+            return master;
         }
     }
 
     async componentDidMount() {
         if (this.state.fetchedVideo?.video == null) {
-            this.parseMaster(this.props.master)
+            let master = await this.parseMaster(this.props.master)
+            if (master && master.GUID) {
+                await this.getVideo(master.GUID);
+            }
         }
 
     }
@@ -102,7 +106,7 @@ export class VideoStream extends Component {
                                 video: video
                             }
                         }));
-                    resolve(data);
+                    resolve(video);
                 },
                     (error) => {
                         console.log(error);
@@ -119,7 +123,24 @@ export class VideoStream extends Component {
 
 
     render() {
-        return(<></>);
+
+
+        var content = this.state.fetchedVideo && this.state.fetchedVideo.video ? 
+            <>
+                <video className="VideoPlayer" controls muted
+                    src={this.state.fetchedVideo.video} >
+                </video>
+
+            </> :
+            <>
+
+            </>
+
+        return (<>
+            {content }
+
+
+        </>);
     }
 
     

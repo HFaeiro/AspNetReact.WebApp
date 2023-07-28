@@ -7,6 +7,7 @@ using System.Text;
 using ASP.Back.Libraries;
 using static ASP.Back.Libraries.FFMPEG;
 using TeamManiacs.Core.Convertors;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace ASP.Back.Controllers
 {
@@ -18,6 +19,8 @@ namespace ASP.Back.Controllers
 
         private readonly IWebHostEnvironment hostEnvironment;
         private readonly TeamManiacsDbContext _context;
+        private readonly IConfiguration _configuration;
+        private MediaManager mediaManager;
 
 
 
@@ -25,10 +28,12 @@ namespace ASP.Back.Controllers
         /// Constructor For Video Controller
         /// Host Env , DB Context
         ///</Summary>
-        public VideoController(IWebHostEnvironment hostEnvironment, TeamManiacsDbContext context)
+        public VideoController(IWebHostEnvironment hostEnvironment, TeamManiacsDbContext context, IConfiguration configuration)
         {
             this.hostEnvironment = hostEnvironment;
             this._context = context;
+            mediaManager = new MediaManager(hostEnvironment, context, configuration, this);
+            _configuration = configuration;
         }
 
 
@@ -56,6 +61,7 @@ namespace ASP.Back.Controllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 return BadRequest($"Video.GET: " + ex.Message);
             }
             return BadRequest($"Video.GET: No Videos");
@@ -69,7 +75,7 @@ namespace ASP.Back.Controllers
         /// <response code="200">Returns the Requested Video</response>
         /// <response code="400">If the item is null</response>
         [HttpGet("master/{id}")]
-        public async Task GetPlay(int id)
+        public async Task GetMaster(int id)
         {
             byte[]? str = null;
             try
@@ -91,7 +97,7 @@ namespace ASP.Back.Controllers
 
                     }
 
-                    using (Stream? master = GetMasterFile(videoIn))
+                    using (Stream? master = mediaManager.GetMasterFile(videoIn.FileName))
                     {
                         if (master != null && master.Length > 0)
                         {
@@ -152,7 +158,10 @@ namespace ASP.Back.Controllers
             {
                 if (videoIn.File.Length / 1024 / 1024 <= 4000)
                 {
-
+                    if(this.User.Identity == null)
+                    {
+                        return BadRequest();
+                    }
                     var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
                     if (userId != null)
                     {
@@ -162,7 +171,7 @@ namespace ASP.Back.Controllers
                             int? ID = null;
                             if (user.Videos == null || user.Videos.Count <= 0)
                             {
-                                ID = await AddVideoToDB(videoIn);
+                                ID = await mediaManager.AddVideoToDB(videoIn, this.User.Identity);
                                 user.Videos = new List<int>();
                                 if (ID != null)
                                 {
@@ -175,7 +184,7 @@ namespace ASP.Back.Controllers
                             else
                             {
 
-                                ID = await AddVideoToDB(videoIn);
+                                ID = await mediaManager.AddVideoToDB(videoIn, this.User.Identity);
                                 if (ID != null)
                                 {
                                     user.Videos.Add((int)ID);
@@ -191,6 +200,7 @@ namespace ASP.Back.Controllers
             }
             catch (Exception ex)
             {
+                Console.WriteLine(ex);
                 return BadRequest(ex);
             }
 
@@ -272,16 +282,17 @@ namespace ASP.Back.Controllers
 
                     _context.Videos.Remove(video);
                     _context.SaveChanges();
-                    var fullFilePath = GetUploadsFolder(video.FileName);
+                    var fullFilePath = Path.GetFileNameWithoutExtension(Path.Combine(mediaManager.videosPath, video.FileName));
                     if (System.IO.File.Exists(fullFilePath))
                     {
+
                         System.IO.File.Delete(fullFilePath);
                     }
                 }
             }
             catch (Exception ex)
             {
-
+                Console.WriteLine(ex.Message);
             }
         }
 
@@ -290,8 +301,9 @@ namespace ASP.Back.Controllers
             List<Video>? result = null;
             if (user.Videos?.Count > 0)
             {
+                
                 int storedVideoCount = user.Videos.Count;
-                var ID = GetVideosByIDs(user.Videos);
+                var ID = mediaManager.GetVideosByIDs(user.Videos, this.User.Identity);
 #if !DEBUG //we don't want to delete not found on disk videos if we are in dev environment
 
                 if (storedVideoCount > ID.Count)
@@ -310,216 +322,7 @@ namespace ASP.Back.Controllers
             }
             return result;
         }
-        private async Task<int?> AddVideoToDB(VideoUpload videoIn)
-        {
 
-            var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
-            if (userId != null)
-            {
-                var uniqueFileName = ControllerHelpers.GetUniqueFileName(videoIn.File.FileName);
-                Video video = new Video(videoIn, (int)userId, uniqueFileName);
-                try
-                {
-
-                    FFVideo? videoOut = new FFVideo();
-                    if (SaveVideoToMediaFolder(videoIn,out videoOut, uniqueFileName))
-                    {
-                        if(videoOut.HasValue) 
-                        { 
-                            video.GUID = videoOut.Value.GUID;
-                        }
-                        video.VideoLength = (int)videoIn.VideoLength;
-                        _context.Videos.Add(video);
-                        await _context.SaveChangesAsync();
-                    }
-
-                }
-                catch (Exception ex)
-                {
-
-                }
-                return video.ID;
-            }
-            return null;
-        }
-        private Stream? GetMasterFile(Video videoIn)
-        {
-            var fileName = Path.GetFileNameWithoutExtension(videoIn.FileName);
-            var fullFilePath = GetUploadsFolder(fileName) + '\\' + fileName + "_master.m3u8";
-            FileStream? fileStream = new FileStream(fullFilePath, FileMode.Open, FileAccess.Read);
-            if (fileStream != null)
-            {
-                return fileStream;
-            }
-            else
-            {
-                return null;
-            }
-        }
-        //private Stream? GetVideoFromMediaFolder(Video videoIn)
-        //{
-
-        //    var fileName = Path.GetFileNameWithoutExtension(videoIn.FileName);
-        //    var fullFilePath = GetUploadsFolder(fileName) + '\\' + "stream_0\\data000000.ts";
-        //    FFMPEG video = new FFMPEG(fullFilePath, new[] { "1920:1080"/*, "1280:720", "720:480"*/ });
-        //    if (video.success)
-        //    {
-        //        //FileStream? fileStream = new FileStream(file, FileMode.Open, FileAccess.Read);
-        //        //return fileStream;
-        //        // return video.Video.stream;
-        //        return video.GetWebmStream(new[] { "1920:1080" });
-        //    }
-        //    else
-        //        return null;
-        //}
-
-        private bool SaveVideoToMediaFolder(VideoUpload videoIn,  out FFVideo? videoOut, string filePath = "")
-        {
-            try
-            {
-                if (filePath == "")
-                {
-                    filePath = ControllerHelpers.GetUniqueFileName(videoIn.File.FileName);
-                }
-                Stream videoStream = videoIn.File.OpenReadStream();
-
-                FFMPEG ffmpeg = new FFMPEG(videoStream, GetUploadsFolder(filePath), new List<string> { "1920x1080", "1280x720", "720x480" });
-                videoStream?.Dispose();
-                videoOut = ffmpeg.Video;
-                if (!ffmpeg.success)
-                {
-                    return false;
-                }
-               return ffmpeg.AppendLineMaster("#GUID=" + ffmpeg.Video.GUID, true);
-
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.ToString());
-                videoOut = null;
-                return false;
-            }
-
-
-        }
-        private string GetUploadsFolder(string fileName)
-        {
-            var uploads = Path.Combine(hostEnvironment.WebRootPath, "uploads");
-            Directory.CreateDirectory(uploads);
-            return Path.Combine(uploads, fileName);
-        }
-
-        private List<Video>? GetVideosByIDs(List<int> IDs)
-        {
-
-            List<Video>? videos = new List<Video>();
-            List<int> badIds = new List<int>();
-            var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
-            foreach (int ID in IDs)
-            {
-                var video = _context.Videos.FirstOrDefault(x =>
-                                                   x.ID == ID);
-                if (video != null)
-                {
-
-                    if (video.isPrivate && userId != null && userId != video.Uploader)
-                    {
-                        //we can't verify if this is users own private video so we will skip this private video.
-                        continue;
-                    }
-
-                    if (video.FileName != "")
-                    {
-                        var vid = GetFileFromVideo(video);
-                        if (vid != null)
-                            videos.Add(video);
-#if !DEBUG //we don't want to delete not found on disk videos if we are in dev environment
-                        else
-                            badIds.Add(ID);
-#endif
-                    }
-                    else
-                        badIds.Add(ID);
-
-                }
-                else
-                    badIds.Add(ID);
-
-            }
-            foreach (int ID in badIds)
-            {
-                IDs.Remove(ID);
-            }
-
-            return videos;
-        }
-
-
-
-        private List<int>? GetVideoIDsByUsername(string username)
-        {
-            var user = ControllerHelpers.GetUserByUsername(username, _context);
-            if (user != null)
-            {
-                if (user.Videos != null)
-                {
-                    return user.Videos;
-                }
-                else return null;
-            }
-            else
-                return null;
-
-        }
-        private FileResult? GetFileFromVideo(Video video)
-        {
-            try
-            {
-                var fileName = Path.GetFileNameWithoutExtension(video.FileName);
-                var fullFilePath = GetUploadsFolder(fileName) + '\\' + fileName + "_master.m3u8";
-                if (System.IO.File.Exists(fullFilePath))
-                {
-                    return File(fullFilePath, video.ContentType, fullFilePath);
-                }
-                //return BadRequest($"Video.GetVideoByFileName:  Failed to Open File");
-
-                // return BadRequest($"Video.GetVideoByFileName:  Failed to Find Video in DB");
-            }
-            catch (Exception ex)
-            {
-                return null;
-                // return BadRequest($"Video.GetVideoByFileName: " + ex);
-            }
-            return null;
-        }
-        private FileResult? GetVideoByFileName(string fileName)
-        {
-            try
-            {
-                Video? video = null;
-
-                video = _context.Videos.FirstOrDefault(x =>
-                                          x.FileName.ToLower() == fileName.ToLower());
-
-                if (video != null)
-                {
-                    var fullFilePath = GetUploadsFolder(fileName);
-                    if (System.IO.File.Exists(fullFilePath))
-                    {
-                        return File(fileName, video.ContentType, video.FileName);
-                    }
-                    //return BadRequest($"Video.GetVideoByFileName:  Failed to Open File");
-                }
-                return null;
-                // return BadRequest($"Video.GetVideoByFileName:  Failed to Find Video in DB");
-            }
-            catch (Exception ex)
-            {
-                return null;
-                // return BadRequest($"Video.GetVideoByFileName: " + ex);
-            }
-
-        }
 
     }
 }

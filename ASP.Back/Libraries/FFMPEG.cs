@@ -18,9 +18,9 @@ namespace ASP.Back.Libraries
         }
         protected struct FFPipe
         {
-            public NamedPipeServerStream npss { get; set; }
-            public string pipeName { get; set; }
-            public Stream? stream { get; set; }
+            public NamedPipeServerStream Npss { get; set; }
+            public string PipeName { get; set; }
+            public Stream? Stream { get; set; }
 
         }
         public struct FFVideo
@@ -87,10 +87,10 @@ namespace ASP.Back.Libraries
             try
             {
                 FFPipe pipe = new FFPipe();
-                pipe.pipeName = Guid.NewGuid().ToString("N");
-                pipe.npss = new NamedPipeServerStream(pipe.pipeName, PipeDirection.InOut, 1,
+                pipe.PipeName = Guid.NewGuid().ToString("N");
+                pipe.Npss = new NamedPipeServerStream(pipe.PipeName, PipeDirection.InOut, 1,
                                                         PipeTransmissionMode.Byte, PipeOptions.WriteThrough);
-                pipe.stream = new System.IO.MemoryStream();
+                pipe.Stream = new System.IO.MemoryStream();
                 return pipe;
             }
             catch (Exception ex)
@@ -210,7 +210,7 @@ namespace ASP.Back.Libraries
             return SaveMaster();
 
         }
-        public Stream? GetWebmStream(string[] resolutions)
+        public Stream? GetWebStream()
         {
             try
             {
@@ -219,35 +219,24 @@ namespace ASP.Back.Libraries
 
                 currentDirectory = _video.folder;
 
-                Task[] tasks = new Task[resolutions.Length];
-                int taskIndex = 0;
-                FFPipe[] ffPipeArr = new FFPipe[resolutions.Length];
-                foreach (string resolution in resolutions)
-                {
+                    // We use Guid for PipeNames
+                   FFPipe? ffPipe = CreatePipe(PipeDirection.InOut);
 
+                    if (ffPipe.Value.Npss == null)
+                        return null;
 
-                    // We use Guid for pipeNames
-                    FFPipe? ffPipe = CreatePipe(PipeDirection.InOut);
+                    string PipeNamesFFmpeg = $@"\\.\pipe\{ffPipe.Value.PipeName}";
 
-                    if (ffPipe?.npss != null)
-                        ffPipeArr[taskIndex] = ffPipe.Value;
-                    else
-                        continue;
-
-                    string pipeNamesFFmpeg = $@"\\.\pipe\{ffPipe.Value.pipeName}";
-
-                    int resSplitIndex = resolution.IndexOf(':');
 
                     var argumentBuilder = new List<string>();
                     argumentBuilder.Add("-loglevel fatal  -y");
                     argumentBuilder.Add("-i");
-                    argumentBuilder.Add('"' + currentDirectory /*+ resolution.Substring(resSplitIndex + 1) + '\\'*/ + _video.fileName + _video.extention + '"');
+                    argumentBuilder.Add('"' + currentDirectory  + _video.fileName + _video.extention + '"');
                     argumentBuilder.Add("-bsf:a aac_adtstoasc -c copy -f mp4 -movflags frag_keyframe+empty_moov");
-                    argumentBuilder.Add(pipeNamesFFmpeg);
-                    //argumentBuilder.Add(currentDirectory + "test.mp4");
+                    argumentBuilder.Add(PipeNamesFFmpeg);
+                //argumentBuilder.Add(currentDirectory + "test.mp4");
 
-
-
+                Task task = null;
                     using (var proc = StartFFMpeg(FFTYPE.FFMPEG, argumentBuilder))
                     {
                         Console.WriteLine($"FFMpeg path: ffmpeg");
@@ -255,12 +244,12 @@ namespace ASP.Back.Libraries
 
                         proc.EnableRaisingEvents = false;
                         proc.Start();
-                        ffPipeArr[taskIndex].npss.WaitForConnection();
+                        ffPipe.Value.Npss.WaitForConnection();
 
-                        tasks[taskIndex] = ffPipeArr[taskIndex].npss.CopyToAsync(ffPipeArr[taskIndex].stream)
+                        task = ffPipe.Value.Npss.CopyToAsync(ffPipe.Value.Stream)
                              .ContinueWith(x =>
                              {
-                                 ffPipeArr[taskIndex].npss.Disconnect();
+                                 ffPipe.Value.Npss.Disconnect();
                              });
                         string processOutput = string.Empty;
                         try
@@ -281,24 +270,19 @@ namespace ASP.Back.Libraries
                         }
                         proc.WaitForExit();
 
-                        taskIndex++;
-                    } 
+                    }
 
-                }
-                Task.WaitAll(tasks);
-                taskIndex = 0;
-                
-                foreach (var ffPipe in ffPipeArr)
+                if (task != null)
                 {
-                    ffPipe.stream.Position = 0;
-                    tasks[taskIndex] = ffPipe.stream.CopyToAsync(_video.stream)
-                        .ContinueWith(x =>
-                    {                        
-                        ffPipe.stream.Dispose();
-                    });
-                    taskIndex++;
+                    Task.WaitAll(task);
+                    ffPipe.Value.Stream.Position = 0;
+                        task = ffPipe.Value.Stream.CopyToAsync(_video.stream)
+                            .ContinueWith(x =>
+                            {
+                                ffPipe.Value.Stream.Dispose();
+                            });
+                    Task.WaitAll(task);
                 }
-                Task.WaitAll(tasks);
                 if (_video.stream != null && _video.stream.Length > 0)
                 {
                     _video.stream.Position = 0;
@@ -346,7 +330,49 @@ namespace ASP.Back.Libraries
             video.fileName = pathWithFileName.Substring(folderIndex + 1);
             return video;
         }
-        public FFMPEG(string fileName, string[] resolutions)
+        
+        public List<string> probe(Stream inStream)
+        {
+            List<string> args = new List<string>();
+            FFPipe? ffPipe = CreatePipe(PipeDirection.Out);
+            List<string> output = new List<string>();
+            if (ffPipe?.Npss == null)
+                    return output;
+            string PipeNamesFFmpeg = $@"\\.\pipe\{ffPipe.Value.PipeName}";
+            args.Add("-loglevel fatal -show_entries stream=codec_type -of default=nw=1 " + PipeNamesFFmpeg);
+            
+            using (var proc = StartFFMpeg(FFTYPE.FFPROBE, args))
+            {
+                Console.WriteLine($"FFMpeg path: " + FFTYPE.FFPROBE.ToString());
+                Console.WriteLine($"Arguments: {proc.StartInfo.Arguments}");
+
+                proc.EnableRaisingEvents = false;
+                proc.Start();
+                ffPipe.Value.Npss.WaitForConnection();
+
+                inStream.CopyToAsync(ffPipe.Value.Npss)
+                      .ContinueWith(x =>
+                      {
+                          ffPipe.Value.Npss.WaitForPipeDrain();
+                          ffPipe.Value.Npss.Disconnect();
+                      });
+                string processOutput = string.Empty;
+                while ((processOutput = proc.StandardOutput.ReadLine()) != null)
+                {
+                    output.Add(processOutput);
+                }
+
+                proc.WaitForExit();
+                
+                ffPipe.Value.Npss?.Dispose();
+
+            }
+            
+            return output;
+
+        }
+
+        public FFMPEG(string fileName)
         {
             try
             {
@@ -359,46 +385,6 @@ namespace ASP.Back.Libraries
             {
                 Console.WriteLine(ex.ToString());
             }
-        }
-        public List<string> probe(Stream inStream)
-        {
-            List<string> args = new List<string>();
-            FFPipe? ffPipe = CreatePipe(PipeDirection.Out);
-            List<string> output = new List<string>();
-            if (ffPipe?.npss == null)
-                    return output;
-            string pipeNamesFFmpeg = $@"\\.\pipe\{ffPipe.Value.pipeName}";
-            args.Add("-loglevel error -show_entries stream=codec_type -of default=nw=1 " + pipeNamesFFmpeg);
-            
-            using (var proc = StartFFMpeg(FFTYPE.FFPROBE, args))
-            {
-                Console.WriteLine($"FFMpeg path: " + FFTYPE.FFPROBE.ToString());
-                Console.WriteLine($"Arguments: {proc.StartInfo.Arguments}");
-
-                proc.EnableRaisingEvents = false;
-                proc.Start();
-                ffPipe.Value.npss.WaitForConnection();
-
-                inStream.CopyToAsync(ffPipe.Value.npss)
-                      .ContinueWith(x =>
-                      {
-                          ffPipe.Value.npss.WaitForPipeDrain();
-                          ffPipe.Value.npss.Disconnect();
-                      });
-                string processOutput = string.Empty;
-                while ((processOutput = proc.StandardOutput.ReadLine()) != null)
-                {
-                    output.Add(processOutput);
-                }
-
-                proc.WaitForExit();
-                
-                ffPipe.Value.npss?.Dispose();
-
-            }
-            
-            return output;
-
         }
         public FFMPEG(Stream inStream, string fileOut, List<string> resolutions)
         {
@@ -417,8 +403,6 @@ namespace ASP.Back.Libraries
                     Directory.CreateDirectory(currentDirectory);
                 }
                 currentDirectory += '\\';
-                Task[] tasks = new Task[resolutions.Count];
-                int taskIndex = 0;
 
                 inStream.Position = streamStartPos;
                 video.codecs = probe(inStream);
@@ -432,10 +416,10 @@ namespace ASP.Back.Libraries
                 }
                 inStream.Position = streamStartPos;
                 FFPipe? ffPipe = CreatePipe(PipeDirection.Out);
-                if (ffPipe?.npss == null)
+                if (ffPipe?.Npss == null)
                     return;
-                video.GUID = ffPipe.Value.pipeName;
-                string pipeNamesFFmpeg = $@"\\.\pipe\{ffPipe.Value.pipeName}";
+                video.GUID = ffPipe.Value.PipeName;
+                string PipeNamesFFmpeg = $@"\\.\pipe\{ffPipe.Value.PipeName}";
                 var pipeBuilder = new List<string>();
                 var argumentBuilder = new List<string>();
                 var filterBuilder = new List<string>();
@@ -444,9 +428,9 @@ namespace ASP.Back.Libraries
                 filterBuilder.Add("-filter_complex " + '"' + "[v:0]split=" + resolutions.Count);
 
                 pipeBuilder.Add("-loglevel fatal -y -i");
-                pipeBuilder.Add(pipeNamesFFmpeg);
+                pipeBuilder.Add(PipeNamesFFmpeg);
                 pipeBuilder.Add("-preset veryfast -sc_threshold 0");
-                pipeBuilder.Add("-metadata TITLE=\"" + ffPipe.Value.pipeName + "\"");
+                pipeBuilder.Add("-metadata TITLE=\"" + ffPipe.Value.PipeName + "\"");
                 int index = 0;
                 foreach (string resolution in resolutions)
                 {
@@ -493,13 +477,13 @@ namespace ASP.Back.Libraries
 
                     proc.EnableRaisingEvents = false;
                     proc.Start();
-                    ffPipe.Value.npss.WaitForConnection();
+                    ffPipe.Value.Npss.WaitForConnection();
 
-                   inStream.CopyToAsync(ffPipe.Value.npss)
+                   inStream.CopyToAsync(ffPipe.Value.Npss)
                          .ContinueWith(x =>
                          {
-                             ffPipe.Value.npss.WaitForPipeDrain();
-                             ffPipe.Value.npss.Disconnect();
+                             ffPipe.Value.Npss.WaitForPipeDrain();
+                             ffPipe.Value.Npss.Disconnect();
                          });
                     string processOutput = string.Empty;
 
@@ -514,7 +498,7 @@ namespace ASP.Back.Libraries
 
 
                     proc.WaitForExit();
-                    ffPipe.Value.npss?.Dispose();
+                    ffPipe.Value.Npss?.Dispose();
                     //taskIndex++;
                 }
 
