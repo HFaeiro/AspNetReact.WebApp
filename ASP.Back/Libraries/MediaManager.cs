@@ -17,6 +17,14 @@ namespace ASP.Back.Libraries
         public readonly string uploadsPath;
         public readonly string videosPath;
         private readonly TeamManiacsDbContext _context;
+        public enum MediaType
+        {
+            Video,
+            Master,
+            Index,
+        
+        }
+
 
         public MediaManager(IWebHostEnvironment hostEnvironment, TeamManiacsDbContext context, IConfiguration config , ControllerBase controller)
         {
@@ -33,9 +41,12 @@ namespace ASP.Back.Libraries
         }
 
         public string IndexPath(string fileName, int index) {
-            return Path.Combine(RootPath, videosPath,fileName, "stream_" +  index);
+            return Path.Combine(RootPath, videosPath,fileName, fileName + "_index_" +  index + ".m3u8");
         }
-
+        public string DataPath(string fileName, int index, int dataIndex)
+        {
+            return Path.Combine(RootPath, videosPath, fileName, "stream_" + index, "data%06" + dataIndex +".ts");
+        }
         public bool SaveVideoToMediaFolder(VideoUpload videoIn, out FFVideo? videoOut,
                      List<string> resolutions, string filePath = "")
         {
@@ -59,7 +70,7 @@ namespace ASP.Back.Libraries
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
+                Console.WriteLine(ex.Message + ex.StackTrace);
                 videoOut = null;
                 return false;
             }
@@ -67,7 +78,6 @@ namespace ASP.Back.Libraries
 
         private Stream? GetVideoChunk(string fileName)
         {
-            fileName = Path.GetFileNameWithoutExtension(fileName);
             var fullFilePath = Path.Combine(IndexPath(fileName, 0), "data000000.ts");
             FFMPEG video = new FFMPEG(fullFilePath);
             if (video.success)
@@ -82,47 +92,70 @@ namespace ASP.Back.Libraries
             return Path.Combine(videosPath, fileName, fileName + "_master.m3u8");
         }
         
-        private FileResult? GetVideoByFileName(string fileName)
-        {
-            try
-            {
-                Video? video = null;
+        ////deprecated Do not use. 
+        //private FileResult? GetVideoByFileName(string fileName)
+        //{
+        //    try
+        //    {
+        //        Video? video = null;
 
-                video = _context.Videos.FirstOrDefault(x =>
-                                          x.FileName.ToLower() == fileName.ToLower());
+        //        video = _context.Videos.FirstOrDefault(x =>
+        //                                  x.FileName.ToLower() == fileName.ToLower());
 
-                if (video != null)
-                {
-                    var videoFilePath = Path.Combine(videosPath,fileName);
-                    if (System.IO.File.Exists(videoFilePath))
-                    {
+        //        if (video != null)
+        //        {
+        //            var videoFilePath = Path.Combine(videosPath,fileName);
+        //            if (System.IO.File.Exists(videoFilePath))
+        //            {
                         
-                        return _controller.File(fileName, video.ContentType, video.FileName);
-                    }
-                    //return BadRequest($"Video.GetVideoByFileName:  Failed to Open File");
-                }
-                return null;
-                // return BadRequest($"Video.GetVideoByFileName:  Failed to Find Video in DB");
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex);
-                return null;
-                // return BadRequest($"Video.GetVideoByFileName: " + ex);
-            }
+        //                return _controller.File(fileName, video.ContentType, video.FileName);
+        //            }
+        //            //return BadRequest($"Video.GetVideoByFileName:  Failed to Open File");
+        //        }
+        //        return null;
+        //        // return BadRequest($"Video.GetVideoByFileName:  Failed to Find Video in DB");
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //       Console.WriteLine(ex.Message + ex.StackTrace);;
+        //        return null;
+        //        // return BadRequest($"Video.GetVideoByFileName: " + ex);
+        //    }
 
-        }
-
-
-        public Stream? GetMasterFile(string fileName)
+        //}
+        public FileStream? GetMedia(MediaType mediaType, string fileName, int index = 0)
         {
-            fileName = Path.GetFileNameWithoutExtension(fileName);
-            var masterPath = GetMasterPath(fileName);
-            if (!System.IO.File.Exists(masterPath))
+            string path = string.Empty;
+            switch (mediaType)
+            {
+                case MediaType.Video:
+                    {
+                        path = videosPath;
+                        break;
+                    }
+                case MediaType.Master:
+                    {
+                        path = GetMasterPath(fileName);
+                        break;
+                    }
+                case MediaType.Index:
+                    {
+                        path = IndexPath(fileName, index);
+                        break;
+                    }
+                    default:
+                    {
+                        Console.WriteLine(string.Format("Warning... Using Default Media Path: {0}, Please Check Configuration!"));
+                        path = uploadsPath;
+                        break;
+                    }
+            }
+
+            if (!System.IO.File.Exists(path))
             {
                 return null;
             }
-            FileStream? fileStream = new FileStream(masterPath, FileMode.Open, FileAccess.Read);
+            FileStream? fileStream = new FileStream(path, FileMode.Open, FileAccess.Read);
             if (fileStream != null)
             {
                 return fileStream;
@@ -131,6 +164,12 @@ namespace ASP.Back.Libraries
             {
                 return null;
             }
+
+        }
+
+        public FileStream? GetMasterFile(string fileName)
+        {
+            return GetMedia(MediaType.Master, fileName);
         }
 
         public async Task<int?> AddVideoToDB(VideoUpload videoIn, IIdentity claimsIdentity)
@@ -187,7 +226,7 @@ namespace ASP.Back.Libraries
 
                     if (video.FileName != "")
                     {
-                        var vid = GetMasterFile(video.FileName);
+                        var vid = GetMasterFile(video.VideoName);
                         if (vid != null)
                             videos.Add(video);
 #if !DEBUG //we don't want to delete not found on disk videos if we are in dev environment
@@ -213,21 +252,27 @@ namespace ASP.Back.Libraries
 
 
 
-        private List<int>? GetVideoIDsByUsername(string username)
-        {
-            var user = ControllerHelpers.GetUserByUsername(username, _context);
-            if (user != null)
-            {
-                if (user.Videos != null)
-                {
-                    return user.Videos;
-                }
-                else return null;
-            }
-            else
-                return null;
-        }
+        //private List<int>? GetVideoIDsByUsername(string username)
+        //{
+        //    var user = ControllerHelpers.GetUserByUsername(username, _context);
+        //    if (user != null)
+        //    {
+        //        if (user.Videos != null)
+        //        {
+        //            return user.Videos;
+        //        }
+        //        else return null;
+        //    }
+        //    else
+        //        return null;
+        //}
 
+        public Video? GetVideoByGuid(Guid guid)
+        {
+            return _context.Videos.FirstOrDefault(x =>
+                                                   x.GUID == guid.ToString("N"));
+            
+        }
     }
 
 }

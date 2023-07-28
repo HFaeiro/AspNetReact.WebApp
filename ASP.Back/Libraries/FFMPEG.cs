@@ -265,7 +265,7 @@ namespace ASP.Back.Libraries
                         }
                         catch (Exception ex)
                         {
-                            Console.WriteLine(ex.ToString());
+                           Console.WriteLine(ex.Message + ex.StackTrace);
                             return null;
                         }
                         proc.WaitForExit();
@@ -313,7 +313,7 @@ namespace ASP.Back.Libraries
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
+               Console.WriteLine(ex.Message + ex.StackTrace);
                 return null; 
             }
         }
@@ -383,7 +383,7 @@ namespace ASP.Back.Libraries
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
+               Console.WriteLine(ex.Message + ex.StackTrace);
             }
         }
         public FFMPEG(Stream inStream, string fileOut, List<string> resolutions)
@@ -542,7 +542,7 @@ namespace ASP.Back.Libraries
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
+               Console.WriteLine(ex.Message + ex.StackTrace);
             }
 
         }

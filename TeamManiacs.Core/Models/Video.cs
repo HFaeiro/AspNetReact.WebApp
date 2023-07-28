@@ -28,6 +28,14 @@ namespace TeamManiacs.Core.Models
             Uploader = uploader;
             isPrivate = true;
         }
+        [NotMapped]
+        public string VideoName
+        {
+            get
+            {
+                return Path.GetFileNameWithoutExtension(FileName);
+            }
+        }
 
         [Key]
         public int ID { get; set; }

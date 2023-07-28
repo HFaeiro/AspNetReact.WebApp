@@ -77,7 +77,7 @@ export class VideoStream extends Component {
 
     getVideo = async (GUID) => {
         return await new Promise(resolve => {
-            fetch('/' + process.env.REACT_APP_API + 'stream/' + GUID, {
+            fetch('/' + process.env.REACT_APP_API + 'stream/' + GUID + '?' + "0", {
                 headers: {
                     'Authorization': 'Bearer ' + this.state.token,
                     'Accept': '*/*',

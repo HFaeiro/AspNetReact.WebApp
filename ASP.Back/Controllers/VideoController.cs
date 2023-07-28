@@ -21,7 +21,7 @@ namespace ASP.Back.Controllers
         private readonly TeamManiacsDbContext _context;
         private readonly IConfiguration _configuration;
         private MediaManager mediaManager;
-
+        private StreamOut streamOut;
 
 
         ///<Summary>
@@ -34,6 +34,7 @@ namespace ASP.Back.Controllers
             this._context = context;
             mediaManager = new MediaManager(hostEnvironment, context, configuration, this);
             _configuration = configuration;
+            streamOut = new StreamOut(this);
         }
 
 
@@ -61,7 +62,7 @@ namespace ASP.Back.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
+               Console.WriteLine(ex.Message + ex.StackTrace);
                 return BadRequest($"Video.GET: " + ex.Message);
             }
             return BadRequest($"Video.GET: No Videos");
@@ -78,6 +79,7 @@ namespace ASP.Back.Controllers
         public async Task GetMaster(int id)
         {
             byte[]? str = null;
+            Response.StatusCode = 400;
             try
             {
                 var videoIn = await _context.Videos.FindAsync(id);
@@ -89,55 +91,31 @@ namespace ASP.Back.Controllers
                     {
                         if (userId != videoIn.Uploader)
                         {
-                            Response.StatusCode = 400;
                             str = Encoding.UTF8.GetBytes($"Video.GET: Video is Private");
                             await Response.Body.WriteAsync(str, 0, str.Length);
                             return;
                         }
 
                     }
-
-                    using (Stream? master = mediaManager.GetMasterFile(videoIn.FileName))
+                    Stream? master = mediaManager.GetMasterFile(videoIn.VideoName);
+                    if (master != null && master.Length > 0)
                     {
-                        if (master != null && master.Length > 0)
-                        {
-
-                            Response.StatusCode = 200;
-                            Response.ContentType = videoIn.ContentType;
-                            byte[] buffer = new byte[1024 * 10];
-                            int bytesRead = 0;
-                            while ((bytesRead = master.Read(buffer, 0, buffer.Length - 1)) > 0)
-                            {
-                                //string base64Video = Convert.ToBase64String(buffer, 0, bytesRead, Base64FormattingOptions.None);
-                                await Response.Body.WriteAsync(buffer, 0, bytesRead);
-
-                            }
-
-                            await Response.Body.FlushAsync();
-                            master.Close();
-                            return;
-                        }
-                        else
-                        {
-
-                            Response.StatusCode = 400;
-                            str = Encoding.UTF8.GetBytes($"Video.GET: Video is Null ");
-                            await Response.Body.WriteAsync(str, 0, str.Length);
-
-                            return;
-                        }
+                        await streamOut.Write(master, videoIn.ContentType); 
+                        master.Close();
                     }
+                    if (streamOut.StatusCode == 400)
+                    {
+                        await streamOut.Write($"Video.GET: Video is Null ");
+                    }
+                    return;
                 }
-                Response.StatusCode = 400;
-                str = Encoding.UTF8.GetBytes($"Video.GET: Video Does not Exist on DB ");
-                await Response.Body.WriteAsync(str, 0, str.Length);
+                await streamOut.Write($"Video.GET: Video Does not Exist on DB ");
                 return;
             }
             catch (Exception ex)
             {
                 Response.StatusCode = 400;
-                str = Encoding.UTF8.GetBytes($"Video.GET: " + ex.Message);
-                await Response.Body.WriteAsync(str, 0, str.Length);
+               await streamOut.Write($"Video.GET: " + ex.Message);
                 return;
 
 
@@ -200,7 +178,7 @@ namespace ASP.Back.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex);
+               Console.WriteLine(ex.Message + ex.StackTrace);;
                 return BadRequest(ex);
             }
 
@@ -282,7 +260,7 @@ namespace ASP.Back.Controllers
 
                     _context.Videos.Remove(video);
                     _context.SaveChanges();
-                    var fullFilePath = Path.GetFileNameWithoutExtension(Path.Combine(mediaManager.videosPath, video.FileName));
+                    var fullFilePath = Path.Combine(mediaManager.videosPath, video.VideoName);
                     if (System.IO.File.Exists(fullFilePath))
                     {
 
