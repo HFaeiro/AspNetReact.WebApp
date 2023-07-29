@@ -26,32 +26,25 @@ namespace ASP.Back.Controllers
             streamOut = new StreamOut(this);
         }
 
-        // GET: api/<StreamController>
+        // GET api/<StreamController>/guid/index
         [HttpGet]
-        public IEnumerable<string> Get()
-        {
-            return new string[] { "value1", "value2" };
-        }
-
-        // GET api/<StreamController>/5
-        [HttpGet("{guid}")]
-        public async Task Get(string guid, int index)
+        [Route("index")]
+        public async Task Get([FromQuery] string guid, [FromQuery] int index)
         {
             try
             {
 
-
-                Video? video = mediaManager.GetVideoByGuid(Guid.Parse(guid));
-                if(video == null)
+                Video? video = mediaManager.GetVideoByGuid(guid);
+                if (video == null)
                 {
                     Response.StatusCode = 400;
                     await streamOut.Write($"Stream.GET: Video is Null ");
                     return;
                 }
-                FileStream indexStream = mediaManager.GetMedia(MediaManager.MediaType.Index, video.VideoName, index);
+                FileStream indexStream = mediaManager.GetMedia(MediaManager.MediaType.Index, video.VideoName, index) as FileStream ;
                 if (indexStream != null && indexStream.Length > 0)
                 {
-                    await streamOut.Write(indexStream, "text:html");
+                    await streamOut.Write(indexStream, "text:html", StreamOut.StatusCodes.Text);
                     indexStream.Close();
                 }
                 if (streamOut.StatusCode == 400)
@@ -63,7 +56,45 @@ namespace ASP.Back.Controllers
             catch (Exception ex)
             {
                 Response.StatusCode = 400;
-                await streamOut.Write($"Stream.GET: " + ex.Message);
+                await streamOut.Write($"Stream.GET(Index): " + ex.Message);
+                return;
+
+
+            }
+        }
+
+        // GET api/<StreamController>/guid/index
+        [HttpGet]
+        [Route("data")]
+        public async Task Get([FromQuery] string guid, [FromQuery] int index, [FromQuery] int dataIndex)
+        {
+            try
+            {
+
+
+                Video? video = mediaManager.GetVideoByGuid(Guid.Parse(guid));
+                if (video == null)
+                {
+                    Response.StatusCode = 400;
+                    await streamOut.Write($"Stream.GET: Video is Null ");
+                    return;
+                }
+                Stream indexStream = mediaManager.GetMedia(MediaManager.MediaType.Video, video.VideoName, dataIndex);
+                if (indexStream != null && indexStream.Length > 0)
+                {
+                    await streamOut.Write(indexStream, "text:html", StreamOut.StatusCodes.Text);
+                    indexStream.Close();
+                }
+                if (streamOut.StatusCode == 400)
+                {
+                    await streamOut.Write($"Stream.GET: Video is Null or Video Does not Exist on DB ");
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Response.StatusCode = 400;
+                await streamOut.Write($"Stream.GET(Data): " + ex.Message);
                 return;
 
 

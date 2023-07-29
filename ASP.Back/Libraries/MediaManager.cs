@@ -21,8 +21,7 @@ namespace ASP.Back.Libraries
         {
             Video,
             Master,
-            Index,
-        
+            Index,        
         }
 
 
@@ -41,11 +40,11 @@ namespace ASP.Back.Libraries
         }
 
         public string IndexPath(string fileName, int index) {
-            return Path.Combine(RootPath, videosPath,fileName, fileName + "_index_" +  index + ".m3u8");
+            return Path.Combine(videosPath,fileName, fileName + "_index_" +  index + ".m3u8");
         }
         public string DataPath(string fileName, int index, int dataIndex)
         {
-            return Path.Combine(RootPath, videosPath, fileName, "stream_" + index, "data%06" + dataIndex +".ts");
+            return Path.Combine(RootPath, videosPath, fileName, "stream_" + index, "data" + dataIndex.ToString().PadLeft(6, '0') + ".ts");
         }
         public bool SaveVideoToMediaFolder(VideoUpload videoIn, out FFVideo? videoOut,
                      List<string> resolutions, string filePath = "")
@@ -123,14 +122,14 @@ namespace ASP.Back.Libraries
         //    }
 
         //}
-        public FileStream? GetMedia(MediaType mediaType, string fileName, int index = 0)
+        public Stream? GetMedia(MediaType mediaType, string fileName, int index = 0, int dataIndex = 0)
         {
             string path = string.Empty;
             switch (mediaType)
             {
                 case MediaType.Video:
                     {
-                        path = videosPath;
+                        path = DataPath(fileName,index, dataIndex);
                         break;
                     }
                 case MediaType.Master:
@@ -155,7 +154,18 @@ namespace ASP.Back.Libraries
             {
                 return null;
             }
-            FileStream? fileStream = new FileStream(path, FileMode.Open, FileAccess.Read);
+            Stream? fileStream;
+
+                
+            if (mediaType != MediaType.Video)
+            {
+                fileStream = new FileStream(path, FileMode.Open, FileAccess.Read);
+            }
+            else
+            {
+               fileStream = new FFMPEG(path)?.GetWebStream();
+
+            }
             if (fileStream != null)
             {
                 return fileStream;
@@ -169,7 +179,7 @@ namespace ASP.Back.Libraries
 
         public FileStream? GetMasterFile(string fileName)
         {
-            return GetMedia(MediaType.Master, fileName);
+            return GetMedia(MediaType.Master, fileName) as FileStream;
         }
 
         public async Task<int?> AddVideoToDB(VideoUpload videoIn, IIdentity claimsIdentity)
@@ -266,7 +276,12 @@ namespace ASP.Back.Libraries
         //    else
         //        return null;
         //}
+        public Video? GetVideoByGuid(string guid)
+        {
+            return _context.Videos.FirstOrDefault(x =>
+                                                   x.GUID == guid);
 
+        }
         public Video? GetVideoByGuid(Guid guid)
         {
             return _context.Videos.FirstOrDefault(x =>

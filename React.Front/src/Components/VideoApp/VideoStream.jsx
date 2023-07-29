@@ -15,12 +15,17 @@ export class VideoStream extends Component {
                 GUID: null,
                 index:
                     [
-                {
-                    bandwidth: null,
-                    resolution: null,
+                        {
+                            bandwidth: null,
+                            resolution: null,
 
-                 }],
+                        }],
 
+            },
+            index:
+            {
+                targetDuration: null,
+                playList: [],
             },
             fetchedVideo:
             {
@@ -30,6 +35,20 @@ export class VideoStream extends Component {
             token: props.token
         }
     }
+
+    createQuery = async (query) => {
+        var retQuery = "";
+        for (var q in query) {
+
+            retQuery += query[q] + '&';
+        }
+        if (retQuery[retQuery.length - 1] == '&') {
+            retQuery = retQuery.substr(0, retQuery.length - 1);
+        }
+        return retQuery;
+    }
+    
+
     parseMaster = async (Master) => {
         if (Master) {
             var master =
@@ -59,9 +78,41 @@ export class VideoStream extends Component {
                 }
             }
             this.setState({
-                master:master
+                master: master
             })
             return master;
+        }
+    }
+
+    parseIndex = async (Index) => {
+        if (Index) {
+            var index =
+            {
+                targetDuration: null,
+                playList: [],
+            };
+            for (var i in Index) {
+
+                var line = Index[i];
+                if (/EXTINF/.test(line)) {
+                    index.playList.push(Index[++i]);
+                    console.log("Added to play list : " + Index[i]);
+                    continue;
+                }
+                if (/X-END/.test(line)) {
+                    break;
+                }
+                if (/X-TA/.test(line)) {
+                    var keyVal = line.split(':')[1];
+                    index.targetDuration = keyVal;
+                    continue;
+                }
+
+            }
+            this.setState({
+                index: index
+            })
+            return index;
         }
     }
 
@@ -69,15 +120,18 @@ export class VideoStream extends Component {
         if (this.state.fetchedVideo?.video == null) {
             let master = await this.parseMaster(this.props.master)
             if (master && master.GUID) {
-                await this.getVideo(master.GUID);
+                var index = await this.getIndex(master.GUID, 0);
+                if (index && index.playList && index.playList.length) {
+                    this.getVideo(master.GUID, 0, 0);
+                }
             }
         }
 
     }
 
-    getVideo = async (GUID) => {
+    get = async (query) => {
         return await new Promise(resolve => {
-            fetch('/' + process.env.REACT_APP_API + 'stream/' + GUID + '?' + "0", {
+            fetch('/' + process.env.REACT_APP_API + 'stream/' + query, {
                 headers: {
                     'Authorization': 'Bearer ' + this.state.token,
                     'Accept': '*/*',
@@ -87,40 +141,56 @@ export class VideoStream extends Component {
 
             })
                 .then(res => {
-                    if (res.status == 200)
-                        return res.blob();
+                    if (res.status == 201) {
+                        return (res.blob());
+                    }
+                    else if (res.status == 202) {
+                        return (res.text());
+                    }
                     else
                         return;
 
+                }).then(data => {
+                    console.log(data);
 
-                })
-                .then(data => {
-
-                    var video = URL.createObjectURL(data);
-
-                    this.setState(
-                        ({
-                            fetchedVideo:
-                            {
-                                id: GUID,
-                                video: video
-                            }
-                        }));
-                    resolve(video);
-                },
-                    (error) => {
-                        console.log(error);
-                        resolve(null);
-                    }).
-                catch((error) => {
-                    console.log(error);
-                    resolve(null);
+                    resolve(data);
                 })
         })
     }
+        
 
+    
 
+    getVideo = async (GUID, Index, DataIndex) => {
+        var query = await this.createQuery({ GUID, Index, DataIndex });
+        return await this.get("data?guid=" + query)
+            .then(data => {
 
+                var video = URL.createObjectURL(data);
+
+                this.setState(
+                    ({
+                        fetchedVideo:
+                        {
+                            id: GUID,
+                            video: video
+                        }
+                    }));
+                return video;
+            })
+
+    }
+    getIndex = async (GUID, Index) => {
+        var query = await this.createQuery({ GUID, Index});
+        return await this.get("index?guid=" + query)
+            .then(data => {
+                    return data.split(/[\r\n]/);
+            })
+            .then(data => {
+                return this.parseIndex(data);                
+            })
+        return;
+    }
 
     render() {
 

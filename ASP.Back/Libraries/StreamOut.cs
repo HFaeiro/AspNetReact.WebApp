@@ -11,6 +11,12 @@ namespace ASP.Back.Libraries
     {
         private readonly ControllerBase _controller;
         List<string> _streams;
+        public enum StatusCodes
+        {
+            Success = 200,
+            Blob = 201,
+            Text = 202,
+        }
         public int StatusCode
         {
             get
@@ -33,17 +39,17 @@ namespace ASP.Back.Libraries
             await _controller.Response.Body.WriteAsync(charStream.Select(c => (byte)c).ToArray(), 0, charStream.Length);
         }
 
-        public async Task Write(Stream? stream, string contentType)
+        public async Task Write(Stream? stream, string contentType, StatusCodes code = StatusCodes.Success)
         {
             try
             {
-
+                
                 using (stream)
                 {
                     if (stream != null && stream.Length > 0)
                     {
 
-                        _controller.Response.StatusCode = 200;
+                        _controller.Response.StatusCode = (int)code;
                         _controller.Response.ContentType = contentType;
                         byte[] buffer = new byte[1024 * 10];
                         int bytesRead = 0;
