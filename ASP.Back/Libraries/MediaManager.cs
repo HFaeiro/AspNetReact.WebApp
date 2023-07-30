@@ -1,5 +1,6 @@
 ﻿using ASP.Back.Controllers;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Principal;
 using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
@@ -69,7 +70,7 @@ namespace ASP.Back.Libraries
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message + ex.StackTrace);
+                Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
                 videoOut = null;
                 return false;
             }
@@ -90,7 +91,7 @@ namespace ASP.Back.Libraries
         {
             return Path.Combine(videosPath, fileName, fileName + "_master.m3u8");
         }
-        
+
         ////deprecated Do not use. 
         //private FileResult? GetVideoByFileName(string fileName)
         //{
@@ -106,7 +107,7 @@ namespace ASP.Back.Libraries
         //            var videoFilePath = Path.Combine(videosPath,fileName);
         //            if (System.IO.File.Exists(videoFilePath))
         //            {
-                        
+
         //                return _controller.File(fileName, video.ContentType, video.FileName);
         //            }
         //            //return BadRequest($"Video.GetVideoByFileName:  Failed to Open File");
@@ -116,12 +117,38 @@ namespace ASP.Back.Libraries
         //    }
         //    catch (Exception ex)
         //    {
-        //       Console.WriteLine(ex.Message + ex.StackTrace);;
+        //      Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
         //        return null;
         //        // return BadRequest($"Video.GetVideoByFileName: " + ex);
         //    }
 
         //}
+        public async Task<IEnumerable<Video>?> GetVideosByUser(Users user, IIdentity claimsIdentity)
+        {
+            List<Video>? result = null;
+            if (user.Videos?.Count > 0)
+            {
+
+                int storedVideoCount = user.Videos.Count;
+                var ID = GetVideosByIDs(user.Videos, claimsIdentity);
+#if !DEBUG //we don't want to delete not found on disk videos if we are in dev environment
+
+                if (storedVideoCount > ID.Count)
+                {
+                    //if(ID.Count == 0)
+                    //{
+                    //    user.Videos.Clear();
+                    //}
+
+                    _context.Entry(user).State = EntityState.Modified;
+                    await _context.SaveChangesAsync();
+                }
+#endif
+                if (ID?.Count > 0)
+                    return ID;
+            }
+            return result;
+        }
         public Stream? GetMedia(MediaType mediaType, string fileName, int index = 0, int dataIndex = 0)
         {
             string path = string.Empty;
@@ -209,7 +236,7 @@ namespace ASP.Back.Libraries
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine(ex.Message);
+                    Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
                 }
                 return video.ID;
             }
@@ -236,7 +263,7 @@ namespace ASP.Back.Libraries
 
                     if (video.FileName != "")
                     {
-                        var vid = GetMasterFile(video.VideoName);
+                        var vid = GetMasterFile(video.GUID);
                         if (vid != null)
                             videos.Add(video);
 #if !DEBUG //we don't want to delete not found on disk videos if we are in dev environment

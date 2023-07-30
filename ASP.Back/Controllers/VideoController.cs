@@ -8,6 +8,7 @@ using ASP.Back.Libraries;
 using static ASP.Back.Libraries.FFMPEG;
 using TeamManiacs.Core.Convertors;
 using Microsoft.EntityFrameworkCore.Diagnostics;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 
 namespace ASP.Back.Controllers
 {
@@ -52,7 +53,7 @@ namespace ASP.Back.Controllers
                 var user = await ControllerHelpers.GetUserById(id, _context);
                 if (user != null)
                 {
-                    var videos = await GetVideosByUser(user);
+                    var videos = await mediaManager.GetVideosByUser(user, this.User.Identity);
                     if (videos != null)
                     {
                         return Ok(videos);
@@ -62,7 +63,7 @@ namespace ASP.Back.Controllers
             }
             catch (Exception ex)
             {
-               Console.WriteLine(ex.Message + ex.StackTrace);
+                Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
                 return BadRequest($"Video.GET: " + ex.Message);
             }
             return BadRequest($"Video.GET: No Videos");
@@ -97,10 +98,10 @@ namespace ASP.Back.Controllers
                         }
 
                     }
-                    Stream? master = mediaManager.GetMasterFile(videoIn.VideoName);
+                    Stream? master = mediaManager.GetMedia(MediaManager.MediaType.Master, videoIn.GUID) as FileStream;
                     if (master != null && master.Length > 0)
                     {
-                        await streamOut.Write(master, videoIn.ContentType); 
+                        await streamOut.Write(master, videoIn.ContentType, StreamOut.StatusCodes.Text); 
                         master.Close();
                     }
                     if (streamOut.StatusCode == 400)
@@ -178,7 +179,7 @@ namespace ASP.Back.Controllers
             }
             catch (Exception ex)
             {
-               Console.WriteLine(ex.Message + ex.StackTrace);;
+              Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
                 return BadRequest(ex);
             }
 
@@ -270,36 +271,11 @@ namespace ASP.Back.Controllers
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.Message);
+                Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
             }
         }
 
-        private async Task<IEnumerable<Video>?> GetVideosByUser(Users user)
-        {
-            List<Video>? result = null;
-            if (user.Videos?.Count > 0)
-            {
-                
-                int storedVideoCount = user.Videos.Count;
-                var ID = mediaManager.GetVideosByIDs(user.Videos, this.User.Identity);
-#if !DEBUG //we don't want to delete not found on disk videos if we are in dev environment
-
-                if (storedVideoCount > ID.Count)
-                {
-                    //if(ID.Count == 0)
-                    //{
-                    //    user.Videos.Clear();
-                    //}
-
-                    _context.Entry(user).State = EntityState.Modified;
-                    await _context.SaveChangesAsync();
-                }
-#endif
-                if (ID?.Count > 0)
-                    return ID;
-            }
-            return result;
-        }
+        
 
 
     }

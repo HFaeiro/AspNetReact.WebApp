@@ -184,7 +184,9 @@ export class VideoStream extends Component {
         var query = await this.createQuery({ GUID, Index});
         return await this.get("index?guid=" + query)
             .then(data => {
+                if (data) {
                     return data.split(/[\r\n]/);
+                }
             })
             .then(data => {
                 return this.parseIndex(data);                

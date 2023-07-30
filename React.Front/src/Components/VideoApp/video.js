@@ -78,7 +78,7 @@ export class Videos extends Component {
 
             })
                 .then(res => {
-                    if (res.status == 200)
+                    if (res.status == 202)
                         return res.text();
                     else
                         return;

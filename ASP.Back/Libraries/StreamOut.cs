@@ -39,7 +39,7 @@ namespace ASP.Back.Libraries
             await _controller.Response.Body.WriteAsync(charStream.Select(c => (byte)c).ToArray(), 0, charStream.Length);
         }
 
-        public async Task Write(Stream? stream, string contentType, StatusCodes code = StatusCodes.Success)
+        public async Task Write(Stream? stream, string contentType, StatusCodes code)
         {
             try
             {
@@ -74,7 +74,7 @@ namespace ASP.Back.Libraries
             }
             catch (Exception ex)
             {
-               Console.WriteLine(ex.Message + ex.StackTrace);
+                Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
                 _controller.Response.StatusCode = 400;
             }
         }
@@ -91,7 +91,7 @@ namespace ASP.Back.Libraries
             }
             catch (Exception ex)
             {
-               Console.WriteLine(ex.Message + ex.StackTrace);
+                Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
             }
         }
 

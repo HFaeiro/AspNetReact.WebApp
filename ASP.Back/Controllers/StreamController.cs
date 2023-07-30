@@ -33,7 +33,7 @@ namespace ASP.Back.Controllers
         {
             try
             {
-
+                Response.StatusCode = 400;
                 Video? video = mediaManager.GetVideoByGuid(guid);
                 if (video == null)
                 {
@@ -41,7 +41,7 @@ namespace ASP.Back.Controllers
                     await streamOut.Write($"Stream.GET: Video is Null ");
                     return;
                 }
-                FileStream indexStream = mediaManager.GetMedia(MediaManager.MediaType.Index, video.VideoName, index) as FileStream ;
+                FileStream indexStream = mediaManager.GetMedia(MediaManager.MediaType.Index, video.GUID, index) as FileStream ;
                 if (indexStream != null && indexStream.Length > 0)
                 {
                     await streamOut.Write(indexStream, "text:html", StreamOut.StatusCodes.Text);
@@ -52,6 +52,7 @@ namespace ASP.Back.Controllers
                     await streamOut.Write($"Stream.GET: Video is Null or Video Does not Exist on DB ");
                     return;
                 }
+                return;
             }
             catch (Exception ex)
             {
@@ -71,7 +72,6 @@ namespace ASP.Back.Controllers
             try
             {
 
-
                 Video? video = mediaManager.GetVideoByGuid(Guid.Parse(guid));
                 if (video == null)
                 {
@@ -79,10 +79,10 @@ namespace ASP.Back.Controllers
                     await streamOut.Write($"Stream.GET: Video is Null ");
                     return;
                 }
-                Stream indexStream = mediaManager.GetMedia(MediaManager.MediaType.Video, video.VideoName, dataIndex);
+                Stream indexStream = mediaManager.GetMedia(MediaManager.MediaType.Video, video.GUID, dataIndex);
                 if (indexStream != null && indexStream.Length > 0)
                 {
-                    await streamOut.Write(indexStream, "text:html", StreamOut.StatusCodes.Text);
+                    await streamOut.Write(indexStream, video.ContentType, StreamOut.StatusCodes.Blob);
                     indexStream.Close();
                 }
                 if (streamOut.StatusCode == 400)
