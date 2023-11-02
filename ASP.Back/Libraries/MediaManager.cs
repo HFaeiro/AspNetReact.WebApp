@@ -151,6 +151,7 @@ namespace ASP.Back.Libraries
         }
         public Stream? GetMedia(MediaType mediaType, string fileName, int index = 0, int dataIndex = 0)
         {
+            Console.WriteLine($"\t\t{nameof(GetMedia)} - mediaType: {mediaType.ToString()} - video : {fileName}");
             string path = string.Empty;
             switch (mediaType)
             {
@@ -211,7 +212,7 @@ namespace ASP.Back.Libraries
 
         public async Task<int?> AddVideoToDB(VideoUpload videoIn, IIdentity claimsIdentity)
         {
-
+            Console.WriteLine($"\t\t{nameof(AddVideoToDB)} - Adding {videoIn.File.FileName}");
             var userId = ControllerHelpers.GetUserIdFromToken(claimsIdentity);
             if (userId != null)
             {
@@ -228,7 +229,7 @@ namespace ASP.Back.Libraries
                         {
                             video.GUID = videoOut.Value.GUID;
                         }
-                        video.VideoLength = (int)videoIn.VideoLength;
+                        video.VideoLength = (int)videoIn.File.Length;
                         _context.Videos.Add(video);
                         await _context.SaveChangesAsync();
                     }
@@ -244,10 +245,11 @@ namespace ASP.Back.Libraries
         }
         public List<Video>? GetVideosByIDs(List<int> IDs, System.Security.Principal.IIdentity claimsIdentity)
         {
-
+           
             List<Video>? videos = new List<Video>();
             List<int> badIds = new List<int>();
             var userId = ControllerHelpers.GetUserIdFromToken(claimsIdentity);
+            Console.WriteLine($"\t\t{nameof(GetVideosByIDs)} - IDs: {IDs} - userID : {userId}");
             foreach (int ID in IDs)
             {
                 var video = _context.Videos.FirstOrDefault(x =>

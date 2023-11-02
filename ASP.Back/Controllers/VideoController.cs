@@ -79,11 +79,14 @@ namespace ASP.Back.Controllers
         [HttpGet("master/{id}")]
         public async Task GetMaster(int id)
         {
+
             byte[]? str = null;
             Response.StatusCode = 400;
             try
             {
+
                 var videoIn = await _context.Videos.FindAsync(id);
+                Console.WriteLine($"\t\t{nameof(GetMaster)} - video Id: {id} - video : {(videoIn != null ? videoIn.FileName : null)}");
                 if (videoIn != null)
                 {
                     var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
@@ -135,6 +138,7 @@ namespace ASP.Back.Controllers
         {
             try
             {
+                Console.WriteLine($"\t\t{nameof(Post)} - {videoIn.File.FileName}");
                 if (videoIn.File.Length / 1024 / 1024 <= 4000)
                 {
                     if(this.User.Identity == null)

@@ -9,7 +9,7 @@ namespace TeamManiacs.Core.Models
 {
     public partial class VideoUpload
     {
-        public float VideoLength { get; set; }
+        //public float VideoLength { get; set; }
         public IFormFile File { get; set; }
 
     }
