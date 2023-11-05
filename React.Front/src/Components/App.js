@@ -17,8 +17,9 @@ export default class App extends Component {
     }
 
 
-
+    
     render() {
+        try{
         return (
             
             <section className="App">
@@ -42,6 +43,13 @@ export default class App extends Component {
             
             
             
-            )
+            );
+            }
+            catch(e)
+            {
+                console.log(e);
+            }
+
     }
+   
 }

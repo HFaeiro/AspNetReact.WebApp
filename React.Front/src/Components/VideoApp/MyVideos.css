@@ -7,5 +7,12 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    
 
+}
+.videoTitle {
+    white-space: normal;
+    height: 41px;
+    text-overflow: ellipsis;
+    overflow: auto;
 }

@@ -151,7 +151,7 @@ namespace ASP.Back.Libraries
         }
         public Stream? GetMedia(MediaType mediaType, string fileName, int index = 0, int dataIndex = 0)
         {
-            Console.WriteLine($"\t\t{nameof(GetMedia)} - mediaType: {mediaType.ToString()} - video : {fileName}");
+           
             string path = string.Empty;
             switch (mediaType)
             {
@@ -177,7 +177,7 @@ namespace ASP.Back.Libraries
                         break;
                     }
             }
-
+            Console.WriteLine($"\t\t{nameof(GetMedia)} - mediaType: {mediaType.ToString()} - video : {fileName} - Index : {index}, dataIndex : {dataIndex} \n ");
             if (!System.IO.File.Exists(path))
             {
                 return null;

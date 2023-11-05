@@ -79,7 +79,7 @@ namespace ASP.Back.Controllers
                     await streamOut.Write($"Stream.GET: Video is Null ");
                     return;
                 }
-                Stream indexStream = mediaManager.GetMedia(MediaManager.MediaType.Video, video.GUID, dataIndex);
+                Stream indexStream = mediaManager.GetMedia(MediaManager.MediaType.Video, video.GUID,index, dataIndex);
                 if (indexStream != null && indexStream.Length > 0)
                 {
                     await streamOut.Write(indexStream, video.ContentType, StreamOut.StatusCodes.Blob);

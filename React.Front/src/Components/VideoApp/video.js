@@ -29,7 +29,7 @@ export class Videos extends Component {
             this.getVideos();
         }
         else if (this.state.fetchedVideo?.video == null){
-            let vidId = parseInt(this.props.router.params.id);
+            let vidId = parseInt(this.props.router?.params.id);
             if (vidId) {
                var res = this.getVideo(vidId);
             }
