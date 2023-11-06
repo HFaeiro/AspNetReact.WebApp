@@ -152,11 +152,11 @@ export class Videos extends Component {
             </> : <>{(this.state.master && this.state.master.length) && (this.state.showPlayer || this.props.router && this.props.router.params.id)
                     ?
                     <div>
-                        <p><VideoStream
+                        <div><VideoStream
                             master={this.state.master }
                         >
 
-                        </VideoStream></p></div>
+                        </VideoStream></div></div>
                     : this.props.userId ? <>No Videos! Please upload one.</>
                         : this.state.userId ? <>This Users Videos are Private!</>
                             : <>This Video Does Not Exist! Please check your Link and Try Again!</>}
