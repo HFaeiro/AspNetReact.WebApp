@@ -56,7 +56,11 @@ namespace ASP.Back.Libraries
                     _codecs = new List<string>();
                     foreach (var codec in value.ToList())
                     {
-                        _codecs.Add(codec.Split('=')[1]);
+                        var codecType = codec.Split('=');
+                        if (codecType.Length == 2)
+                        {
+                            _codecs.Add(codecType[1]);
+                        }
                     }
 
                 }
@@ -116,9 +120,13 @@ namespace ASP.Back.Libraries
         }
 
 
-        private Process? StartFFMpeg(FFTYPE type, List<string> arguments, bool redirectStandardOutput = true,
+        private Process? StartFFMpeg(FFTYPE type, List<string> arguments, string workingDirectory = "", bool redirectStandardOutput = true,
                    bool redirectStandardError = true)
         {
+            if(workingDirectory == "")
+            {
+                workingDirectory = Directory.GetCurrentDirectory();
+            }
             return new Process
             {
                 StartInfo = new ProcessStartInfo
@@ -128,7 +136,8 @@ namespace ASP.Back.Libraries
                     Arguments = String.Join(" ", arguments.ToArray()),
                     UseShellExecute = false,
                     RedirectStandardOutput = redirectStandardOutput,
-                    RedirectStandardError = redirectStandardError
+                    RedirectStandardError = redirectStandardError,
+                    WorkingDirectory = workingDirectory
                 }
             };
         }
@@ -264,18 +273,18 @@ namespace ASP.Back.Libraries
                 }
 
                 var argumentBuilder = new List<string>();
-                argumentBuilder.Add("-loglevel error  -y");
+                argumentBuilder.Add("-loglevel debug  -y");
                 argumentBuilder.Add("-i");
                 argumentBuilder.Add('"' + currentDirectory + _video.fileName + _video.extention + '"');
-                argumentBuilder.Add("-bsf:a aac_adtstoasc -c copy -f mp4 -movflags frag_keyframe+empty_moov");
+                argumentBuilder.Add($"-bsf:a aac -c copy -f {_video.extention} - movflags frag_keyframe+empty_moov");
                 argumentBuilder.Add(PipeNamesFFmpeg);
                 //argumentBuilder.Add(currentDirectory + "test.mp4");
 
                 Task task = null;
-                using (var proc = StartFFMpeg(FFTYPE.FFMPEG, argumentBuilder/*,false,false*/))
+                using (var proc = StartFFMpeg(FFTYPE.FFMPEG,argumentBuilder,"",true,false))
                 {
                    // Console.WriteLine($"FFMpeg path: " + FFTYPE.FFMPEG);
-                   // Console.WriteLine($"Arguments: {proc.StartInfo.Arguments}");
+                    Console.WriteLine($"Arguments: {proc.StartInfo.Arguments}");
 
                     proc.EnableRaisingEvents = false;
                     proc.Start();
@@ -296,10 +305,10 @@ namespace ASP.Back.Libraries
 
                     try
                     {
-                        while ((processOutput = proc.StandardError.ReadLine()) != null)
-                        {
-                            error.Add(processOutput);
-                        }
+                        //while ((processOutput = proc.StandardError.ReadLine()) != null)
+                        //{
+                        //    error.Add(processOutput);
+                        //}
                         while ((processOutput = proc.StandardOutput.ReadLine()) != null)
                         {
                             output.Add(processOutput);
@@ -475,7 +484,13 @@ namespace ASP.Back.Libraries
                     lock (values)
                     {
                         foreach (string sline in values)
-                            Console.WriteLine(sline);
+                        {
+                            if (sline != null)
+                            {
+                                Console.WriteLine(sline);
+                                output.Add(sline);
+                            }
+                        }
                     }
 
                     ffPipe.Value.Npss?.Dispose();
@@ -507,15 +522,18 @@ namespace ASP.Back.Libraries
                 Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
             }
         }
-        public bool hasAudio(Stream inStream)
+        public bool hasAudio(Stream inStream, FFVideo? video = null)
         {
             List<string> codecs = new List<string>();
             long streamStartPos = inStream.Position;
-            if (_video.codecs == null || _video.codecs.Count == 0)
+            if ((_video.codecs == null || _video.codecs.Count == 0) && video == null)
             {
-                codecs = probeForCodecs(inStream);
+               codecs = probeForCodecs(inStream);
             }
-
+            else
+            {
+                codecs = video?.codecs;
+            }
 
             foreach (var codec in codecs)
             {
@@ -548,7 +566,7 @@ namespace ASP.Back.Libraries
                 FFVideo video = fillFileStrings(fileOut);
                 video.codecs = probeForCodecs(inStream);
                 inStream.Position = streamStartPos;
-                bool containsAudio = hasAudio(inStream);
+                bool containsAudio = hasAudio(inStream, video);
 
                 inStream.Position = streamStartPos;
 
@@ -612,7 +630,7 @@ namespace ASP.Back.Libraries
                 }
                 resolutionBuilder.Add('"'.ToString());
 
-                argumentBuilder.Add("-f hls -hls_time 1 -hls_playlist_type event");
+                argumentBuilder.Add("-f hls -hls_time 1 -hls_segment_type fmp4 -hls_playlist_type vod");
 
                 argumentBuilder.Add("-master_pl_name " + video.GUID + "_master.m3u8");
 
@@ -623,14 +641,14 @@ namespace ASP.Back.Libraries
                 }
                 argumentBuilder.Add('"'.ToString());
 
-                argumentBuilder.Add("-hls_segment_filename " + currentDirectory + Path.Combine("stream_%v", "data%06d.ts"));
+                argumentBuilder.Add("-hls_segment_filename " + Path.Combine("stream_%v", "data%06d.m4s"));
 
-                argumentBuilder.Add('"' + currentDirectory + video.GUID + "_index_%v.m3u8" + '"');
+                argumentBuilder.Add('"' + video.GUID + "_index_%v.m3u8" + '"');
 
                 List<string> completeArgs = pipeBuilder.Concat(filterBuilder.Concat(resolutionBuilder.Concat(audioMapper.Concat(argumentBuilder)))).ToList();
 
                 StringCollection values = new StringCollection();
-                using (var proc = StartFFMpeg(FFTYPE.FFMPEG, completeArgs))
+                using (var proc = StartFFMpeg(FFTYPE.FFMPEG, completeArgs, currentDirectory))
                 {
                     //Console.WriteLine($"FFMpeg path: " + FFTYPE.FFMPEG);
                    // Console.WriteLine($"Arguments: {proc.StartInfo.Arguments}");
@@ -745,11 +763,6 @@ namespace ASP.Back.Libraries
                             }
                             recoveryStream.Position = 0;
                             recoveryStream.Flush();
-                            //Stream recoveryCopy = new MemoryStream();
-                            //recoveryStream.CopyTo(recoveryCopy);
-                            //recoveryStream.Dispose();
-                            //recoveryCopy.Position = 0;
-                           // return BuildHLS(recoveryCopy, fileOut, resolutions, true);
                             return BuildHLS(recoveryStream, fileOut, resolutions, true);
                         }
                     }

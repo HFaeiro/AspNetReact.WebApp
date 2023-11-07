@@ -22,7 +22,8 @@ namespace ASP.Back.Libraries
         {
             Video,
             Master,
-            Index,        
+            Index,
+            Init
         }
 
 
@@ -45,7 +46,7 @@ namespace ASP.Back.Libraries
         }
         public string DataPath(string fileName, int index, int dataIndex)
         {
-            return Path.Combine(RootPath, videosPath, fileName, "stream_" + index, "data" + dataIndex.ToString().PadLeft(6, '0') + ".ts");
+            return Path.Combine(RootPath, videosPath, fileName, "stream_" + index, "data" + dataIndex.ToString().PadLeft(6, '0') + ".m4s");
         }
         public bool SaveVideoToMediaFolder(VideoUpload videoIn, out FFVideo? videoOut,
                      List<string> resolutions, string filePath = "")
@@ -78,7 +79,7 @@ namespace ASP.Back.Libraries
 
         private Stream? GetVideoChunk(string fileName)
         {
-            var fullFilePath = Path.Combine(IndexPath(fileName, 0), "data000000.ts");
+            var fullFilePath = Path.Combine(IndexPath(fileName, 0), "data000000.m4s");
             FFMPEG video = new FFMPEG(fullFilePath);
             if (video.success)
             {
@@ -86,6 +87,10 @@ namespace ASP.Back.Libraries
             }
             else
                 return null;
+        }
+        private string GetInitPath(string fileName, int index)
+        {
+            return Path.Combine(videosPath, fileName, $"init_{index}.mp4");
         }
         private string GetMasterPath(string fileName)
         {
@@ -165,6 +170,11 @@ namespace ASP.Back.Libraries
                         path = GetMasterPath(fileName);
                         break;
                     }
+                case MediaType.Init:
+                    {
+                        path = GetInitPath(fileName, index);
+                        break;
+                    }
                 case MediaType.Index:
                     {
                         path = IndexPath(fileName, index);
@@ -191,8 +201,8 @@ namespace ASP.Back.Libraries
             }
             else
             {
-               fileStream = new FFMPEG(path)?.GetWebStream();
-
+               //fileStream = new FFMPEG(path)?.GetWebStream();
+               fileStream = new FileStream(path,FileMode.Open, FileAccess.Read);
             }
             if (fileStream != null)
             {
@@ -222,7 +232,7 @@ namespace ASP.Back.Libraries
                 {
 
                     FFVideo? videoOut = new FFVideo();
-                    List<string> resolutions = new List<string> { "1920x1080", "1280x720", "720x480" };
+                    List<string> resolutions = new List<string> { "1920x1080", "1280x720", "720x480", "480x360", "360x240" };
                     if (SaveVideoToMediaFolder(videoIn, out videoOut, resolutions, uniqueFileName))
                     {
                         if (videoOut.HasValue)

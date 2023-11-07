@@ -62,8 +62,8 @@ namespace ASP.Back.Controllers
 
 
             }
-        }
-
+        }        
+        
         // GET api/<StreamController>/guid/index
         [HttpGet]
         [Route("data")]
@@ -79,7 +79,15 @@ namespace ASP.Back.Controllers
                     await streamOut.Write($"Stream.GET: Video is Null ");
                     return;
                 }
-                Stream indexStream = mediaManager.GetMedia(MediaManager.MediaType.Video, video.GUID,index, dataIndex);
+                Stream indexStream = null;
+                if (dataIndex < 0)
+                {
+                    indexStream = mediaManager.GetMedia(MediaManager.MediaType.Init, video.GUID, index, dataIndex);
+                }
+                else
+                {
+                    indexStream = mediaManager.GetMedia(MediaManager.MediaType.Video, video.GUID, index, dataIndex);
+                }
                 if (indexStream != null && indexStream.Length > 0)
                 {
                     await streamOut.Write(indexStream, video.ContentType, StreamOut.StatusCodes.Blob);
