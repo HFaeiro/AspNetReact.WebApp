@@ -8,6 +8,13 @@ using Newtonsoft.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
+using TeamManiacs.Core.Convertors;
+using Microsoft.OpenApi.Models;
+using System.Reflection;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.ResponseCompression;
+using System.Net.WebSockets;
+using TeamManiacs.Core.Models;
 
 internal class Program
 {
@@ -16,6 +23,7 @@ internal class Program
         var MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
 
         var builder = WebApplication.CreateBuilder(args);
+            
 
         builder.Services.AddCors(options =>
         {
@@ -25,30 +33,84 @@ internal class Program
                                   policy.WithOrigins("localhost").AllowAnyHeader().AllowAnyMethod(); 
                               });
         });
-
+        builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(x =>
+        {
+            x.ValueLengthLimit = int.MaxValue;
+            x.MultipartBodyLengthLimit = int.MaxValue; // In case of multipart
+        });
         //Add services to the container.
+#if !DEBUG
+                       string appsettings = "appsettings.Production.json";
+                
+#else
+        string appsettings = "appsettings.Development.json";
+#endif
         builder.Services.AddDbContext<TeamManiacsDbContext>(options =>
         {
+           
             IConfiguration config = new ConfigurationBuilder()
-                                        .AddJsonFile("appsettings.json", optional: false)
+                                        .AddJsonFile(appsettings, optional: false)
                                         .Build();
             //options.UseSqlServer(config.GetConnectionString("ASPBackContext"));
-            var connectString = config.GetConnectionString("CleverCloudSQL");
+#if !DEBUG
+                var connectString = config.GetConnectionString("CleverCloudSQL");
+#else
+            var connectString = config.GetConnectionString("DEVSQL1");
+#endif
             options.UseMySql(connectString, ServerVersion.AutoDetect(connectString));
 
         });
         builder.Services.AddControllers();
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
-
+        
         builder.Services.AddEndpointsApiExplorer();
-        builder.Services.AddSwaggerGen();
+        builder.Services.AddSwaggerGen(c =>
+        {
+            c.SwaggerDoc("v1", new OpenApiInfo { Title = "Mikes Video Api", Version = "v1" });
+            c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+            {
+                Description = @"JWT Authorization header using the Bearer scheme. \r\n\r\n 
+                      Enter 'Bearer' [space] and then your token in the text input below.
+                      \r\n\r\nExample: 'Bearer 12345abcdef'",
+                Name = "Authorization",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.ApiKey,
+                Scheme = "Bearer"
+            });
 
+            c.AddSecurityRequirement(new OpenApiSecurityRequirement()
+      {
+        {
+          new OpenApiSecurityScheme
+          {
+            Reference = new OpenApiReference
+              {
+                Type = ReferenceType.SecurityScheme,
+                Id = "Bearer"
+              },
+              Scheme = "oauth2",
+              Name = "Bearer",
+              In = ParameterLocation.Header,
+
+            },
+            new List<string>()
+          }
+        });
+            var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+            var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
+            c.IncludeXmlComments(xmlPath);
+        });
+        builder.Services.AddResponseCompression(options =>
+        {
+            options.Providers.Add<GzipCompressionProvider>();
+            options.EnableForHttps = true;
+        });
         builder.Services.AddControllers()
                         .AddJsonOptions(o =>
                         {
                             //o.JsonSerializerOptions.NumberHandling = JsonNumberHandling.AllowReadingFromString;
                             o.JsonSerializerOptions.Converters.Add(new JsonStringEnumMemberConverter());
-
+                            o.JsonSerializerOptions.Converters.Add(new BoolConvertor());
                         });
 
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -66,16 +128,23 @@ internal class Program
                                     Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
                             };
                         });
-
+        builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
         var app = builder.Build();
         // Configure the HTTP request pipeline.
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
             app.UseSwaggerUI();
+            
+         }
+        else
+        {
+            app.UseHsts();
         }
+        app.UseHttpsRedirection();
+        app.UseResponseCompression();
         
-        
+
         app.UseStaticFiles();
         app.UseRouting();
         app.UseDefaultFiles();
@@ -88,16 +157,33 @@ internal class Program
 
         app.UseEndpoints(endpoints =>
         {
-            endpoints.MapControllers();
-            endpoints.MapFallbackToController("Index", "Fallback");
+            endpoints.MapControllerRoute(
+                    name: "default",
+                    pattern: "{controller=Fallback}/{action=Index}/{id?}")
+                    .WithDisplayName("Default Controller Route")
+                    .WithMetadata("Custom.. but default metadata"); ;
+
+            endpoints.MapFallbackToController("Index", "Fallback")
+                .WithDisplayName("Fallback route")
+                .WithMetadata("Custom metadata");
         });
-  
- 
-       app.MapControllers();
 
-        app.UseHttpsRedirection();
- 
 
+        app.MapControllers();
+
+
+        //app.MapWhen(x => !x.Request.Path.Value.StartsWith("/api"), builder =>
+        //{
+        //    builder.Run(async context => {
+        //       var index =  Path.Combine(Directory.GetCurrentDirectory(),
+        //        "wwwroot", "index.html");
+
+        //        await context.Response.WriteAsync("Not API call");
+        //    }
+        //    );
+
+       
+        //});
 
 
 

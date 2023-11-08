@@ -9,14 +9,10 @@
     <!-- Command to create an optimized build of the project that's ready for publishing -->
     <ProductionBuildCommand>npm run build</ProductionBuildCommand>
     <!-- Folder where production build objects will be placed -->
-    <BuildOutputFolder>$(MSBuildProjectDirectory)\build</BuildOutputFolder>
-   
-
+    <BuildOutputFolder>$(MSBuildProjectDirectory)\..\ASP.Back\wwwroot</BuildOutputFolder>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove="src\App.test.js" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Remove="src\App.test.js" />
+    <Folder Include="src\Components\VideoApp\Functions\" />
+    <Folder Include="src\Utils\" />
   </ItemGroup>
 </Project>

@@ -13,10 +13,10 @@ export class EditUsersModal extends Component {
     }
     openModal = () => this.setState({ showModal: true });
     closeModal = () => this.setState({ showModal: false });
-    async handleSubmit(event) {
+    handleSubmit = async (event) => {
         const ret = await new Promise(resolve => {
             event.preventDefault();
-            fetch(process.env.REACT_APP_API + 'users/' + event.target.Id.value, {
+            fetch('/' +process.env.REACT_APP_API + 'users/' + event.target.Id.value, {
                 method: 'PUT',
                 headers: {
                     'Accept': 'application/json',
@@ -29,36 +29,58 @@ export class EditUsersModal extends Component {
                     Password: event.target.Password.value,
                     Privileges: event.target.Privileges.value
 
-
-
                 })
 
+            })
+                .then(res => {
+                    if (res.status == 200) {
+                        
+                        if (this.props.myId == event.target.Id.value) {
+                            var profile =
+                            {
+                                username: this.props.uName,
+                                privileges: this.props.uPriv
+                            }
 
-            }).then(res => res.json())
-                .then((result) => {
-                    this.closeModal()
-                    alert(result);
+                            var areEdits = false;
+                            if (event.target.Username.value != '' && profile.Username != event.target.Username.value) {
+                                profile.username = event.target.Username.value;
+                                areEdits = true;
+                            }
 
+                            if (event.target.Privileges.value != '' && event.target.Privileges.value != profile.Privileges) {
+                                profile.privileges = event.target.Privileges.value
+                                areEdits = true;
+                            }
+                            if (areEdits == true)
+                                this.props.updateProfile(profile);
+                        }
+                        event.target.Id.value = null;
+                        event.target.Username.value = null;
 
-                },
-                    (error) => {
-                        alert('Failed:' + error);
-                    })
+                        event.target.Privileges.value = null;
+                        document.getElementById('editUsers').submit();
+                        
+                    }
+                    resolve(res.json())
+            
+                }
+
+            )
 
         })
+        return ret;
     }
 
 
     loader = async (event) => {
         const res = await this.handleSubmit(event);
         if (res) {
-            if (res.status != 400)
-                event.target.Id.value = null;
-            event.target.Username.value = null;
-            event.target.Password.value = null;
-            event.target.Privileges.value = null;
-            document.getElementById('editUsers').submit();
+             alert(res);
+        } else {
+            console.log('Undefined Behavior');
         }
+        event.target.Password.value = null;
     }
 
     render() {
@@ -104,7 +126,7 @@ export class EditUsersModal extends Component {
                                     </Form.Group>
                                     <Form.Group controlId="Password">
                                         <Form.Label>Password</Form.Label>
-                                        <Form.Control type="password" name="Password" required>
+                                        <Form.Control type="password" name="Password" >
 
                                         </Form.Control>
                                     </Form.Group>

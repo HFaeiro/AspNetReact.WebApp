@@ -3,7 +3,7 @@ import { Modal, Button, Row, Col, Form } from 'react-bootstrap';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Users } from './Users';
 import { AddUsersModal } from './AddUsersModal';
-
+import './Login.css'
 export class Login extends Component {
     constructor(props) {
         super(props);
@@ -13,7 +13,7 @@ export class Login extends Component {
     //attempt to get profile data back from server with login data
     getPostResponse = async (event) => {
         return await new Promise(resolve => {
-            fetch(process.env.REACT_APP_API + 'login', {
+            fetch('/' +process.env.REACT_APP_API + 'login', {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
@@ -24,7 +24,11 @@ export class Login extends Component {
                     Password: event.target.Password.value,
                 })
             })
-                .then(res => res.json())
+                .then(res => {
+                    if (res.status == 200)
+                        return res.json();
+                    else return res;
+                })
                 .then(data => {
                     resolve(data); //got the data now lets see what it is! this goes back to loader()
                 })
@@ -39,7 +43,7 @@ export class Login extends Component {
             event.preventDefault();
             const res = await this.getPostResponse(event);//await login response from server
             if (res != null) {
-                if (res.status != 400) { //if response status is not a bad request send data to login func
+                if (!res.status) { //if response status is not a bad request send data to login func
                     this.props.login(res);
                     event.target.Username.value = null;
                     event.target.Password.value = null;
@@ -50,6 +54,7 @@ export class Login extends Component {
                     alert('Sorry Invalid Username & Password. Please Try Again!');
                     if (this.props.isLoggedIn === 'true')
                         this.props.logout();
+                    event.target.Password.value = null;
                 }
             }
             else { //if invalid return value from login we will just send to logout to make sure no lingering logged in vals
@@ -68,7 +73,8 @@ export class Login extends Component {
 
             console.log(this.props);
             return (
-                <div>
+                <>
+                <div className="loginForm">
                     <h3>Login</h3>
 
                     <Form id="login" onSubmit={this.loader}>
@@ -91,20 +97,23 @@ export class Login extends Component {
                             </Button>
                         </Form.Group>
                     </Form>
-                    <AddUsersModal
-                        token={this.props.token}
-
-
-                    />
+                       
                 </div>
+                    <div className="">
+                        <AddUsersModal
+                            token={this.props.token}
 
+
+
+                        /> </div>
+                </>
             );
         }
-        //else redirect to users page
+        //else redirect to home page
         else
             return (
                 <div>
-                    <Navigate to={"/"} />
+                    <Navigate to={"/videoapp/myvideos"} />
 
                 </div>
 

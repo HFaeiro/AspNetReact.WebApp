@@ -1,0 +1,26 @@
+.loginForm {
+    flex-direction: column;
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: center;
+    align-content: space-around;
+}
+.loginForm div {
+    flex-direction: column;
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    
+    align-content: space-around;
+}
+.addUsersModal {
+        flex-direction: column;
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: flex-start;
+        align-content: space-around;
+}

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
 
@@ -16,14 +17,26 @@ namespace ASP.Back.Controllers
         {
              _context = context;
         }
-
+   
         // GET: api/Users
         [HttpGet]
-        [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<IEnumerable<Users>>> GetUserModels()
+        [Authorize]
+        public async Task<ActionResult<IEnumerable<Profile>>> GetUserModels()
         {
-            return await _context.UserModels.ToListAsync();
+            var users = await _context.UserModels.ToListAsync();
+            return UserModelToProfile(users);
         }
+
+
+
+        private ActionResult<IEnumerable<Profile>> UserModelToProfile(IEnumerable<Users> users)
+        {
+            List<Profile> p = new List<Profile>();
+            foreach (Users user in users)
+                p.Add(new Profile(user));
+            return p;
+        }
+
 
         //// GET: api/Users/5
         //[HttpGet("{id}")]
@@ -59,27 +72,45 @@ namespace ASP.Back.Controllers
                 return NotFound();
             }
         }
-
+        [HttpGet("ping/")]
+        [Authorize]
+        public async Task<IActionResult> GetPing()
+        {
+            string expirationDate = ControllerHelpers.GetExpirationFromToken(User.Identity).ToString();
+            return Ok(expirationDate);
+        }
         // PUT: api/Users/5
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPut("{id}")]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> PutUserModel(int id,Users UserModel)
+        public async Task<IActionResult> PutUserModel(int id, Users UserModel)
         {
 
             if (id != UserModel.UserId)
             {
                 return BadRequest();
             }
-            var userModel = _context.UserModels.FirstOrDefault(x =>
-                                                    x.Username.ToLower() == UserModel.Username.ToLower());
+            var userModel = await _context.UserModels.FindAsync(id);
             if (userModel == null)
             {
                 return NotFound();
             }
 
-            _context.Entry(userModel.replace(UserModel)).State = EntityState.Modified;
 
+            if (userModel.Username != UserModel.Username)
+            {
+
+                var tstUser = _context.UserModels.FirstOrDefault(x =>
+                                                       x.Username.ToLower() == UserModel.Username.ToLower());
+                if (tstUser == null)
+                {
+                    _context.Entry(userModel.replace(UserModel)).State = EntityState.Modified;
+                }
+                else
+                    return BadRequest($"Username Already Taken");
+            }
+            else
+                _context.Entry(userModel.replace(UserModel)).State = EntityState.Modified;
             try
             {
                 await _context.SaveChangesAsync();
@@ -97,6 +128,7 @@ namespace ASP.Back.Controllers
             }
 
             return Ok($"Edited Successfully");
+
         }
 
         // POST: api/Users
@@ -123,8 +155,8 @@ namespace ASP.Back.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> DeleteUserModel(int id)
         {
-            
-           if(id == 1)
+
+            if (id == 1)
                 return BadRequest();
             var tmpUserModel = await _context.UserModels.FindAsync(id);
             if (tmpUserModel == null)

@@ -1,0 +1,12 @@
+.App {
+    display: block;
+}
+.bannerLogo {
+    position: relative;
+    display: inline-block;
+    width: calc(100vw - 60px);
+    height: 20vh;
+    margin: auto;
+    top: 0;
+    left: 5vw;
+}

@@ -20,7 +20,7 @@ export class AddUsersModal extends Component {
     handleSubmit = async (event) => {
          const ret = await new Promise(resolve => {
             event.preventDefault();
-            fetch(process.env.REACT_APP_API + 'users', {
+             fetch('/' +process.env.REACT_APP_API + 'users', {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
@@ -66,7 +66,7 @@ export class AddUsersModal extends Component {
        
         return (
             <>
-                <div className="d-flex align-items-center justify-content-center">
+                <div className="addUsersModal">
                 {!this.props.dontShowButton ?  
                     <Button variant="primary" onClick={this.openModal}>
                         Create User

@@ -26,7 +26,7 @@ export default function Logout(props) {
                 <Button variant='primary' onClick={() => closeModal() }>Nevermind!</Button>
             </Modal.Body>
             </Modal>
-        : <Navigate to={"/"} />
+        : <Navigate to={"/videoapp"} />
 
 
     return (

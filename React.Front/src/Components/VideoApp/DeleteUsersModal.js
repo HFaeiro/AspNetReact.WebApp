@@ -18,7 +18,7 @@ export class DeleteUsersModal extends Component {
 
     //sends a delete with id
     async handleSubmit(event) {
-        fetch(process.env.REACT_APP_API + 'users/' + event.target.Id.value, {
+        fetch('/' +process.env.REACT_APP_API + 'users/' + event.target.Id.value, {
             method: 'DELETE',
             headers: {
                 'Accept': 'application/json',

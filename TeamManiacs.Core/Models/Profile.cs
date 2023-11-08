@@ -14,13 +14,23 @@ namespace TeamManiacs.Core.Models
     {
         private PrivTypes privileges;
 
-        public Profile(int userId, string username, string token, PrivTypes privileges)
+        public Profile(int userId, string username, string token, PrivTypes privileges, List<int>? videos)
         {
             UserId = userId;
             Username = username;
             Token = token;
             Privileges = privileges;
+            Videos = videos?.Count>0 ? videos : new List<int>();
         }
+        public Profile(Users user)
+        {
+            UserId = user.UserId;
+            Username = user.Username;
+            Privileges= user.Privileges;
+            Videos = user.Videos?.Count > 0 ? user.Videos : new List<int>();
+            Token = "";
+        }
+
 
         [Key]
         public int UserId { get; set; }
@@ -35,5 +45,6 @@ namespace TeamManiacs.Core.Models
 
         [JsonConverter(typeof(JsonStringEnumMemberConverter))]
         public PrivTypes Privileges { get; set; }
+        public List<int> Videos { get; set; }
     }
 }

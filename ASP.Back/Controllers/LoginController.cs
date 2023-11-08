@@ -44,7 +44,7 @@ namespace ASP.Back.Controllers
             if(user != null)
             {
                 var token = GenToken(user);
-                Profile profile = new Profile(user.UserId, user.Username, token, user.Privileges);
+                Profile profile = new Profile(user.UserId, user.Username, token, user.Privileges, user.Videos);
                 if (profile != null)
                 {
                     return Ok(profile);
@@ -60,14 +60,14 @@ namespace ASP.Back.Controllers
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
             var claims = new Claim[]
             {
-                new Claim(ClaimTypes.NameIdentifier ,user.Username),
+                new Claim(ClaimTypes.NameIdentifier ,user.UserId.ToString()),
                 new Claim(ClaimTypes.Role, user.Privileges.ToString())
             };
             var token = new JwtSecurityToken(
                 _config["Jwt:Issuer"],
                 _config["Jwt:Audience"],
                 claims,
-                expires: DateTime.Now.AddDays(15),
+                expires: DateTimeOffset.UtcNow.AddSeconds(30).DateTime,
                 signingCredentials: credentials);
             string sToken = new JwtSecurityTokenHandler().WriteToken(token);
             return sToken;

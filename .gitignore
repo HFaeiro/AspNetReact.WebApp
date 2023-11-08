@@ -368,3 +368,9 @@ FodyWeavers.xsd
 /TeamManiacs.Data/Migrations
 *.mp4
 
+/ASP.Back/wwwroot
+/ASP.Back/Properties/ServiceDependencies/portalmjr - Web Deploy
+/ASP.Back/Properties
+/React.Front/'/ASP.Back/wwwroot/'
+/ASP.Back/appsettings.json
+/ASP.Back/uploads/videos

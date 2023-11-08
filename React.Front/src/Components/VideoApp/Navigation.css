@@ -1,0 +1,54 @@
+
+
+.Bar {
+    position: relative;
+    background-color: #212529;
+    height: 60px;
+    width: 100%;
+    z-index: 99;
+}
+
+    .videoNavBar .navLink {
+        text-decoration: none;
+    }
+
+        .videoNavBar .navLink div {
+            color: #212529;
+            padding: 1.5vh 2.5vh 1.5vh;
+            text-decoration: none;
+        }
+
+            .videoNavBar .navLink div:hover {
+                cursor: pointer;
+                opacity: .7;
+                background-color: #0a090e;
+                transition: .1s
+            }
+
+
+.videoNavBar {
+    position: absolute;
+    display: inline-block;
+    top: 0;
+    right: 0;
+    height: auto;
+    max-height: 60px;
+    width: auto;
+    overflow: hidden;
+    white-space: nowrap;
+    background-color: #212529;
+}
+
+    .Bar:hover .videoNavBar {
+        margin-top : 60px;
+        max-height: 2000px;
+        transition: max-height 1.5s ease-in-out, box-shadow 0.6s linear;
+    }
+
+        .Bar:hover .videoNavBar .navLink div {
+            color: aliceblue;
+            transition: color 1.5s;
+            transition: background-color .5s;
+        }
+
+
