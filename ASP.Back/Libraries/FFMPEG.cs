@@ -21,7 +21,7 @@ namespace ASP.Back.Libraries
             public NamedPipeServerStream Npss { get; set; }
             public string PipeName { get; set; }
             public Stream? Stream { get; set; }
-            public string pipePath { get; set; }
+            public string PipePath { get; set; }
 
         }
         public struct FFVideo
@@ -87,12 +87,27 @@ namespace ASP.Back.Libraries
         }
         public bool success { get; set; }
 
-        private FFPipe? CreatePipe(PipeDirection direction)
+        private FFPipe? CreatePipe(PipeDirection direction, string workingDirectory = "", bool createDirectory = false)
         {
             try
             {
+
+
+
                 FFPipe pipe = new FFPipe();
                 pipe.PipeName = Guid.NewGuid().ToString("N");
+                workingDirectory = Path.Combine(workingDirectory , pipe.PipeName);
+
+                if (createDirectory)
+                {                    
+                    if (!Directory.Exists(workingDirectory))
+                    {
+                        Console.WriteLine($"\t\t{nameof(CreatePipe)} - workingDirectory:{Path.Combine(workingDirectory)} Doesn't Exist! Creating it. ");
+                        Directory.CreateDirectory(workingDirectory);
+                    }
+
+                }
+
                 if (RuntimeInformation.RuntimeIdentifier.StartsWith("win"))
                 {
                     pipe.Npss = new NamedPipeServerStream(pipe.PipeName, direction, 1,
@@ -105,9 +120,25 @@ namespace ASP.Back.Libraries
                     //ProcessStartInfo startInfo = new ProcessStartInfo("mkfifo");
                     //startInfo.Arguments = pipe.PipeName;
                     //Process.Start(startInfo);
+                    if (workingDirectory != "")
+                    {
+                        string pipeDirectory = Path.Combine("pipes");
+                        string pipePath = Path.Combine(workingDirectory, pipeDirectory);
+                        if (!Directory.Exists(pipePath))
+                        {
+                            Console.WriteLine($"\t\t{nameof(CreatePipe)} - pipeDirectory:{pipePath} Doesn't Exist! Creating it. ");
+                            Directory.CreateDirectory(pipePath);
+                        }
 
-                    pipe.pipePath = Path.Combine("pipes", pipe.PipeName);
-                    pipe.Stream = File.Open(pipe.PipeName, FileMode.Create);
+                        pipe.PipePath = Path.Combine(pipePath, pipe.PipeName);
+                        pipe.Stream = File.Open(pipe.PipePath, FileMode.Create);
+
+                    }
+                    else
+                    {
+                        pipe.PipePath = Path.Combine("pipes", pipe.PipeName);
+                        pipe.Stream = File.Open(pipe.PipePath, FileMode.Create);
+                    }
                 }
 
                 return pipe;
@@ -240,6 +271,7 @@ namespace ASP.Back.Libraries
             return SaveMaster();
 
         }
+
         public Stream? GetWebStream()
         {
             try
@@ -383,6 +415,7 @@ namespace ASP.Back.Libraries
                 return null;
             }
         }
+
         private FFVideo fillFileStrings(string fullFilePath)
         {
             FFVideo video = new FFVideo();
@@ -425,7 +458,7 @@ namespace ASP.Back.Libraries
                 else
                 {
 
-                    PipeNamesFFmpeg = $@"{ffPipe.Value.pipePath + ".pipe"}";
+                    PipeNamesFFmpeg = $@"{ffPipe.Value.PipePath + ".pipe"}";
                 }
                 args.Add("-loglevel fatal -show_entries stream=codec_type -of default=nw=1 " + PipeNamesFFmpeg);
                 StringCollection values = new StringCollection();
@@ -570,22 +603,19 @@ namespace ASP.Back.Libraries
 
                 inStream.Position = streamStartPos;
 
-                FFPipe? ffPipe = CreatePipe(PipeDirection.InOut);
+
+
+                currentDirectory = video.folder;
+                FFPipe? ffPipe = CreatePipe(PipeDirection.InOut, currentDirectory, true);
                 if ((ffPipe?.Npss == null && isWindows) || ffPipe?.Stream == null)
                 {
                     Console.WriteLine($"\t\t{nameof(BuildHLS)} - Named Pipe Returned Null! ");
                     return false;
                 }
+                
                 video.GUID = ffPipe.Value.PipeName;
-
-                currentDirectory = video.folder + video.GUID;
-                if (!Directory.Exists(currentDirectory))
-                {
-                    //Console.WriteLine($"\t\t{nameof(BuildHLS)} - currentDirectory:{Path.Combine(currentDirectory)} Doesn't Exist! Creating it. ");
-                    Directory.CreateDirectory(currentDirectory);
-                }
+                currentDirectory += video.GUID;
                 currentDirectory += Path.DirectorySeparatorChar;
-
 
                 string PipeNamesFFmpeg;
                 if (isWindows)
@@ -594,7 +624,8 @@ namespace ASP.Back.Libraries
                 }
                 else
                 {
-                    PipeNamesFFmpeg = $@"{ffPipe.Value.PipeName}";
+                    PipeNamesFFmpeg = $@"{ffPipe.Value.PipePath}";
+                    Console.WriteLine($"\t\t{nameof(BuildHLS)} - Named Pipe Path! {PipeNamesFFmpeg} ");
                 }
                 var pipeBuilder = new List<string>();
                 var argumentBuilder = new List<string>();
@@ -651,7 +682,7 @@ namespace ASP.Back.Libraries
                 using (var proc = StartFFMpeg(FFTYPE.FFMPEG, completeArgs, currentDirectory))
                 {
                     //Console.WriteLine($"FFMpeg path: " + FFTYPE.FFMPEG);
-                   // Console.WriteLine($"Arguments: {proc.StartInfo.Arguments}");
+                    Console.WriteLine($"Arguments: {proc.StartInfo.Arguments}");
 
                     proc.EnableRaisingEvents = false;
                     proc.Start();
@@ -678,10 +709,10 @@ namespace ASP.Back.Libraries
                     else
                     {
 
-                       // Console.WriteLine($"\t\t{nameof(BuildHLS)} - Writing Linux Stream! - ");
+                        Console.WriteLine($"\t\t{nameof(BuildHLS)} - Writing Linux Stream! - ");
                         inStream.CopyTo(ffPipe.Value.Stream);
 
-                       // Console.WriteLine($"\t\t{nameof(BuildHLS)} - Wrote Linux Stream! - inStream.Position : {inStream.Position} - Wrote: {ffPipe.Value.Stream.Length} Bytes");
+                        Console.WriteLine($"\t\t{nameof(BuildHLS)} - Wrote Linux Stream! - inStream.Position : {inStream.Position} - Wrote: {ffPipe.Value.Stream.Length} Bytes");
 
                     }
 
@@ -737,11 +768,11 @@ namespace ASP.Back.Libraries
                 }
                 if (actualErr > 0)
                 {
-                    if (Directory.Exists(currentDirectory))
-                    {
-                        Directory.Delete(currentDirectory,true);
-                    }
-
+                    //if (Directory.Exists(currentDirectory))
+                    //{
+                    //    Directory.Delete(currentDirectory,true);
+                    //}
+                    Console.WriteLine($"\t\t{nameof(BuildHLS)} - Directory.Delete({currentDirectory},true);");
                     success = false;
                     //Console.WriteLine($"\t\t{nameof(BuildHLS)} - FFMPEG Failed to Convert media To HLS format - Time Elapsed {sw.Elapsed.ToString("mm\\:ss\\.ff")}");
                     if (recursed)
@@ -929,7 +960,7 @@ namespace ASP.Back.Libraries
                     {
                         File.Delete(videoPath);
                     }
-
+                    
                     outFFPipe.Value.Npss?.Dispose();
                     sw.Stop();
                     Console.WriteLine($"\t\t{nameof(MoveFlags)} - Total Time Taken to do job - {sw.Elapsed.ToString("hh\\mm\\:ss\\.ff")}");

@@ -91,7 +91,10 @@ export class VideoStream extends Component {
                         continue;
                     }
                     if (/CODECS/.test(line)) {
-                        var keyVal = line.split(',')[2] + ',' + line.split(',')[3];
+
+                        var c1 = line.split(',')[2];
+                        var c2 = line.split(',')[3];
+                        var keyVal = c1 + (c2 != undefined ?  ',' + c2 : '');
                         master.codex = keyVal;
                     }
                     if (/STREAM-INF/.test(line)) {
@@ -319,10 +322,10 @@ export class VideoStream extends Component {
         if (!this.vRef || !this.vRef.current) {
             return;
         }
-        if (this.vRef.current.currentTime === 0 && this.master.currentTsIndex != 0) {
+       /* if (this.vRef.current.currentTime === 0 && this.master.currentTsIndex != 0) {
             this.vRef.current.play();
             return;
-        }
+        }*/
 
         if ((this.vRef.current.duration == NaN || this.vRef.current.duration == undefined) &&
             (this.vRef.current.currentTime >= (this.vRef.current.duration) * .5)) {
@@ -339,7 +342,7 @@ export class VideoStream extends Component {
         {
             return setTimeout(this.onTimeUpdate, 2600);
         }
-        if (this.vRef.current.currentTime >= this.totalChunkDuration - (currentChunkTime * .3) && this.totalChunkDuration != 0) {
+        if (this.vRef.current.currentTime >= this.totalChunkDuration - (currentChunkTime * .2) && this.totalChunkDuration != 0) {
 
             /*deprecated by mediaSource
             if (!this.fetchedVideo.video[this.master.currentTsIndex + 1] || this.fetchedVideo.video[this.master.currentTsIndex + 1] == undefined || this.fetchedVideo.video[this.master.currentTsIndex + 1] == NaN) {
