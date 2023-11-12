@@ -1,19 +1,27 @@
 import React, { Component } from 'react';
-import { Form } from 'react-bootstrap'
+import { Form ,Modal} from 'react-bootstrap'
 
 import './UploadVideo.css';
 export class UploadVideo extends Component {
     constructor(props) {
         super(props);
-
+        this.token = this.props.profile.token;
         this.state =
         {
+            showModal:false,
             file: null,
             video: null,
             showResults: false,
+            uploaded:false,
+            uploadButton:true,
+
         }
     }
-    clearFiles() {
+
+    openModal = () => this.setState({ showModal: true });
+    closeModal = () => this.setState({ showModal: false });
+
+    clearFile() {
         window.URL.revokeObjectURL(this.state.video.src);
         this.setState({ file: null, video: null });
     }
@@ -27,7 +35,7 @@ export class UploadVideo extends Component {
 
                 if (video.duration > 900) {
 
-                    reject("Invalid Video! Max Video Length is 1:30s");
+                    reject("Invalid Video! Max Video Length is 15m");
                     window.URL.revokeObjectURL(video.src);
                 }
                 resolve(this);
@@ -90,6 +98,11 @@ export class UploadVideo extends Component {
         this.loadFile(file)
     }
     async uploadFile() {
+        this.setState(
+            {
+                uploadButton:false
+            }
+        )
         var success = true;
         const formData = new FormData();
         formData.append("VideoLength", this.state.video.duration);
@@ -99,13 +112,15 @@ export class UploadVideo extends Component {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
-                    'Authorization': 'Bearer ' + this.props.profile.token
+                    'Authorization': 'Bearer ' + this.token
                 },
                 body: formData
 
             }).then(
                 response => {
-
+                     this.setState(
+                       { uploaded: true}
+                    );
                     if (response.status == 200) {
                         return response.json()
                     }
@@ -120,14 +135,16 @@ export class UploadVideo extends Component {
                         profile.videos.push(data);
                         this.props.updateProfile(profile);
                     }
+
                 },
                 (error) => {
                     alert(error);
                     success = false;
                 })
-                .then(
-                    console.log("sent file : ", this.state.file.name) // Handle the success response object
-                ).catch(
+                .then( () => {
+                    console.log("sent file : ", this.state.file.name); // Handle the success response object
+                   
+                }).catch(
                     error => console.log("fetch: " + error), // Handle the error response object
                     /*success = false*/
                 );
@@ -137,29 +154,44 @@ export class UploadVideo extends Component {
             console.log("catch: " + e)
             success = false;
         }
-        if (success) {
+/*        
+if (success) {
             this.setState({ file: null });
             this.setState({ video: null });
 
 
         }
-
+*/
     }
 
 
     render() {
-        return (
-            (this.state.file && this.state.video && this.props != undefined) ?
+        let uploadModal = this.state.showModal ?
+        <div>
+        
+        <Modal className="uploadModal"  show={this.state.showModal}
+                    onHide={this.closeModal}
+                    size="lg"
+                    aria-labelledby="contained-modal-title-vcenter"
+                    centered >
+                    <Modal.Header >
+                        <Modal.Title id="contained-modal-title-vcenter">
+                            Upload Video
+                        </Modal.Title>
+                    </Modal.Header>
+                    <Modal.Body >
 
+{(this.state.file && this.state.video && this.props.profile != undefined) ?
                 <div className=" justify-content-left">
-
                     <button className="btn btn-primary" onClick={(e) => this.setState({ showResults: !this.state.showResults })}>
-                        {this.state.showResults ? "Hide" : "Preview"}
+                        {this.state.showResults ? "Hide Preview" : "Preview"}
                     </button>
                     <div>
-                        {this.state.showResults ? <video controls muted type={this.state.file.type}
+                        {this.state.showResults 
+                            ? <video className="videoPreview" controls muted type={this.state.file.type}
                             src={this.state.video.src} >
-                        </video> : null}
+                        </video> 
+                        : null}
                     </div>
                     <table className='table table-striped'
                         aria-labelledby="tabelLabel">
@@ -179,21 +211,62 @@ export class UploadVideo extends Component {
                             </tr>
                         </tbody>
                     </table>
-                    <button className="btn btn-primary" onClick={(e) => { this.uploadFile().then(() => window.location.reload()) }}>
-                        Upload File
+                    
+                   {this.state.uploaded ? 
+                       <button className="btn btn-danger" type="submit"  >
+                        Save
                     </button>
-                    <button className="btn btn-danger" type="submit" onClick={(e) => this.clearFiles()}>
-                        Clear File
-                    </button>
-
+                    : 
+                    <div >
+                      <button className="btn btn-primary" disabled={!this.state.uploadButton} onClick={(e) => { this.uploadFile() }}>
+                        Upload
+                      </button>
+                   <button className="btn btn-danger" disabled={!this.state.uploadButton} onClick={(e) => { this.clearFile() }}>
+                        Clear
+                      </button>
+                      </div>
+                    }
+                    
+                   
+                    
+                   
+                    
+                    
                 </div> : <div >
                     <Form.Group controlId="formFile" className="mb-3">
-                        <Form.Label>Upload a Video Submission!</Form.Label>
+                        <Form.Label>Upload a Video!</Form.Label>
                         <Form.Control type="file" name="file_source" size="40" accept="video/*" onChange={(e) => this.handleFileChange(e)} />
                     </Form.Group>
 
-                </div>
+                </div>}
+                </Modal.Body>
+                    <Modal.Footer>
+                    {this.state.uploaded ? 
+                    <button className="btn btn-success" onClick={this.closeModal}>
+                            Finish
+                        </button>
+                        :
+                        <button className="btn btn-danger" disabled={!this.state.uploadButton} onClick={this.closeModal}>
+                            Cancel
+                        </button>
 
+                        }
+                    </Modal.Footer>
+                 </Modal>
+        </div>
+       
+        : 
+        <div>
+        <button className="btn btn-primary" onClick={(e) => this.setState({ showModal: !this.state.showModal })}>
+                       Upload!</button>
+        </div>
+
+
+
+        return (
+            <div>
+            {uploadModal}
+            </div>
 
         );
     }

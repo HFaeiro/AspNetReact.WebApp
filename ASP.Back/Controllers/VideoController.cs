@@ -9,6 +9,9 @@ using static ASP.Back.Libraries.FFMPEG;
 using TeamManiacs.Core.Convertors;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.Extensions.DependencyInjection;
+using System.Security.Principal;
+using System.IO;
 
 namespace ASP.Back.Controllers
 {
@@ -19,8 +22,8 @@ namespace ASP.Back.Controllers
     {
 
         private readonly IWebHostEnvironment hostEnvironment;
-        private readonly TeamManiacsDbContext _context;
         private readonly IConfiguration _configuration;
+        IServiceScopeFactory _serviceScopeFactory;
         private MediaManager mediaManager;
         private StreamOut streamOut;
 
@@ -29,11 +32,11 @@ namespace ASP.Back.Controllers
         /// Constructor For Video Controller
         /// Host Env , DB Context
         ///</Summary>
-        public VideoController(IWebHostEnvironment hostEnvironment, TeamManiacsDbContext context, IConfiguration configuration)
+        public VideoController(IWebHostEnvironment hostEnvironment, IServiceScopeFactory _serviceScopeFactory, IConfiguration configuration)
         {
             this.hostEnvironment = hostEnvironment;
-            this._context = context;
-            mediaManager = new MediaManager(hostEnvironment, context, configuration, this);
+            this._serviceScopeFactory = _serviceScopeFactory;
+            mediaManager = new MediaManager(hostEnvironment, _serviceScopeFactory, configuration, this);
             _configuration = configuration;
             streamOut = new StreamOut(this);
         }
@@ -50,15 +53,25 @@ namespace ASP.Back.Controllers
 
             try
             {
-                var user = await ControllerHelpers.GetUserById(id, _context);
-                if (user != null)
+                Users? user = null;
+                using (var scope = _serviceScopeFactory.CreateScope())
                 {
-                    var videos = await mediaManager.GetVideosByUser(user, this.User.Identity);
-                    if (videos != null)
+                    TeamManiacsDbContext db = scope.ServiceProvider.GetService<TeamManiacsDbContext>();
+                    if (db == null)
                     {
-                        return Ok(videos);
+                        return BadRequest($"Video.GET: No DB");
                     }
 
+                    user = await ControllerHelpers.GetUserById(id, db);
+                    if (user != null)
+                    {
+                        var videos = await mediaManager.GetVideosByUser(user, this.User.Identity, db);
+                        if (videos != null)
+                        {
+                            return Ok(videos);
+                        }
+
+                    }
                 }
             }
             catch (Exception ex)
@@ -84,8 +97,16 @@ namespace ASP.Back.Controllers
             Response.StatusCode = 400;
             try
             {
-
-                var videoIn = await _context.Videos.FindAsync(id);
+                Video? videoIn = null;
+                using (var scope = _serviceScopeFactory.CreateScope())
+                {
+                    TeamManiacsDbContext db = scope.ServiceProvider.GetService<TeamManiacsDbContext>();
+                    if (db == null)
+                    {
+                        return ;
+                    }
+                    videoIn = await db.Videos.FindAsync(id);
+                }
                 Console.WriteLine($"\t\t{nameof(GetMaster)} - video Id: {id} - video : {(videoIn != null ? videoIn.FileName : null)}");
                 if (videoIn != null)
                 {
@@ -148,35 +169,49 @@ namespace ASP.Back.Controllers
                     var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
                     if (userId != null)
                     {
-                        var user = await ControllerHelpers.GetUserById((int)userId, _context);
-                        if (user != null)
+
+                        IIdentity ? identity = this.User.Identity;
+                        Stream vod = new System.IO.MemoryStream(); 
+                        videoIn.File.CopyTo(vod);
+                        VideoUpload videoUpload = new VideoUpload();
+                        videoUpload.File = new FormFile(vod, 0, vod.Length, "streamFile", videoIn.File.FileName)
                         {
-                            int? ID = null;
-                            if (user.Videos == null || user.Videos.Count <= 0)
+                            Headers = new HeaderDictionary(),
+                            ContentType = videoIn.File.ContentType,
+                            ContentDisposition = videoIn.File.ContentDisposition,
+                        };
+                        Thread thread = new Thread(async () =>
+                        {
+                        using (var scope = _serviceScopeFactory.CreateScope())
+                        {
+                            TeamManiacsDbContext db = scope.ServiceProvider.GetService<TeamManiacsDbContext>();
+                            if (db == null)
                             {
-                                ID = await mediaManager.AddVideoToDB(videoIn, this.User.Identity);
-                                user.Videos = new List<int>();
-                                if (ID != null)
-                                {
-                                    user.Videos.Add((int)ID);
-                                    _context.Entry(user).State = EntityState.Modified;
-                                    await _context.SaveChangesAsync();
-                                }
-
+                                return;
                             }
-                            else
+                            var user = await ControllerHelpers.GetUserById((int)userId, db);
+                            if (user != null)
                             {
 
-                                ID = await mediaManager.AddVideoToDB(videoIn, this.User.Identity);
-                                if (ID != null)
-                                {
-                                    user.Videos.Add((int)ID);
-                                    _context.Entry(user).State = EntityState.Modified;
-                                    await _context.SaveChangesAsync();
-                                }
+                                
+                                    int? ID = null;
+                                    if (user.Videos == null || user.Videos.Count <= 0)
+                                    {
+                                        user.Videos = new List<int>();
+                                    }
+                                    ID = await mediaManager.AddVideoToDB(videoUpload, identity, db);
+                                    if (ID != null)
+                                    {
+                                        user.Videos.Add((int)ID);
+                                        db.Entry(user).State = EntityState.Modified;
+                                        await db.SaveChangesAsync();
+                                    }
+                                
+                                
                             }
-                            return Ok(ID);
-                        }
+                        }});
+                        thread.Start();
+                        return Ok(200);
                     }
                 }
                 return BadRequest();
@@ -188,6 +223,10 @@ namespace ASP.Back.Controllers
             }
 
         }
+
+        
+
+
         ///<Summary>
         /// Edits Video Information
         /// send values for every field. 
@@ -220,17 +259,24 @@ namespace ASP.Back.Controllers
                             video.Description = videoIn.Description;
                             //video.Ratings = videoIn.Ratings;
                             video.Title = videoIn.Title;
-
-                            _context.Entry(video).State = EntityState.Modified;
-                            try
+                            using (var scope = _serviceScopeFactory.CreateScope())
                             {
-                                await _context.SaveChangesAsync();
-                            }
-                            catch (DbUpdateConcurrencyException)
-                            {
-
+                                TeamManiacsDbContext db = scope.ServiceProvider.GetService<TeamManiacsDbContext>();
+                                if (db == null)
                                 {
-                                    throw;
+                                    return BadRequest($"Video.GET: No DB");
+                                }
+                                db.Entry(video).State = EntityState.Modified;
+                                try
+                                {
+                                    await db.SaveChangesAsync();
+                                }
+                                catch (DbUpdateConcurrencyException)
+                                {
+
+                                    {
+                                        throw;
+                                    }
                                 }
                             }
                             return Ok($"Video Edited Successfully");
@@ -245,9 +291,15 @@ namespace ASP.Back.Controllers
 
         protected Video? GetVideoById(int id)
         {
-
-            return _context.Videos.Find(id);
-
+            using (var scope = _serviceScopeFactory.CreateScope())
+            {
+                TeamManiacsDbContext db = scope.ServiceProvider.GetService<TeamManiacsDbContext>();
+                if (db == null)
+                {
+                    return null;
+                }
+                return db.Videos.Find(id);
+            }
         }
         ///<Summary>
         /// Deletes the Video by [INT]Id
@@ -262,9 +314,16 @@ namespace ASP.Back.Controllers
                 Video? video = GetVideoById(id);
                 if (video != null)
                 {
-
-                    _context.Videos.Remove(video);
-                    _context.SaveChanges();
+                    using (var scope = _serviceScopeFactory.CreateScope())
+                    {
+                        TeamManiacsDbContext db = scope.ServiceProvider.GetService<TeamManiacsDbContext>();
+                        if (db == null)
+                        {
+                            return;
+                        }
+                        db.Videos.Remove(video);
+                        db.SaveChanges();
+                    }
                     var fullFilePath = Path.Combine(mediaManager.videosPath, video.VideoName);
                     if (System.IO.File.Exists(fullFilePath))
                     {

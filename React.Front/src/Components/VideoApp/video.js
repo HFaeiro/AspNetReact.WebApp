@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import { Table } from 'react-bootstrap'
 import VideoTable from './Functions/VideoTable'
 import { VideoStream } from './VideoStream'
+
+import { UploadVideo } from './UploadVideo'
 import { Navigate, useParams } from 'react-router-dom';
 import { withRouter } from '../../Utils/withRouter';
 import { Helmet } from "react-helmet";
@@ -152,14 +154,22 @@ export class Videos extends Component {
             </> : <>{(this.state.master && this.state.master.length) && (this.state.showPlayer || this.props.router && this.props.router.params.id)
                     ?
                     <div>
-                        <div><VideoStream
+                        <div>
+                            <VideoStream
                             master={this.state.master }
                         >
 
-                        </VideoStream></div></div>
-                    : this.props.userId ? <>No Videos! Please upload one.</>
+                            </VideoStream>
+                        </div>
+                   </div>
+                    : this.props.userId ? <><div className="upload">
+                    <h2 className="noVideoText">No Videos! Please upload one.</h2>
+                    <UploadVideo
+                        profile={this.props.profile}
+                        updateProfile={this.props.updateProfile }
+                    /></div></>
                         : this.state.userId ? <>This Users Videos are Private!</>
-                            : <>This Video Does Not Exist! Please check your Link and Try Again!</>}
+                            : this.props.userId ? <>This Video Does Not Exist! Please check your Link and Try Again!</> :  <></>}
             </>}
             </div>
 

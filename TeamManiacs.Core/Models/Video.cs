@@ -22,9 +22,9 @@ namespace TeamManiacs.Core.Models
             if (Title?.Length < 0)
                 Title = videoIn.File.FileName;
             ContentSize = (int)videoIn.File.OpenReadStream().Length;
-            Description = videoIn.File.ContentDisposition;
-            ContentType = videoIn.File.ContentType;
-            ContentDisposition = videoIn.File.ContentDisposition;
+            Description = videoIn.File.ContentDisposition != null ? videoIn.File.ContentDisposition : " ";
+            ContentType = videoIn.File.ContentType != null ? videoIn.File.ContentType : " ";
+            ContentDisposition = videoIn.File.ContentDisposition != null ? videoIn.File.ContentDisposition : " ";
             Uploader = uploader;
             isPrivate = true;
         }

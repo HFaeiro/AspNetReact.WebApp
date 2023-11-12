@@ -1,4 +1,5 @@
 ﻿
+using Microsoft.CodeAnalysis;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using System.IO;
@@ -37,12 +38,17 @@ namespace ASP.Back.Libraries
                 master = new List<string>();
                 resolutions = new List<string>();
                 _codecs = new List<string>();
-
+                _frames = 0;
+                _desiredFps = 23.94f;
+                _duration = 0f;
             }
             public string fileName { get; set; }
             public string videoName { get; set; }
             public string folder { get; set; }
             public string extention { get; set; }
+            public float _desiredFps { get; set; }
+            public float _duration { get; set; }
+            public int _frames { get; set; }
             public List<string> resolutions { get; set; }
             private List<string> _codecs;
             public List<string> codecs
@@ -54,12 +60,79 @@ namespace ASP.Back.Libraries
                 set
                 {
                     _codecs = new List<string>();
-                    foreach (var codec in value.ToList())
+                    foreach (var codec in value)
                     {
-                        var codecType = codec.Split('=');
-                        if (codecType.Length == 2)
+                        if (codec == null)
+                            continue;
+                        if (codec.Contains("nb_frames") && _frames == 0)
                         {
-                            _codecs.Add(codecType[1]);
+                            int totalFrames = 0;
+                            bool frames = int.TryParse(codec.Split('=')[1], out totalFrames);
+                            if (frames)
+                            {
+                                if (this._duration > 0)
+                                {
+                                    this._frames = (int)(this._duration * this._desiredFps);
+                                }
+                                else
+                                {
+                                    this._frames = totalFrames;
+                                }
+
+                            }
+                        }
+                        else if (codec.Contains("nb_read_frames") && _frames == 0)
+                        {
+                            int totalFrames = 0;
+                            bool frames = int.TryParse(codec.Split('=')[1], out totalFrames);
+                            if (frames)
+                            {
+                                if (this._duration > 0)
+                                {
+                                    this._frames = (int)(this._duration * this._desiredFps);
+                                }
+                                else
+                                {
+                                    this._frames = totalFrames;
+                                }
+
+                            }
+                        }
+                        else if (codec.Contains("duration"))
+                        {
+                            float duration = 0;
+                            bool tryDuration = float.TryParse(codec.Split('=')[1], out duration);
+                            if (tryDuration)
+                            {
+                                this._duration = duration;
+                                if(this._frames > 0)
+                                {
+                                    this._frames = (int)(duration * this._desiredFps);
+                                }
+                            }
+                        }else if (codec.Contains("pts_time"))
+                        {
+                            float duration = 0;
+                            bool tryDuration = float.TryParse(codec.Split('=')[1], out duration);
+                            if (tryDuration)
+                            {
+                                if (duration > this._duration)
+                                {
+                                    this._duration = duration;
+                                    if (this._frames > 0)
+                                    {
+                                        this._frames = (int)(duration * this._desiredFps);
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            var codecType = codec.Split('=');
+                            if (codecType.Length == 2)
+                            {
+                                _codecs.Add(codecType[1]);
+                            }
                         }
                     }
 
@@ -73,18 +146,12 @@ namespace ASP.Back.Libraries
         {
             get
             {
-                return currentDirectory + this.Video.GUID + "_master.m3u8";
+                return currentDirectory + this._video.GUID + "_master.m3u8";
             }
         }
-        protected FFVideo _video { get; set; }
+        public FFVideo _video;
         private string currentDirectory { get; set; }
-        public FFVideo Video
-        {
-            get
-            {
-                return _video;
-            }
-        }
+       
         public bool success { get; set; }
 
         private FFPipe? CreatePipe(PipeDirection direction, string workingDirectory = "", bool createDirectory = false)
@@ -195,7 +262,7 @@ namespace ASP.Back.Libraries
 
                 while ((line = masterFile.ReadLine()) != null)
                 {
-                    this.Video.master.Add(line);
+                    this._video.master.Add(line);
                 }
 
                 masterFile.Dispose();
@@ -227,7 +294,7 @@ namespace ASP.Back.Libraries
                     return false;
                 }
 
-                foreach (string line in this.Video.master)
+                foreach (string line in this._video.master)
                 {
                     masterFile.Write(line + '\n');
                 }
@@ -246,7 +313,7 @@ namespace ASP.Back.Libraries
         public bool AppendLineMaster(string newLine, bool atFront = false)
         {
 
-            if (this.Video.master == null || this.Video.master.Count == 0)
+            if (this._video.master == null || this._video.master.Count == 0)
             {
                 if (LoadMaster())
                 {
@@ -260,12 +327,12 @@ namespace ASP.Back.Libraries
             }
             if (atFront)
             {
-                this.Video.master.Insert(0, newLine);
+                this._video.master.Insert(0, newLine);
 
             }
             else
             {
-                this.Video.master.Add(newLine);
+                this._video.master.Add(newLine);
 
             }
             return SaveMaster();
@@ -430,7 +497,7 @@ namespace ASP.Back.Libraries
             return video;
         }
 
-        public List<string> probeForCodecs(Stream inStream)
+        public List<string> probeForCodecsAndFrames(Stream inStream)
         {
             Stopwatch sw = Stopwatch.StartNew();
             bool isWindows = RuntimeInformation.RuntimeIdentifier.StartsWith("win");
@@ -460,8 +527,18 @@ namespace ASP.Back.Libraries
 
                     PipeNamesFFmpeg = $@"{ffPipe.Value.PipePath + ".pipe"}";
                 }
-                args.Add("-loglevel fatal -show_entries stream=codec_type -of default=nw=1 " + PipeNamesFFmpeg);
-                StringCollection values = new StringCollection();
+                string ffProbeInstructionsPath = Path.Combine(Directory.GetCurrentDirectory(), "ffProbeCmds.txt");
+                if (File.Exists(ffProbeInstructionsPath))
+                {
+                    string ffProbeArgs = File.ReadAllText(ffProbeInstructionsPath);
+                    args.Add($"{ffProbeArgs} " + PipeNamesFFmpeg);
+                }
+                else
+                {
+                    args.Add("-loglevel fatal -count_frames -show_entries format_tags -of default=nw=1 " + PipeNamesFFmpeg);
+                }
+                StringCollection values = new StringCollection();                
+                StringCollection genOutput = new StringCollection();
                 using (var proc = StartFFMpeg(FFTYPE.FFPROBE, args))
                 {
                    // Console.WriteLine($"FFMpeg path: " + FFTYPE.FFPROBE.ToString().ToLower());
@@ -495,9 +572,9 @@ namespace ASP.Back.Libraries
                     }
                     proc.OutputDataReceived += (s, e) =>
                     {
-                        lock (values)
+                        lock (genOutput)
                         {
-                            values.Add(e.Data);
+                            genOutput.Add(e.Data);
                         }
                     };
                     proc.ErrorDataReceived += (s, e) =>
@@ -530,9 +607,9 @@ namespace ASP.Back.Libraries
 
                 }
                 sw.Stop();
-                Console.WriteLine($"\t\t{nameof(probeForCodecs)} - Exiting after {sw.Elapsed.ToString("mm\\:ss\\.ff")}");
-
-                return output;
+                Console.WriteLine($"\t\t{nameof(probeForCodecsAndFrames)} - Exiting after {sw.Elapsed.ToString("mm\\:ss\\.ff")}");
+                
+                return genOutput.Cast<string>().ToList();
             }
             catch (Exception ex)
             {
@@ -561,7 +638,7 @@ namespace ASP.Back.Libraries
             long streamStartPos = inStream.Position;
             if ((_video.codecs == null || _video.codecs.Count == 0) && video == null)
             {
-               codecs = probeForCodecs(inStream);
+               codecs = probeForCodecsAndFrames(inStream);
             }
             else
             {
@@ -575,6 +652,7 @@ namespace ASP.Back.Libraries
                     inStream.Position = streamStartPos;
                     return true;
                 }
+               
             }
             inStream.Position = streamStartPos;
             return false;
@@ -596,16 +674,16 @@ namespace ASP.Back.Libraries
                 }
                 long streamStartPos = inStream.Position;
                 inStream.Flush();
-                FFVideo video = fillFileStrings(fileOut);
-                video.codecs = probeForCodecs(inStream);
+                this._video = fillFileStrings(fileOut);
+                _video.codecs = probeForCodecsAndFrames(inStream);
                 inStream.Position = streamStartPos;
-                bool containsAudio = hasAudio(inStream, video);
+                bool containsAudio = hasAudio(inStream, _video);
 
                 inStream.Position = streamStartPos;
 
 
 
-                currentDirectory = video.folder;
+                currentDirectory = _video.folder;
                 FFPipe? ffPipe = CreatePipe(PipeDirection.InOut, currentDirectory, true);
                 if ((ffPipe?.Npss == null && isWindows) || ffPipe?.Stream == null)
                 {
@@ -613,8 +691,8 @@ namespace ASP.Back.Libraries
                     return false;
                 }
                 
-                video.GUID = ffPipe.Value.PipeName;
-                currentDirectory += video.GUID;
+                this._video.GUID = ffPipe.Value.PipeName;
+                currentDirectory += _video.GUID;
                 currentDirectory += Path.DirectorySeparatorChar;
 
                 string PipeNamesFFmpeg;
@@ -635,9 +713,9 @@ namespace ASP.Back.Libraries
 
                 filterBuilder.Add("-filter_complex " + '"' + "[v:0]split=" + resolutions.Count);
 
-                pipeBuilder.Add("-loglevel error -y -f " + video.extention.Split('.')[1] + " -i");
+                pipeBuilder.Add("-y -f " + _video.extention.Split('.')[1] + " -i");
                 pipeBuilder.Add(PipeNamesFFmpeg);
-                pipeBuilder.Add("-pix_fmt yuv420p -vcodec libx264 -r 23.976 -crf 30 -b:v 3625k -threads 0 -sc_threshold 0");
+                pipeBuilder.Add($"-pix_fmt yuv420p -vcodec libx264 -r {this._video._desiredFps} -crf 30 -b:v 3625k -threads 0 -sc_threshold 0");
                // pipeBuilder.Add("-preset fast -sc_threshold 0");
                // pipeBuilder.Add("-strict -2 -preset:v veryfast -profile:v baseline -level 3.0");
                 pipeBuilder.Add("-preset medium -profile:v high -tune film -g 48 -x264opts no-scenecut");
@@ -663,7 +741,7 @@ namespace ASP.Back.Libraries
 
                 argumentBuilder.Add("-f hls -hls_time 1 -hls_segment_type fmp4 -hls_playlist_type vod");
 
-                argumentBuilder.Add("-master_pl_name " + video.GUID + "_master.m3u8");
+                argumentBuilder.Add("-master_pl_name " + _video.GUID + "_master.m3u8");
 
                 argumentBuilder.Add("-var_stream_map " + '"');
                 for (int i = 0; i < resolutions.Count; i++)
@@ -674,11 +752,12 @@ namespace ASP.Back.Libraries
 
                 argumentBuilder.Add("-hls_segment_filename " + Path.Combine("stream_%v", "data%06d.m4s"));
 
-                argumentBuilder.Add('"' + video.GUID + "_index_%v.m3u8" + '"');
+                argumentBuilder.Add('"' + _video.GUID + "_index_%v.m3u8" + '"');
 
                 List<string> completeArgs = pipeBuilder.Concat(filterBuilder.Concat(resolutionBuilder.Concat(audioMapper.Concat(argumentBuilder)))).ToList();
 
                 StringCollection values = new StringCollection();
+                StringCollection genOutput = new StringCollection();
                 using (var proc = StartFFMpeg(FFTYPE.FFMPEG, completeArgs, currentDirectory))
                 {
                     //Console.WriteLine($"FFMpeg path: " + FFTYPE.FFMPEG);
@@ -718,16 +797,28 @@ namespace ASP.Back.Libraries
 
                     proc.OutputDataReceived += (s, e) =>
                     {
-                        lock (values)
+                        lock (genOutput)
                         {
-                            values.Add(e.Data);
+                            genOutput.Add(e.Data);
+                            Console.Out.WriteLine($"\t\t{nameof(BuildHLS)}" +
+                                $".{FFTYPE.FFMPEG.ToString()} -     {e.Data}!-");
                         }
                     };
                     proc.ErrorDataReceived += (s, e) =>
                     {
-                        lock (values)
+                        if (e.Data != null)
                         {
-                            values.Add("! >" + e.Data);
+                            lock (values)
+                            {
+
+                                values.Add("! >" + e.Data);
+
+                            }
+                            string Eta = getETAFromString(e.Data);
+                            if (Eta.Length > 0)
+                            {
+                                Console.WriteLine(Eta);
+                            }
                         }
                     };
 
@@ -751,17 +842,11 @@ namespace ASP.Back.Libraries
                     {
                         if (sline != null)
                         {
-                            Console.WriteLine(sline);
-                            if (sline.Contains("Invalid argument") || sline.Contains("Unable to seek to the next packet") || sline.Contains("Invalid data"))
+                            //Console.WriteLine(sline);
+                            if (sline.StartsWith("! >Conversion failed!") || sline.Contains("Cannot determine format"))
                             {
-                                continue;
-                            }
-                            else if (sline.Contains("! >"))
-                            {
-                                if (sline.Split('>')[1].Length > 0)
-                                {
-                                    actualErr++;
-                                }
+                                Console.WriteLine(sline);
+                                actualErr++;
                             }
                         }
                     }
@@ -808,7 +893,7 @@ namespace ASP.Back.Libraries
 
                 }
                 Console.WriteLine($"\t\t{nameof(BuildHLS)} - Total Time Taken to do job - {sw.Elapsed.ToString("mm\\:ss\\.ff")}");
-                _video = video;
+                
                 return success;
             }
             catch (Exception ex)
@@ -819,6 +904,73 @@ namespace ASP.Back.Libraries
                 return false;
             }
         }
+        private string getETAFromString(string sLine)
+        {
+            if (sLine == null)
+                return "";
+            try
+            {
+                if (sLine.StartsWith("frame="))
+                {
+                    string[] framesInfoToArray = sLine.Split('=');
+                    if (framesInfoToArray.Length < 2) { return ""; }
+                    int currentFrame = 0;
+                    string[] framesCountSplitBySpace = framesInfoToArray[1].Split(' ');
+                    int spacingIndex = 4;
+                    if (framesCountSplitBySpace.Length <= 5)
+                    {
+                        int decrementer = 2;
+                        spacingIndex = framesCountSplitBySpace.Length - decrementer;
+                        if (spacingIndex < 0)
+                        {
+                            return "";
+                        }
+                    }
+                    string strCurrentFrame = framesCountSplitBySpace[spacingIndex];
+                    bool isInt = int.TryParse(strCurrentFrame, out currentFrame);
+                    if (!isInt)
+                    {
+                        return "";
+                    }
+
+
+                    string[] aSFPS = framesInfoToArray[2].Split(' ');
+                    if (aSFPS.Length > 1)
+                    {
+                        spacingIndex = aSFPS.Length - 2;
+                        string sFPS = aSFPS[spacingIndex];
+                        float currentProccessingFPS = 0;
+                        isInt = float.TryParse(sFPS, out currentProccessingFPS);
+                        if (!isInt)
+                        {
+
+                            return "";
+                        }
+
+
+                        int framesLeft = this._video._frames - currentFrame;
+                        float eta = 9999999;
+                        if (currentProccessingFPS > 0)
+                        {
+                            eta = (float)framesLeft / (float)currentProccessingFPS;
+                        }
+                        double progress = 1;
+
+                        progress = Math.Round(((double)currentFrame / (double)this._video._frames) * 100d, 1);
+
+                       return $"\t\t{nameof(BuildHLS)}\t eta :{eta}\t\tprogress :{progress}%";
+                    }
+                }
+                return "";
+            }
+            catch (Exception e)
+            {
+
+                Console.WriteLine($"{e.Message} \n\n {e.StackTrace}");
+                return "";
+            }
+        }
+
         public FFMPEG(Stream inStream, string fileOut, List<string> resolutions)
         {
             try
@@ -877,7 +1029,7 @@ namespace ASP.Back.Libraries
                 var argumentBuilder = new List<string>();
 
                 argumentBuilder.Add("-loglevel error -y -i");
-                argumentBuilder.Add(videoPath + " -f flv -c:v copy -crf 30 -b:v 3625k -movflags faststart " + outPipeNameFFmpeg);
+                argumentBuilder.Add(videoPath + " -f flv -c:v copy -map 0 -movflags faststart " + outPipeNameFFmpeg);
 
 
 

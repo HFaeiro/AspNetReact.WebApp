@@ -1,5 +1,6 @@
 ﻿using ASP.Back.Libraries;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics.Metrics;
 using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
@@ -13,16 +14,17 @@ namespace ASP.Back.Controllers
     public class StreamController : ControllerBase
     {
         private readonly IWebHostEnvironment hostEnvironment;
-        private readonly TeamManiacsDbContext _context;
         private readonly IConfiguration _configuration;
         private MediaManager mediaManager;
         private StreamOut streamOut;
 
-        public StreamController(IWebHostEnvironment hostEnvironment, TeamManiacsDbContext context, IConfiguration configuration)
+        private readonly IServiceScopeFactory ServiceScopeFactory;
+
+        public StreamController(IWebHostEnvironment hostEnvironment,  IServiceScopeFactory _serviceScopeFactory, IConfiguration configuration)
         {
             this.hostEnvironment = hostEnvironment;
-            this._context = context;
-            mediaManager = new MediaManager(hostEnvironment, context, configuration, this);
+            ServiceScopeFactory = _serviceScopeFactory;
+            mediaManager = new MediaManager(hostEnvironment, _serviceScopeFactory, configuration, this);
             streamOut = new StreamOut(this);
         }
 

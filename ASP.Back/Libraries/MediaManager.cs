@@ -1,6 +1,7 @@
 ﻿using ASP.Back.Controllers;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
 using System.Security.Principal;
 using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
@@ -14,10 +15,11 @@ namespace ASP.Back.Libraries
         private readonly ILogger _logger;
         private readonly IConfiguration _configuration;
         private readonly ControllerBase _controller;
+
+        IServiceScopeFactory _serviceScopeFactory;
         private readonly string RootPath;
         public readonly string uploadsPath;
         public readonly string videosPath;
-        private readonly TeamManiacsDbContext _context;
         public enum MediaType
         {
             Video,
@@ -27,10 +29,10 @@ namespace ASP.Back.Libraries
         }
 
 
-        public MediaManager(IWebHostEnvironment hostEnvironment, TeamManiacsDbContext context, IConfiguration config , ControllerBase controller)
+        public MediaManager(IWebHostEnvironment hostEnvironment,IServiceScopeFactory _serviceScopeFactory, IConfiguration config , ControllerBase controller)
         {
             _hostEnvironment = hostEnvironment;
-            _context = context;
+            this._serviceScopeFactory = _serviceScopeFactory;
             _configuration = config;
             _controller = controller;
             RootPath = _hostEnvironment.WebRootPath;
@@ -61,12 +63,12 @@ namespace ASP.Back.Libraries
 
                 FFMPEG ffmpeg = new FFMPEG(videoStream, Path.Combine(videosPath, filePath), resolutions);
                 videoStream?.Dispose();
-                videoOut = ffmpeg.Video;
+                videoOut = ffmpeg._video;
                 if (!ffmpeg.success)
                 {
                     return false;
                 }
-                return ffmpeg.AppendLineMaster("#GUID=" + ffmpeg.Video.GUID, true);
+                return ffmpeg.AppendLineMaster("#GUID=" + ffmpeg._video.GUID, true);
 
             }
             catch (Exception ex)
@@ -128,14 +130,14 @@ namespace ASP.Back.Libraries
         //    }
 
         //}
-        public async Task<IEnumerable<Video>?> GetVideosByUser(Users user, IIdentity claimsIdentity)
+        public async Task<IEnumerable<Video>?> GetVideosByUser(Users user, IIdentity claimsIdentity, TeamManiacsDbContext _context)
         {
             List<Video>? result = null;
             if (user.Videos?.Count > 0)
             {
 
                 int storedVideoCount = user.Videos.Count;
-                var ID = GetVideosByIDs(user.Videos, claimsIdentity);
+                var ID = GetVideosByIDs(user.Videos, claimsIdentity, _context);
 #if !DEBUG //we don't want to delete not found on disk videos if we are in dev environment
 
                 if (storedVideoCount > ID.Count)
@@ -220,7 +222,7 @@ namespace ASP.Back.Libraries
             return GetMedia(MediaType.Master, fileName) as FileStream;
         }
 
-        public async Task<int?> AddVideoToDB(VideoUpload videoIn, IIdentity claimsIdentity)
+        public async Task<int?> AddVideoToDB(VideoUpload videoIn, IIdentity claimsIdentity, TeamManiacsDbContext _context)
         {
             Console.WriteLine($"\t\t{nameof(AddVideoToDB)} - Adding {videoIn.File.FileName}");
             var userId = ControllerHelpers.GetUserIdFromToken(claimsIdentity);
@@ -253,7 +255,7 @@ namespace ASP.Back.Libraries
             }
             return null;
         }
-        public List<Video>? GetVideosByIDs(List<int> IDs, System.Security.Principal.IIdentity claimsIdentity)
+        public List<Video>? GetVideosByIDs(List<int> IDs, System.Security.Principal.IIdentity claimsIdentity, TeamManiacsDbContext _context)
         {
            
             List<Video>? videos = new List<Video>();
@@ -317,15 +319,30 @@ namespace ASP.Back.Libraries
         //}
         public Video? GetVideoByGuid(string guid)
         {
-            return _context.Videos.FirstOrDefault(x =>
+            using (var scope = _serviceScopeFactory.CreateScope())
+            {
+                TeamManiacsDbContext db = scope.ServiceProvider.GetService<TeamManiacsDbContext>();
+                if (db == null)
+                {
+                    return null;
+                }
+                return db.Videos.FirstOrDefault(x =>
                                                    x.GUID == guid);
+            }
 
         }
         public Video? GetVideoByGuid(Guid guid)
         {
-            return _context.Videos.FirstOrDefault(x =>
+            using (var scope = _serviceScopeFactory.CreateScope())
+            {
+                TeamManiacsDbContext db = scope.ServiceProvider.GetService<TeamManiacsDbContext>();
+                if (db == null)
+                {
+                    return null;
+                }
+                return db.Videos.FirstOrDefault(x =>
                                                    x.GUID == guid.ToString("N"));
-            
+            }
         }
     }
 

@@ -1,2 +1,15 @@
-body {
+.uploadModal {
+    /*position: relative;*/
+   /* display: flex;*/
+    /*width: 50vw;*/
+    flex-wrap: nowrap;
+    align-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.videoPreview {
+    position: relative;
+    display: flex;
+    width: 100%;
 }

@@ -63,15 +63,11 @@ export class MyVideos extends Component {
 
     render() {
         let uploadVideos = 
-            this.props.profile ?
+            this.props.profile && this.props.profile.userId?
                 <div>
-                    <UploadVideo
-                        profile={this.props.profile}
-                        updateProfile={this.props.updateProfile }
-                    />
-                    
-                       
-                            <Videos
+                <Videos
+                                updateProfile={this.props.updateProfile}
+                                profile={this.props.profile}
                                 userId={this.props.profile.userId}
                                 token={this.props.profile.token}>
                                 <EditVideosModal
@@ -82,11 +78,9 @@ export class MyVideos extends Component {
                                     Delete
                                 </button>
                             </Videos>
-
-                    
                 </div>
                 :
-                <>An Error Has Occured In Upload Component</>
+                <>{window.location.href="/videoapp/login"}</>
         
         return (
             <div>
