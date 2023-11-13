@@ -1,8 +1,5 @@
-﻿
-using Microsoft.CodeAnalysis;
-using System.Collections.Specialized;
+﻿using System.Collections.Specialized;
 using System.Diagnostics;
-using System.IO;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
 
@@ -25,6 +22,7 @@ namespace ASP.Back.Libraries
             public string PipePath { get; set; }
 
         }
+        private IProgress<(int, int)> progress;
         public struct FFVideo
         {
             public FFVideo()
@@ -788,10 +786,10 @@ namespace ASP.Back.Libraries
                     else
                     {
 
-                        Console.WriteLine($"\t\t{nameof(BuildHLS)} - Writing Linux Stream! - ");
+                        //Console.WriteLine($"\t\t{nameof(BuildHLS)} - Writing Linux Stream! - ");
                         inStream.CopyTo(ffPipe.Value.Stream);
 
-                        Console.WriteLine($"\t\t{nameof(BuildHLS)} - Wrote Linux Stream! - inStream.Position : {inStream.Position} - Wrote: {ffPipe.Value.Stream.Length} Bytes");
+                        //Console.WriteLine($"\t\t{nameof(BuildHLS)} - Wrote Linux Stream! - inStream.Position : {inStream.Position} - Wrote: {ffPipe.Value.Stream.Length} Bytes");
 
                     }
 
@@ -814,11 +812,20 @@ namespace ASP.Back.Libraries
                                 values.Add("! >" + e.Data);
 
                             }
-                            string Eta = getETAFromString(e.Data);
-                            if (Eta.Length > 0)
+                            (int, int) Eta = getProgressFromString(e.Data);
+
+                            if (this.progress != null)
+                            {
+                                if (Eta.Item1 + Eta.Item2 > 0)
+                                {
+                                    this.progress.Report(Eta);
+                                }
+                            }
+                            else
                             {
                                 Console.WriteLine(Eta);
                             }
+
                         }
                     };
 
@@ -904,16 +911,16 @@ namespace ASP.Back.Libraries
                 return false;
             }
         }
-        private string getETAFromString(string sLine)
+        private (int, int) getProgressFromString(string sLine)
         {
             if (sLine == null)
-                return "";
+                return (0,0);
             try
             {
                 if (sLine.StartsWith("frame="))
                 {
                     string[] framesInfoToArray = sLine.Split('=');
-                    if (framesInfoToArray.Length < 2) { return ""; }
+                    if (framesInfoToArray.Length < 2) { return (0, 0); }
                     int currentFrame = 0;
                     string[] framesCountSplitBySpace = framesInfoToArray[1].Split(' ');
                     int spacingIndex = 4;
@@ -923,14 +930,14 @@ namespace ASP.Back.Libraries
                         spacingIndex = framesCountSplitBySpace.Length - decrementer;
                         if (spacingIndex < 0)
                         {
-                            return "";
+                            return (0,0);
                         }
                     }
                     string strCurrentFrame = framesCountSplitBySpace[spacingIndex];
                     bool isInt = int.TryParse(strCurrentFrame, out currentFrame);
                     if (!isInt)
                     {
-                        return "";
+                        return (0, 0);
                     }
 
 
@@ -944,37 +951,44 @@ namespace ASP.Back.Libraries
                         if (!isInt)
                         {
 
-                            return "";
+                            return (0, 0);
                         }
 
 
                         int framesLeft = this._video._frames - currentFrame;
                         float eta = 9999999;
+                        string strEta = eta.ToString();
                         if (currentProccessingFPS > 0)
                         {
                             eta = (float)framesLeft / (float)currentProccessingFPS;
+                            TimeSpan t = TimeSpan.FromSeconds(eta);
+
+                            strEta = t.ToString(@"hh\:mm\:ss\:fff");
+
                         }
                         double progress = 1;
 
                         progress = Math.Round(((double)currentFrame / (double)this._video._frames) * 100d, 1);
 
-                       return $"\t\t{nameof(BuildHLS)}\t eta :{eta}\t\tprogress :{progress}%";
+                        // return $"\t\t{nameof(BuildHLS)}\t eta :{strEta}\t\tprogress :{progress}%";
+                        return ((int)eta,(int)progress);
                     }
                 }
-                return "";
+                return (0, 0);
             }
             catch (Exception e)
             {
 
                 Console.WriteLine($"{e.Message} \n\n {e.StackTrace}");
-                return "";
+                return (0,100);
             }
         }
 
-        public FFMPEG(Stream inStream, string fileOut, List<string> resolutions)
+        public FFMPEG(Stream inStream, string fileOut, List<string> resolutions, IProgress<(int, int)> progress)
         {
             try
             {
+                this.progress = progress;
                 this.success = BuildHLS(inStream, fileOut, resolutions);
 
             }

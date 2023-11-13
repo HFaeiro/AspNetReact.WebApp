@@ -2,12 +2,16 @@ import React, { Component } from 'react';
 import { Form ,Modal} from 'react-bootstrap'
 
 import './UploadVideo.css';
+import { EditVideosModal } from './EditVideosModal';
 export class UploadVideo extends Component {
     constructor(props) {
         super(props);
         this.token = this.props.profile.token;
+        this.updateVideoInfo = this.updateVideoInfo.bind(this);
         this.state =
         {
+            taskId:null,
+            errorMessage:null,
             showModal:false,
             file: null,
             video: null,
@@ -25,7 +29,22 @@ export class UploadVideo extends Component {
         window.URL.revokeObjectURL(this.state.video.src);
         this.setState({ file: null, video: null });
     }
+    updateVideoInfo = (video) => {
+        
+        this.setState
+            (
+                {
+                    video:
+                    {
+                        Id: this.state.taskId,
+                        title: video.Title.value,
+                        description: video.Description.value,
+                        isPrivate: video.Private.value
 
+                    }
+                }
+            );
+    }
     loadVideo = file => new Promise((resolve, reject) => {
         try {
             var video = document.createElement('video');
@@ -117,12 +136,10 @@ export class UploadVideo extends Component {
                 body: formData
 
             }).then(
-                response => {
-                     this.setState(
-                       { uploaded: true}
-                    );
+                response => {                     
                     if (response.status == 200) {
                         return response.json()
+
                     }
                     else if 
                         (response.status == 400) {
@@ -130,15 +147,23 @@ export class UploadVideo extends Component {
                     }
                 })
                 .then(data => {// if the response is a JSON object
-                    if (data) {
-                        var profile = this.props.profile;
-                        profile.videos.push(data);
-                        this.props.updateProfile(profile);
+                    if (data) {//we got the task ID back so we can then reference it back for progress updates! 
+                        this.setState({
+                            taskId: data,
+                            uploaded: true
+                           
+                        });
                     }
 
                 },
                 (error) => {
-                    alert(error);
+                    window.URL.revokeObjectURL(this.state.video.src);
+                    this.setState(
+                        {
+                            errorMessage: error,                            
+                            file: null,
+                            video: null
+                        });
                     success = false;
                 })
                 .then( () => {
@@ -146,6 +171,7 @@ export class UploadVideo extends Component {
                    
                 }).catch(
                     error => console.log("fetch: " + error), // Handle the error response object
+                    
                     /*success = false*/
                 );
 
@@ -176,12 +202,30 @@ if (success) {
                     centered >
                     <Modal.Header >
                         <Modal.Title id="contained-modal-title-vcenter">
-                            Upload Video
+                            {this.state.uploaded ? "Uploaded! Now Edit Your video while we Process it!":"Upload Video"}
                         </Modal.Title>
                     </Modal.Header>
                     <Modal.Body >
+                {this.state.uploaded 
+                ? <div>
+                <EditVideosModal
+                                    showModal={true}
+                                    token={this.token}
+                                    video={
+                                        this.state.video.isPrivate != undefined ? this.state.video :
+                                        {
+                                            isPrivate: "True",
+                                            title: this.state.file.name,
+                                        }
+                                    }
+                                    taskId={this.state.taskId}
+                                    editParent={this.updateVideoInfo }
+                />
+                </div>
+                : <div>
+{(this.state.file && this.state.video && this.props.profile != undefined) 
 
-{(this.state.file && this.state.video && this.props.profile != undefined) ?
+                ?
                 <div className=" justify-content-left">
                     <button className="btn btn-primary" onClick={(e) => this.setState({ showResults: !this.state.showResults })}>
                         {this.state.showResults ? "Hide Preview" : "Preview"}
@@ -211,12 +255,7 @@ if (success) {
                             </tr>
                         </tbody>
                     </table>
-                    
-                   {this.state.uploaded ? 
-                       <button className="btn btn-danger" type="submit"  >
-                        Save
-                    </button>
-                    : 
+                                       
                     <div >
                       <button className="btn btn-primary" disabled={!this.state.uploadButton} onClick={(e) => { this.uploadFile() }}>
                         Upload
@@ -224,21 +263,16 @@ if (success) {
                    <button className="btn btn-danger" disabled={!this.state.uploadButton} onClick={(e) => { this.clearFile() }}>
                         Clear
                       </button>
-                      </div>
-                    }
-                    
-                   
-                    
-                   
-                    
-                    
-                </div> : <div >
+                      </div>                       
+                </div> 
+                :
+                 <div >
                     <Form.Group controlId="formFile" className="mb-3">
-                        <Form.Label>Upload a Video!</Form.Label>
+                        <Form.Label>{this.state.errorMessage ? this.state.errorMessage : "Upload a Video!"}</Form.Label>
                         <Form.Control type="file" name="file_source" size="40" accept="video/*" onChange={(e) => this.handleFileChange(e)} />
                     </Form.Group>
 
-                </div>}
+                </div>} </div>}
                 </Modal.Body>
                     <Modal.Footer>
                     {this.state.uploaded ? 

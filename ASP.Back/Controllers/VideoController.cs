@@ -5,16 +5,12 @@ using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
 using System.Text;
 using ASP.Back.Libraries;
-using static ASP.Back.Libraries.FFMPEG;
-using TeamManiacs.Core.Convertors;
-using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Microsoft.Extensions.DependencyInjection;
 using System.Security.Principal;
-using System.IO;
 
 namespace ASP.Back.Controllers
 {
+
+
 
     [Route("api/[controller]")]
     [ApiController]
@@ -26,6 +22,14 @@ namespace ASP.Back.Controllers
         IServiceScopeFactory _serviceScopeFactory;
         private MediaManager mediaManager;
         private StreamOut streamOut;
+        static Dictionary<int, MediaTask> processingList = new Dictionary<int, MediaTask>();
+
+        private struct MediaTask
+            {
+            public IProgress<(int, int)> iProgress;
+            public Task task;
+            public MediaManager mediaManager;
+        }
 
 
         ///<Summary>
@@ -146,6 +150,62 @@ namespace ASP.Back.Controllers
 
             }
         }
+
+
+        private async Task UploadVideoAsync(int userId, IIdentity identity, IProgress<(int, int)> progress)
+        {
+            {
+                using (var scope = _serviceScopeFactory.CreateScope())
+                {
+                    TeamManiacsDbContext db = scope.ServiceProvider.GetService<TeamManiacsDbContext>();
+                    if (db == null)
+                    {
+                        return;
+                    }
+                    var user = await ControllerHelpers.GetUserById((int)userId, db);
+                    if (user != null)
+                    {
+                        int? ID = null;
+                        if (user.Videos == null || user.Videos.Count <= 0)
+                        {
+                            user.Videos = new List<int>();
+                        }
+                        ID = await mediaManager.AddVideoToDB(identity, db, progress);
+                        if (ID != null)
+                        {
+                            user.Videos.Add((int)ID);
+                            db.Entry(user).State = EntityState.Modified;
+                            await db.SaveChangesAsync();
+                        }
+                    }
+                }
+            }
+        }
+        [HttpGet("progress/{id}")]
+        public async Task<ActionResult<(int,int)>> GetUploadProgress(int id)
+        {
+            try
+            {
+                if (processingList.ContainsKey(id))
+                {
+                    MediaTask mediaTask = processingList[id];
+
+                    (int, int) progress = mediaTask.mediaManager.progress;
+                    if (progress.Item2 == 100)
+                    {
+                        processingList.Remove(id);                        
+                    }
+                    return Ok(progress);                    
+                }
+            }
+            catch
+            (Exception ex)
+            {
+                return (0, 0);
+            }
+            return (0, 0);
+        }
+
         ///<Summary>
         ///upload a video as json form data. 
         /// Returns the Uploaded Video [INT]Id
@@ -170,8 +230,8 @@ namespace ASP.Back.Controllers
                     if (userId != null)
                     {
 
-                        IIdentity ? identity = this.User.Identity;
-                        Stream vod = new System.IO.MemoryStream(); 
+                        IIdentity? identity = this.User.Identity;
+                        Stream vod = new System.IO.MemoryStream();
                         videoIn.File.CopyTo(vod);
                         VideoUpload videoUpload = new VideoUpload();
                         videoUpload.File = new FormFile(vod, 0, vod.Length, "streamFile", videoIn.File.FileName)
@@ -180,38 +240,26 @@ namespace ASP.Back.Controllers
                             ContentType = videoIn.File.ContentType,
                             ContentDisposition = videoIn.File.ContentDisposition,
                         };
-                        Thread thread = new Thread(async () =>
-                        {
-                        using (var scope = _serviceScopeFactory.CreateScope())
-                        {
-                            TeamManiacsDbContext db = scope.ServiceProvider.GetService<TeamManiacsDbContext>();
-                            if (db == null)
-                            {
-                                return;
-                            }
-                            var user = await ControllerHelpers.GetUserById((int)userId, db);
-                            if (user != null)
-                            {
+                        mediaManager.setVideoIn(videoUpload);
+                        string uniqueFileName = mediaManager.getUniqueFileName();
+                        IProgress<(int, int)> progress = new Progress<(int, int)>(progress => {
 
-                                
-                                    int? ID = null;
-                                    if (user.Videos == null || user.Videos.Count <= 0)
-                                    {
-                                        user.Videos = new List<int>();
-                                    }
-                                    ID = await mediaManager.AddVideoToDB(videoUpload, identity, db);
-                                    if (ID != null)
-                                    {
-                                        user.Videos.Add((int)ID);
-                                        db.Entry(user).State = EntityState.Modified;
-                                        await db.SaveChangesAsync();
-                                    }
-                                
-                                
-                            }
-                        }});
-                        thread.Start();
-                        return Ok(200);
+                            mediaManager.progress = progress;
+                            Console.WriteLine($"\t\tEta {progress.Item1} \t\tProgress:{progress.Item2}%");
+
+
+                            });
+                        Task task = UploadVideoAsync(userId.Value, identity, progress);
+                        mediaManager.TaskId = task.Id;
+
+                        MediaTask mediaTask = new MediaTask();
+                        mediaTask.task = task;
+                        mediaTask.mediaManager = mediaManager;
+                        mediaTask.iProgress = progress;
+
+                        processingList.Add(task.Id, mediaTask);
+                        
+                        return Ok(task.Id);
                     }
                 }
                 return BadRequest();

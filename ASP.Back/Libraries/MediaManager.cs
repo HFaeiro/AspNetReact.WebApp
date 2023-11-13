@@ -20,6 +20,10 @@ namespace ASP.Back.Libraries
         private readonly string RootPath;
         public readonly string uploadsPath;
         public readonly string videosPath;
+        public string uniqueVideoName {get; private set;}
+        public VideoUpload? videoIn { get; private set;}
+        public int TaskId { get; set; } = 0;
+        public (int,int) progress { get; set; }
         public enum MediaType
         {
             Video,
@@ -31,6 +35,7 @@ namespace ASP.Back.Libraries
 
         public MediaManager(IWebHostEnvironment hostEnvironment,IServiceScopeFactory _serviceScopeFactory, IConfiguration config , ControllerBase controller)
         {
+            uniqueVideoName = "";
             _hostEnvironment = hostEnvironment;
             this._serviceScopeFactory = _serviceScopeFactory;
             _configuration = config;
@@ -50,18 +55,19 @@ namespace ASP.Back.Libraries
         {
             return Path.Combine(RootPath, videosPath, fileName, "stream_" + index, "data" + dataIndex.ToString().PadLeft(6, '0') + ".m4s");
         }
-        public bool SaveVideoToMediaFolder(VideoUpload videoIn, out FFVideo? videoOut,
-                     List<string> resolutions, string filePath = "")
+        public bool SaveVideoToMediaFolder(out FFVideo? videoOut,List<string> resolutions, IProgress<(int, int)> progress)
         {
             try
             {
-                if (filePath == "")
+                if (videoIn == null)
                 {
-                    filePath = ControllerHelpers.GetUniqueFileName(videoIn.File.FileName);
+                    videoOut = null;
+                    return false;
                 }
+                getUniqueFileName();
                 Stream videoStream = videoIn.File.OpenReadStream();
 
-                FFMPEG ffmpeg = new FFMPEG(videoStream, Path.Combine(videosPath, filePath), resolutions);
+                FFMPEG ffmpeg = new FFMPEG(videoStream, Path.Combine(videosPath, this.uniqueVideoName), resolutions, progress);
                 videoStream?.Dispose();
                 videoOut = ffmpeg._video;
                 if (!ffmpeg.success)
@@ -221,21 +227,40 @@ namespace ASP.Back.Libraries
         {
             return GetMedia(MediaType.Master, fileName) as FileStream;
         }
-
-        public async Task<int?> AddVideoToDB(VideoUpload videoIn, IIdentity claimsIdentity, TeamManiacsDbContext _context)
+        public void setVideoIn(VideoUpload videoIn)
+        { 
+            this.videoIn = videoIn;
+        }
+        public string getUniqueFileName()
         {
+            if (videoIn == null)
+            {
+                return "";
+            }
+            if (this.uniqueVideoName == "")
+            {
+                this.uniqueVideoName = ControllerHelpers.GetUniqueFileName(videoIn.File.FileName);
+            }
+            return this.uniqueVideoName;
+        }
+        public async Task<int?> AddVideoToDB(IIdentity claimsIdentity, TeamManiacsDbContext _context, IProgress<(int, int)> progress)
+        {
+            if(videoIn == null)
+            {
+                return null;
+            }
             Console.WriteLine($"\t\t{nameof(AddVideoToDB)} - Adding {videoIn.File.FileName}");
             var userId = ControllerHelpers.GetUserIdFromToken(claimsIdentity);
             if (userId != null)
             {
-                var uniqueFileName = ControllerHelpers.GetUniqueFileName(videoIn.File.FileName);
-                Video video = new Video(videoIn, (int)userId, uniqueFileName);
+                getUniqueFileName();
+                 Video video = new Video(videoIn, (int)userId, this.uniqueVideoName);
                 try
                 {
 
                     FFVideo? videoOut = new FFVideo();
                     List<string> resolutions = new List<string> { "1920x1080", "1280x720", "720x480", "480x360", "360x240" };
-                    if (SaveVideoToMediaFolder(videoIn, out videoOut, resolutions, uniqueFileName))
+                    if (SaveVideoToMediaFolder(out videoOut, resolutions, progress))
                     {
                         if (videoOut.HasValue)
                         {
