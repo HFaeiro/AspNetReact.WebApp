@@ -191,11 +191,12 @@ namespace ASP.Back.Controllers
                     MediaTask mediaTask = processingList[id];
 
                     (int, int) progress = mediaTask.mediaManager.progress;
-                    if (progress.Item2 == 100)
+                    if (progress.Item2 == 100 || mediaTask.task.Status == TaskStatus.RanToCompletion)
                     {
-                        processingList.Remove(id);                        
+                        processingList.Remove(id);
+                        progress.Item2 = 100;
                     }
-                    return Ok(progress);                    
+                    return Ok(progress.ToTuple<int,int>());                    
                 }
             }
             catch
@@ -244,11 +245,17 @@ namespace ASP.Back.Controllers
                         string uniqueFileName = mediaManager.getUniqueFileName();
                         IProgress<(int, int)> progress = new Progress<(int, int)>(progress => {
 
-                            mediaManager.progress = progress;
-                            Console.WriteLine($"\t\tEta {progress.Item1} \t\tProgress:{progress.Item2}%");
+                            
+                           // Console.WriteLine($"\t\tEta {progress.Item1} \t\tProgress:{progress.Item2}%");
+                            if (processingList.ContainsKey(this.mediaManager.TaskId))
+                            {
+                                MediaTask mediaTask = processingList[this.mediaManager.TaskId];
+                                mediaTask.mediaManager.progress = progress;
+                                processingList[this.mediaManager.TaskId] = mediaTask;
+                                
+                            }
 
-
-                            });
+                        });
                         Task task = UploadVideoAsync(userId.Value, identity, progress);
                         mediaManager.TaskId = task.Id;
 
