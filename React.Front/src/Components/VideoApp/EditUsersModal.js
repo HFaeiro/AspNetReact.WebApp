@@ -109,7 +109,7 @@ export class EditUsersModal extends Component {
                         <Row>
                             <Col sm={6}>
                                 <Form id="editUsers" onSubmit={this.loader}>
-                                    <Form.Group controlId="Id">
+                                    <Form.Group controlid="Id">
                                         <Form.Label>Id</Form.Label>
                                         <Form.Control type="text" name="Id" required
                                             disabled
@@ -117,21 +117,21 @@ export class EditUsersModal extends Component {
                                             placeholder={this.props.uId}>
                                         </Form.Control>
                                     </Form.Group>
-                                    <Form.Group controlId="Username">
+                                    <Form.Group controlid="Username">
                                         <Form.Label>Username</Form.Label>
                                         <Form.Control type="text" name="Username" required
                                             defaultValue={this.props.uName}
                                             placeholder={this.props.uName}>
                                         </Form.Control>
                                     </Form.Group>
-                                    <Form.Group controlId="Password">
+                                    <Form.Group controlid="Password">
                                         <Form.Label>Password</Form.Label>
                                         <Form.Control type="password" name="Password" >
 
                                         </Form.Control>
                                     </Form.Group>
 
-                                    <Form.Group controlId="Privileges">
+                                    <Form.Group controlid="Privileges">
                                         <Form.Label>Privileges</Form.Label>
                                         <Form.Select type="text" name="Privileges"
 

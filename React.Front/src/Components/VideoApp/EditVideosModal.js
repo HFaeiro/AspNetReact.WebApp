@@ -101,8 +101,8 @@ export class EditVideosModal extends Component {
 
                                 <Row className="mb-3">                                    
                                     <Col>
-                                        <Form.Group controlId="Title">
-                                            <FloatingLabel controlId="floatingInput" label="Video Title"
+                                        <Form.Group controlid="Title">
+                                            <FloatingLabel controlid="floatingInput" label="Video Title"
                                                 className="mb-3">
                                                 <Form.Control type="text" name="Title" required
                                                     defaultValue={this.props.video.title}
@@ -112,8 +112,8 @@ export class EditVideosModal extends Component {
                                         </Form.Group>
 
                                     </Col>
-                                    <Form.Group controlId="Description">
-                                        <FloatingLabel controlId="floatingInput" label="Description">
+                                    <Form.Group controlid="Description">
+                                        <FloatingLabel controlid="floatingInput" label="Description">
                                             <Form.Control as="textarea" rows={3} type="Description" name="Description" required
                                                 defaultValue={this.props.video.description}
                                                 placeholder={this.props.video.description}>
@@ -122,8 +122,8 @@ export class EditVideosModal extends Component {
                                     </Form.Group>
                                     <Col sm={3}>
 
-                                        <Form.Group controlId="Private">
-                                            <FloatingLabel controlID="floatingInput" label="Privacy">
+                                        <Form.Group controlid="Private">
+                                            <FloatingLabel controlid="floatingInput" label="Privacy">
 
                                                 <Form.Select type="text" name="Private"
 

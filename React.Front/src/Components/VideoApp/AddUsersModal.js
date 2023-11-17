@@ -92,13 +92,13 @@ export class AddUsersModal extends Component {
                         <Row>
                             <Col sm={6}>
                                 <Form id="addUsers" onSubmit={this.loader}>
-                                    <Form.Group controlId="Username">
+                                    <Form.Group controlid="Username">
                                         <Form.Label>Username</Form.Label>
                                         <Form.Control type="text" name="Username" required
                                             placeholder="Username">
                                         </Form.Control>
                                     </Form.Group>
-                                    <Form.Group controlId="Password">
+                                    <Form.Group controlid="Password">
                                         <Form.Label>Password</Form.Label>
                                         <Form.Control type="password" name="Password" required
                                             placeholder="Password">
