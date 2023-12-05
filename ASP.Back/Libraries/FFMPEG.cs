@@ -1,7 +1,9 @@
 ﻿using System.Collections.Specialized;
 using System.Diagnostics;
+using System.IO;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 
 
@@ -157,14 +159,13 @@ namespace ASP.Back.Libraries
             try
             {
 
-
-
                 FFPipe pipe = new FFPipe();
                 pipe.PipeName = Guid.NewGuid().ToString("N");
-                workingDirectory = Path.Combine(workingDirectory , pipe.PipeName);
+                
 
                 if (createDirectory)
-                {                    
+                {
+                    workingDirectory = Path.Combine(workingDirectory, pipe.PipeName);
                     if (!Directory.Exists(workingDirectory))
                     {
                         Console.WriteLine($"\t\t{nameof(CreatePipe)} - workingDirectory:{Path.Combine(workingDirectory)} Doesn't Exist! Creating it. ");
@@ -348,7 +349,7 @@ namespace ASP.Back.Libraries
                 currentDirectory = _video.folder;
 
                 // We use Guid for PipeNames
-                FFPipe? ffPipe = CreatePipe(PipeDirection.InOut);
+                FFPipe? ffPipe = CreatePipe(PipeDirection.Out);
                 if (ffPipe == null)
                 {
                     return null;
@@ -458,14 +459,18 @@ namespace ASP.Back.Libraries
                         int actualErr = 0;
                         foreach (var err in error)
                         {
-                            Console.WriteLine(err);
+                            
                             if (err.Contains("Invalid argument"))
                             {
                                 continue;
                             }
                             else
                             {
+                                ConsoleColor originalColor = Console.ForegroundColor;
+                                Console.ForegroundColor = ConsoleColor.Red;
+                                Console.WriteLine(err);
                                 actualErr++;
+                                Console.ForegroundColor = originalColor;
                             }
 
                         }
@@ -495,15 +500,16 @@ namespace ASP.Back.Libraries
             return video;
         }
 
-        public List<string> probeForCodecsAndFrames(Stream inStream)
+        public List<string>? probeForCodecsAndFrames(Stream inStream)
         {
             Stopwatch sw = Stopwatch.StartNew();
             bool isWindows = RuntimeInformation.RuntimeIdentifier.StartsWith("win");
+            int actualErr = 0;
             try
             {
                // Console.WriteLine($"\t\t{nameof(probeForCodecs)} - inStream length: {inStream.Length} - inStream.Position : {inStream.Position}");
                 List<string> args = new List<string>();
-                FFPipe? ffPipe = CreatePipe(PipeDirection.Out);
+                FFPipe? ffPipe = CreatePipe(PipeDirection.Out, _video.folder);
                 List<string> output = new List<string>();
                 if ((ffPipe?.Npss == null && isWindows) || ffPipe?.Stream == null)
                 {
@@ -523,7 +529,7 @@ namespace ASP.Back.Libraries
                 else
                 {
 
-                    PipeNamesFFmpeg = $@"{ffPipe.Value.PipePath + ".pipe"}";
+                    PipeNamesFFmpeg = $@"{ffPipe.Value.PipePath}";
                 }
                 string ffProbeInstructionsPath = Path.Combine(Directory.GetCurrentDirectory(), "ffProbeCmds.txt");
                 if (File.Exists(ffProbeInstructionsPath))
@@ -533,7 +539,7 @@ namespace ASP.Back.Libraries
                 }
                 else
                 {
-                    args.Add("-loglevel fatal -count_frames -show_entries format_tags -of default=nw=1 " + PipeNamesFFmpeg);
+                    args.Add("-loglevel fatal -count_frames -show_entries packet=pts_time:stream=codec_type,nb_read_frames,nb_frames,duration -of default=nw=1 -read_intervals 10%+#3 " + PipeNamesFFmpeg);
                 }
                 StringCollection values = new StringCollection();                
                 StringCollection genOutput = new StringCollection();
@@ -551,9 +557,9 @@ namespace ASP.Back.Libraries
                         inStream.CopyToAsync(ffPipe.Value.Npss)
                           .ContinueWith(x =>
                           {
-                             
-                              ffPipe.Value.Npss.Disconnect();
                               ffPipe.Value.Npss.WaitForPipeDrain();
+                              ffPipe.Value.Npss.Disconnect();
+                              
                               
                           });
                         //Console.WriteLine($"\t\t{nameof(probeForCodecs)} - Wrote Windows Stream! - inStream.Position : {inStream.Position} - ");
@@ -573,6 +579,7 @@ namespace ASP.Back.Libraries
                         lock (genOutput)
                         {
                             genOutput.Add(e.Data);
+                            Console.WriteLine(e.Data);
                         }
                     };
                     proc.ErrorDataReceived += (s, e) =>
@@ -580,6 +587,7 @@ namespace ASP.Back.Libraries
                         lock (values)
                         {
                             values.Add("! >" + e.Data);
+                            Console.WriteLine(e.Data);
                         }
                     };
 
@@ -595,7 +603,15 @@ namespace ASP.Back.Libraries
                         {
                             if (sline != null)
                             {
-                                Console.WriteLine(sline);
+                                //Console.WriteLine(sline);
+                                if (sline.Contains("Invalid data"))
+                                {
+                                    ConsoleColor originalColor = Console.ForegroundColor;
+                                    Console.ForegroundColor = ConsoleColor.Red;
+                                    Console.WriteLine(sline);
+                                    actualErr++;
+                                    Console.ForegroundColor = originalColor;
+                                }
                                 output.Add(sline);
                             }
                         }
@@ -606,8 +622,14 @@ namespace ASP.Back.Libraries
                 }
                 sw.Stop();
                 Console.WriteLine($"\t\t{nameof(probeForCodecsAndFrames)} - Exiting after {sw.Elapsed.ToString("mm\\:ss\\.ff")}");
-                
-                return genOutput.Cast<string>().ToList();
+                if (actualErr > 0)
+                {
+                    return null;
+                }
+                else
+                {
+                    return genOutput.Cast<string>().ToList();
+                }
             }
             catch (Exception ex)
             {
@@ -655,6 +677,18 @@ namespace ASP.Back.Libraries
             inStream.Position = streamStartPos;
             return false;
         }
+        private bool CallRecoveryStream(Stream inStream, string fileOut, List<string> resolutions)
+        {
+            Stream? recoveryStream = MoveFlags(inStream);
+            if (recoveryStream?.Length > 0)
+            {
+                Console.WriteLine($"\t\t{nameof(BuildHLS)} - \n\nFFMPEG Recovered and Moved the File FLags to the start! Attempting to Re-encode");
+                recoveryStream.Position = 0;
+                recoveryStream.Flush();
+                return BuildHLS(recoveryStream, fileOut, resolutions, true);
+            }
+            return false;
+        }
         public bool BuildHLS(Stream inStream, string fileOut, List<string> resolutions, bool recursed = false)
         {
             if(inStream == null)
@@ -673,13 +707,16 @@ namespace ASP.Back.Libraries
                 long streamStartPos = inStream.Position;
                 inStream.Flush();
                 this._video = fillFileStrings(fileOut);
-                _video.codecs = probeForCodecsAndFrames(inStream);
+                List<string>? codecs = probeForCodecsAndFrames(inStream);
+                if(codecs == null)
+                {
+                   return CallRecoveryStream(inStream, fileOut, resolutions);
+                }
+                _video.codecs = codecs;
                 inStream.Position = streamStartPos;
                 bool containsAudio = hasAudio(inStream, _video);
 
                 inStream.Position = streamStartPos;
-
-
 
                 currentDirectory = _video.folder;
                 FFPipe? ffPipe = CreatePipe(PipeDirection.InOut, currentDirectory, true);
@@ -709,14 +746,42 @@ namespace ASP.Back.Libraries
                 var resolutionBuilder = new List<string>();
                 var audioMapper = new List<string>();
 
-                filterBuilder.Add("-filter_complex " + '"' + "[v:0]split=" + resolutions.Count);
+                filterBuilder.Add("-filter_complex " + '"' + "[v:0]split=" + resolutions.Count);              
 
-                pipeBuilder.Add("-y -f " + _video.extention.Split('.')[1] + " -i");
-                pipeBuilder.Add(PipeNamesFFmpeg);
-                pipeBuilder.Add($"-pix_fmt yuv420p -vcodec libx264 -r {this._video._desiredFps} -crf 30 -b:v 3625k -threads 0 -sc_threshold 0");
-               // pipeBuilder.Add("-preset fast -sc_threshold 0");
-               // pipeBuilder.Add("-strict -2 -preset:v veryfast -profile:v baseline -level 3.0");
-                pipeBuilder.Add("-preset medium -profile:v high -tune film -g 48 -x264opts no-scenecut");
+
+
+                string HlsInputInstructionsPath = Path.Combine(Directory.GetCurrentDirectory(), "hlsInputArgs.txt");
+                if (File.Exists(HlsInputInstructionsPath))
+                {
+                    string[] args = File.ReadAllLines(HlsInputInstructionsPath);
+                    if (args.Length >= 2)
+                    {
+                        pipeBuilder.Add("-y -f " + _video.extention.Trim('.') + " -i");
+                        pipeBuilder.Add(PipeNamesFFmpeg);
+                        pipeBuilder.Add($"{args[0]}");
+                        pipeBuilder.Add($"-r {this._video._desiredFps}" );
+                        for (int i = 1; i < args.Length; i++)
+                        {
+                            pipeBuilder.Add($"{args[i]}");
+                        }
+                    }
+                    else
+                    {
+                        //pipeBuilder.Add("-loglevel error -y -f " + _video.extention.Split('.')[1] + " -i");
+                        pipeBuilder.Add("-y -f " + _video.extention.Trim('.') + " -i");
+                        pipeBuilder.Add(PipeNamesFFmpeg);
+                        pipeBuilder.Add($"-pix_fmt yuv420p -vcodec libx264 -r {this._video._desiredFps} -crf 30 -b:v 3625k -threads 0 -sc_threshold 0");
+                        pipeBuilder.Add("-preset medium -profile:v high -tune film -g 48 -x264opts no-scenecut");
+                    }
+                }
+                else
+                {
+                    //pipeBuilder.Add("-loglevel error -y -f " + _video.extention.Split('.')[1] + " -i");
+                    pipeBuilder.Add("-y -f " + _video.extention.Trim('.') + " -i");
+                    pipeBuilder.Add(PipeNamesFFmpeg);
+                    pipeBuilder.Add($"-pix_fmt yuv420p -vcodec libx264 -r {this._video._desiredFps} -crf 30 -b:v 3625k -threads 0 -sc_threshold 0");
+                    pipeBuilder.Add("-preset medium -profile:v high -tune film -g 48 -x264opts no-scenecut");
+                }
 
                 int index = 0;
                 foreach (string resolution in resolutions)
@@ -759,7 +824,7 @@ namespace ASP.Back.Libraries
                 using (var proc = StartFFMpeg(FFTYPE.FFMPEG, completeArgs, currentDirectory))
                 {
                     //Console.WriteLine($"FFMpeg path: " + FFTYPE.FFMPEG);
-                    Console.WriteLine($"Arguments: {proc.StartInfo.Arguments}");
+                   // Console.WriteLine($"Arguments: {proc.StartInfo.Arguments}");
 
                     proc.EnableRaisingEvents = false;
                     proc.Start();
@@ -821,18 +886,15 @@ namespace ASP.Back.Libraries
                                     this.progress.Report(Eta);
                                 }
                             }
-                            else
-                            {
-                                Console.WriteLine(Eta);
-                            }
-
+                            Console.Out.WriteLine($"\t\t{nameof(BuildHLS)}" +
+                                $".{FFTYPE.FFMPEG.ToString()} -     {e.Data}!-");
                         }
                     };
 
                     proc.BeginErrorReadLine();
                     proc.BeginOutputReadLine();
 
-                    if (!proc.WaitForExit(999999))
+                    if (!proc.WaitForExit(9999999))
                     {
                         Console.WriteLine($"\t\t{nameof(BuildHLS)} - Proc Timed Out!!! - - Wrote: {ffPipe.Value.Stream.Length} Bytes");
                     }
@@ -850,21 +912,33 @@ namespace ASP.Back.Libraries
                         if (sline != null)
                         {
                             //Console.WriteLine(sline);
-                            if (sline.StartsWith("! >Conversion failed!") || sline.Contains("Cannot determine format"))
+                            if (sline.StartsWith("! >Conversion failed!") || sline.StartsWith("! >Stream specifier") || 
+                                sline.Contains("Cannot determine format") || sline.Contains("partial file") 
+                                || sline.Contains("moov atom not found") || sline.Contains("Invalid data"))
                             {
+                                ConsoleColor originalColor = Console.ForegroundColor;
+                                Console.ForegroundColor = ConsoleColor.Red;
                                 Console.WriteLine(sline);
                                 actualErr++;
+                                Console.ForegroundColor = originalColor;
                             }
                         }
                     }
                 }
                 if (actualErr > 0)
                 {
-                    //if (Directory.Exists(currentDirectory))
-                    //{
-                    //    Directory.Delete(currentDirectory,true);
-                    //}
-                    Console.WriteLine($"\t\t{nameof(BuildHLS)} - Directory.Delete({currentDirectory},true);");
+                    if (Directory.Exists(currentDirectory))
+                    {
+                        if (currentDirectory.Length > 1)
+                        {
+                            Directory.Delete(currentDirectory, true);
+                        }
+                        else
+                        {
+                            Console.WriteLine($"\t\t{nameof(BuildHLS)} - WARNING! ATTEMPTED Directory.Delete({currentDirectory},true);");
+                        }
+                    }
+                    // Console.WriteLine($"\t\t{nameof(BuildHLS)} - Directory.Delete({currentDirectory},true);");
                     success = false;
                     //Console.WriteLine($"\t\t{nameof(BuildHLS)} - FFMPEG Failed to Convert media To HLS format - Time Elapsed {sw.Elapsed.ToString("mm\\:ss\\.ff")}");
                     if (recursed)
@@ -879,11 +953,13 @@ namespace ASP.Back.Libraries
                         if (recoveryStream?.Length > 0)
                         {
                             Console.WriteLine($"\t\t{nameof(BuildHLS)} - \n\nFFMPEG Recovered and Moved the File FLags to the start! Attempting to Re-encode");
-                            int fileExtIndex = fileOut.LastIndexOf('.');
-                            if (fileExtIndex != -1)
-                            {
-                                fileOut = fileOut[..fileExtIndex] + ".flv";
-                            }
+
+                            //Idon't recall why i did this. it is interferring at the moment. 
+                            //int fileExtIndex = fileOut.LastIndexOf('.');
+                            //if (fileExtIndex != -1)
+                            //{
+                            //    fileOut = fileOut[..fileExtIndex] + ".flv";
+                            //}
                             recoveryStream.Position = 0;
                             recoveryStream.Flush();
                             return BuildHLS(recoveryStream, fileOut, resolutions, true);
@@ -1005,7 +1081,7 @@ namespace ASP.Back.Libraries
             try
             {
                 //Console.WriteLine($"\t\t{nameof(MoveFlags)} - Attempting To Move mp4 Flags to the front");
-                FFPipe? outFFPipe = CreatePipe(PipeDirection.InOut);
+                FFPipe? outFFPipe = CreatePipe(PipeDirection.InOut, _video.folder);
 
                 if (outFFPipe == null)
                 {
@@ -1017,7 +1093,7 @@ namespace ASP.Back.Libraries
                 videoIn.Position = 0;
                 string applicationTmpPath = Path.Combine(System.IO.Path.GetTempPath(), "Aeirosoft", "video");
 
-                string videoPath = Path.Combine(applicationTmpPath , outFFPipe.Value.PipeName);
+                string videoPath = Path.Combine(applicationTmpPath, outFFPipe.Value.PipeName);
                 if (!Directory.Exists(applicationTmpPath))
                 {
                     Directory.CreateDirectory(applicationTmpPath);
@@ -1029,117 +1105,140 @@ namespace ASP.Back.Libraries
                     fs.Flush();
                 }
 
-                string outPipeNameFFmpeg;
-
-                if (isWindows)
-                {
-                    outPipeNameFFmpeg = $@"\\.\pipe\{outFFPipe.Value.PipeName}";
-                }
-                else
-                {
-                    outPipeNameFFmpeg = $@"{outFFPipe.Value.PipeName}";
-
-                }
-                var argumentBuilder = new List<string>();
-
-                argumentBuilder.Add("-loglevel error -y -i");
-                argumentBuilder.Add(videoPath + " -f flv -c:v copy -map 0 -movflags faststart " + outPipeNameFFmpeg);
-
-
-
-                using (var proc = StartFFMpeg(FFTYPE.FFMPEG, argumentBuilder))
-                {
-                    //Console.WriteLine($"FFMpeg path: " + FFTYPE.FFMPEG);
-                    //Console.WriteLine($"Arguments: {proc.StartInfo.Arguments}");
-
-                    proc.EnableRaisingEvents = true;
-                    proc.Start();
-                    Task task = null;
+                    string outPipeNameFFmpeg;
 
                     if (isWindows)
                     {
-                        //Console.WriteLine($"\t\t{nameof(MoveFlags)} - Writing Windows Stream! - ");
-                        outFFPipe.Value.Npss.WaitForConnection();
-                        task = outFFPipe.Value.Npss.CopyToAsync(outFFPipe.Value.Stream)
-                             .ContinueWith(x =>
-                             {
-
-                                 outFFPipe.Value.Npss.Disconnect();
-                             });
-                      //  Console.WriteLine($"\t\t{nameof(MoveFlags)} - Wrote Windows Stream! - inStream.Position : {outFFPipe.Value.Stream.Position} - Wrote: {outFFPipe.Value.Stream.Length} Bytes");
-                    }
-
-                    StringCollection values = new StringCollection();
-                    proc.OutputDataReceived += (s, e) =>
-                    {
-                        lock (values)
-                        {
-                            values.Add(e.Data);
-                        }
-                    };
-                    proc.ErrorDataReceived += (s, e) =>
-                    {
-                        lock (values)
-                        {
-                            values.Add("! >" + e.Data);
-                        }
-                    };
-
-                    proc.BeginErrorReadLine();
-                    proc.BeginOutputReadLine();
-
-                    if (!proc.WaitForExit(/*99*/9999))
-                    {
-                        Console.WriteLine($"\n\n\t\t{nameof(MoveFlags)} - Proc Timed Out!!! - videoIn.Length : {videoIn.Length} - Wrote: {outFFPipe.Value.Stream.Length} Bytes\n\n");
+                        outPipeNameFFmpeg = $@"\\.\pipe\{outFFPipe.Value.PipeName}";
                     }
                     else
                     {
-                       // Console.WriteLine($"\t\t{nameof(MoveFlags)} - Proc Finished !!! - videoIn.Length : {videoIn.Length} - Wrote: { outFFPipe.Value.Stream.Length} Bytes");
+                        outPipeNameFFmpeg = outFFPipe.Value.PipePath;
+
+                    }
+                    var argumentBuilder = new List<string>();
+
+
+                    string movFlagsInstructionsPath = Path.Combine(Directory.GetCurrentDirectory(), "movFlags.txt");
+                    if (File.Exists(movFlagsInstructionsPath))
+                    {
+                        string[] movFlagArgs = File.ReadAllLines(movFlagsInstructionsPath);
+                        if (movFlagArgs.Length >= 2)
+                        {
+
+                            argumentBuilder.Add($"{movFlagArgs[0]}");
+                            argumentBuilder.Add(videoPath + $" -f {_video.extention.Trim('.')} {movFlagArgs[1]} " + outPipeNameFFmpeg);
+
+                        }
+                        else
+                        {
+                        argumentBuilder.Add("-loglevel fatal -y -i");
+                        argumentBuilder.Add(videoPath + $" -f {_video.extention.Trim('.')} -c:v copy -map 0:v -movflags faststart " + outPipeNameFFmpeg);
                     }
 
-                    if (task != null)
-                    {
-                        Task.WaitAll(task);
-                        
                     }
                     else
                     {
-                      //  Console.WriteLine($"\t\t{nameof(MoveFlags)} - Wrote Linux Stream! -  Wrote: {outFFPipe.Value.Stream.Length} Bytes");
+                        argumentBuilder.Add("-loglevel fatal -y -i");
+                        argumentBuilder.Add(videoPath + $" -f {_video.extention.Trim('.')} -c:v copy -map 0:v -movflags faststart " + outPipeNameFFmpeg);
                     }
 
-                    try
+
+                    using (var proc = StartFFMpeg(FFTYPE.FFMPEG, argumentBuilder))
                     {
-                        lock (values)
+                        //Console.WriteLine($"FFMpeg path: " + FFTYPE.FFMPEG);
+                        Console.WriteLine($"Arguments: {proc.StartInfo.Arguments}");
+
+                        proc.EnableRaisingEvents = true;
+                        proc.Start();
+                        Task task = null;
+
+                        if (isWindows)
                         {
-                            foreach (string sline in values)
+                            //Console.WriteLine($"\t\t{nameof(MoveFlags)} - Writing Windows Stream! - ");
+                            outFFPipe.Value.Npss.WaitForConnection();
+                            task = outFFPipe.Value.Npss.CopyToAsync(outFFPipe.Value.Stream)
+                                 .ContinueWith(x =>
+                                 {
+
+                                     outFFPipe.Value.Npss.Disconnect();
+                                 });
+                            //  Console.WriteLine($"\t\t{nameof(MoveFlags)} - Wrote Windows Stream! - inStream.Position : {outFFPipe.Value.Stream.Position} - Wrote: {outFFPipe.Value.Stream.Length} Bytes");
+                        }
+
+                        StringCollection values = new StringCollection();
+                        proc.OutputDataReceived += (s, e) =>
+                        {
+                            lock (values)
                             {
-                                Console.WriteLine(sline);
+                                values.Add(e.Data);
                             }
+                        };
+                        proc.ErrorDataReceived += (s, e) =>
+                        {
+                            lock (values)
+                            {
+                                values.Add("! >" + e.Data);
+                            }
+                        };
+
+                        proc.BeginErrorReadLine();
+                        proc.BeginOutputReadLine();
+
+                        if (!proc.WaitForExit(/*99*/99999))
+                        {
+                            Console.WriteLine($"\n\n\t\t{nameof(MoveFlags)} - Proc Timed Out!!! - videoIn.Length : {videoIn.Length} - Wrote: {outFFPipe.Value.Stream.Length} Bytes\n\n");
                         }
-                        
-                    }
-                    catch {
+                        else
+                        {
+                            // Console.WriteLine($"\t\t{nameof(MoveFlags)} - Proc Finished !!! - videoIn.Length : {videoIn.Length} - Wrote: { outFFPipe.Value.Stream.Length} Bytes");
+                        }
+
+                        if (task != null)
+                        {
+                            Task.WaitAll(task);
+
+                        }
+                        else
+                        {
+                            //  Console.WriteLine($"\t\t{nameof(MoveFlags)} - Wrote Linux Stream! -  Wrote: {outFFPipe.Value.Stream.Length} Bytes");
+                        }
+
+                        try
+                        {
+                            lock (values)
+                            {
+                                foreach (string sline in values)
+                                {
+                                    Console.WriteLine(sline);
+                                }
+                            }
+
+                        }
+                        catch
+                        {
 
 
-                    }
-                    if (File.Exists(videoPath))
-                    {
-                        File.Delete(videoPath);
-                    }
-                    
-                    outFFPipe.Value.Npss?.Dispose();
-                    sw.Stop();
-                    Console.WriteLine($"\t\t{nameof(MoveFlags)} - Total Time Taken to do job - {sw.Elapsed.ToString("hh\\mm\\:ss\\.ff")}");
-                    if (videoIn.Length > outFFPipe.Value.Stream.Length * outFFPipe.Value.Stream.Length)
-                    {
-                        Console.WriteLine($"\t\t{nameof(MoveFlags)} - (videoIn.Length > outFFPipe.Value.Stream.Length * outFFPipe.Value.Stream.Length) - DOH! - Disposing Pipe Stream");
-                        outFFPipe.Value.Stream.Dispose();
-                        return null;
-                    }
+                        }
+                        if (File.Exists(videoPath))
+                        {
+                            File.Delete(videoPath);
+                        }
 
-                    return outFFPipe?.Stream;
+                        outFFPipe.Value.Npss?.Dispose();
+                        sw.Stop();
+                        Console.WriteLine($"\t\t{nameof(MoveFlags)} - Total Time Taken to do job - {sw.Elapsed.ToString("hh\\mm\\:ss\\.ff")}");
+                        if (videoIn.Length > outFFPipe.Value.Stream.Length * outFFPipe.Value.Stream.Length)
+                        {
+                            Console.WriteLine($"\t\t{nameof(MoveFlags)} - ({outFFPipe.Value.Stream.Length} Bytes) (videoIn.Length > outFFPipe.Value.Stream.Length * outFFPipe.Value.Stream.Length) - DOH! - Disposing Pipe Stream");
+                            outFFPipe.Value.Stream.Dispose();
+                            return null;
+                        }
+
+                        return outFFPipe?.Stream;
+                    }
                 }
-            }
+            
 
             catch (Exception ex)
             {
@@ -1150,7 +1249,3 @@ namespace ASP.Back.Libraries
         }
     }
 }
-
-
-
-

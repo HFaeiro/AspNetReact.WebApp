@@ -1,6 +1,5 @@
 import React, { Component } from 'react';
 import { Form, Modal } from 'react-bootstrap'
-
 import './UploadVideo.css';
 import { EditVideosModal } from './EditVideosModal';
 export class UploadVideo extends Component {
@@ -90,16 +89,16 @@ export class UploadVideo extends Component {
             try {
                 let video = await this.loadVideo(file);
 
-                //if (video && fileInMB <= 100) {
+                if (video && fileInMB <= 21474836480) {
                 this.setState({ file: file });
                 this.setState({ video: video });
-                //}
-                //else {
-                //alert("File Too Powerful, Please upload a file smaller than 100MB");
-                //document.getElementById("formFile").value = "";
-                //window.URL.revokeObjectURL(video.src);
+                }
+                else {
+                alert("File Too Powerful!, Please upload a file smaller than 2GB");
+                document.getElementById("formFile").value = "";
+                window.URL.revokeObjectURL(video.src);
 
-                //}
+                }
             }
             catch (e) {
                 alert(e);
@@ -139,6 +138,7 @@ export class UploadVideo extends Component {
                         }
                     );
                     if (progress.item2 < 100) {
+                        setTimeout(1000)
                         this.getUploadProcessingStatus(taskId);
                     }
                     else {
