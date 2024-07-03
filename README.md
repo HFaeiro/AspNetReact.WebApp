@@ -2,7 +2,7 @@
 
 ### Currently working just as a login portal.
 
-## Dependancies:
+## Dependencies:
 
 - >Visual Studio 2022 IDE.
 
