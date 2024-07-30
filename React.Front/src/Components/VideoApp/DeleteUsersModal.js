@@ -58,7 +58,7 @@ export class DeleteUsersModal extends Component {
                         <Row>
                             <Col sm={8}>
                                 <Form onSubmit={this.handleSubmit}>
-                                    <Form.Group controlId="Id">
+                                    <Form.Group controlid="Id">
                                         <Form.Label>Id</Form.Label>
                                         <Form.Control type="text" name="Id" required
                                             disabled
@@ -66,7 +66,7 @@ export class DeleteUsersModal extends Component {
                                             placeholder={this.props.uId}>
                                         </Form.Control>
                                     </Form.Group>
-                                    <Form.Group controlId="Username">
+                                    <Form.Group controlid="Username">
                                         <Form.Label>Username</Form.Label>
                                         <Form.Control type="text" name="Username" required
                                             disabled
@@ -74,7 +74,7 @@ export class DeleteUsersModal extends Component {
                                             placeholder={this.props.uName}>
                                         </Form.Control>
                                     </Form.Group>
-                                    <Form.Group controlId="Privileges">
+                                    <Form.Group controlid="Privileges">
                                         <Form.Label>Privileges</Form.Label>
                                         <Form.Control type="text" name="Privileges"
                                             disabled

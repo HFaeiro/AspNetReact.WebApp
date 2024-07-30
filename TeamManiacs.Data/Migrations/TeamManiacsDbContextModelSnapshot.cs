@@ -102,11 +102,18 @@ namespace TeamManiacs.Data.Migrations
                         .IsRequired()
                         .HasColumnType("longtext");
 
+                    b.Property<string>("GUID")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("longtext");
 
                     b.Property<int>("Uploader")
+                        .HasColumnType("int");
+
+                    b.Property<int>("VideoLength")
                         .HasColumnType("int");
 
                     b.Property<bool>("isPrivate")

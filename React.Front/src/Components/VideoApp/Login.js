@@ -79,13 +79,13 @@ export class Login extends Component {
 
                     <Form id="login" onSubmit={this.loader}>
 
-                        <Form.Group controlId="Username">
+                        <Form.Group controlid="Username">
                             <Form.Label>Username</Form.Label>
                             <Form.Control type="text" name="Username" required
                             >
                             </Form.Control>
                         </Form.Group>
-                        <Form.Group controlId="Password">
+                        <Form.Group controlid="Password">
                             <Form.Label>Password</Form.Label>
                             <Form.Control type="password" name="Password" required
                             >

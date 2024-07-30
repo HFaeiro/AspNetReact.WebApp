@@ -22,15 +22,24 @@ namespace TeamManiacs.Core.Models
             if (Title?.Length < 0)
                 Title = videoIn.File.FileName;
             ContentSize = (int)videoIn.File.OpenReadStream().Length;
-            Description = videoIn.File.ContentDisposition;
-            ContentType = videoIn.File.ContentType;
-            ContentDisposition = videoIn.File.ContentDisposition;
+            Description = videoIn.File.ContentDisposition != null ? videoIn.File.ContentDisposition : " ";
+            ContentType = videoIn.File.ContentType != null ? videoIn.File.ContentType : " ";
+            ContentDisposition = videoIn.File.ContentDisposition != null ? videoIn.File.ContentDisposition : " ";
             Uploader = uploader;
             isPrivate = true;
+        }
+        [NotMapped]
+        public string VideoName
+        {
+            get
+            {
+                return Path.GetFileNameWithoutExtension(FileName);
+            }
         }
 
         [Key]
         public int ID { get; set; }
+        public string GUID { get; set; }
         public int ContentSize { get; set; }
         public bool isPrivate { get; set; }
         public string FileName { get; set; }
@@ -39,6 +48,7 @@ namespace TeamManiacs.Core.Models
         public string ContentType { get; set; }
         public string ContentDisposition { get; set; }
         public int Uploader { get; set; }
+        public int VideoLength { get; set; }
         public ICollection<VideoRating>? Ratings { get; set; }
 
         public string ToJson()

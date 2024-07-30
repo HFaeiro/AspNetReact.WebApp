@@ -1,0 +1,2 @@
+-loglevel debug -y -i
+-f mp4 -c:v copy -map 0 -movflags faststart

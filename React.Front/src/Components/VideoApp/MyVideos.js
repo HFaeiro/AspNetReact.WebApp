@@ -62,42 +62,42 @@ export class MyVideos extends Component {
     }
 
     render() {
-        let uploadVideos = 
-            this.props.profile ?
+        let uploadVideos =
+            this.props.profile && this.props.profile.userId ?
                 <div>
-                    <UploadVideo
+                    <div className="upload">                        
+                        <UploadVideo
+                            profile={this.props.profile}
+                            updateProfile={this.props.updateProfile}
+                        /></div>
+                    <Videos
+                        updateProfile={this.props.updateProfile}
                         profile={this.props.profile}
-                        updateProfile={this.props.updateProfile }
-                    />
-                    
-                       
-                            <Videos
-                                userId={this.props.profile.userId}
-                                token={this.props.profile.token}>
-                                <EditVideosModal
-                                    token={this.props.profile.token}
-                                />
-                                <button name="Id" className="btn btn-danger"
-                                    onClick={(e) => this.deleteVideo(e).then(() => window.location.reload())}>
-                                    Delete
-                                </button>
-                            </Videos>
-
-                    
+                        userId={this.props.profile.userId}
+                        token={this.props.profile.token}>
+                        <EditVideosModal
+                            token={this.props.profile.token}
+                        />
+                        <button name="Id" className="btn btn-danger"
+                            onClick={(e) => this.deleteVideo(e).then(() => window.location.reload())}>
+                            Delete
+                        </button>
+                    </Videos>
+                  
                 </div>
                 :
-                <>An Error Has Occured In Upload Component</>
-        
+                <>{window.location.href = "/videoapp/login"}</>
+
         return (
             <div>
-            <div className="mt-5 justify-content-left">
-                
-                {uploadVideos}
-                    
-                
+                <div className="mt-5 justify-content-left">
+
+                    {uploadVideos}
+
+
                 </div>
-                </div>
-           
+            </div>
+
         );
     }
 }

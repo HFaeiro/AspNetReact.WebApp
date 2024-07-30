@@ -1,6 +1,9 @@
 import React, { Component } from 'react';
 import { Table } from 'react-bootstrap'
 import VideoTable from './Functions/VideoTable'
+import { VideoStream } from './VideoStream'
+
+import { UploadVideo } from './UploadVideo'
 import { Navigate, useParams } from 'react-router-dom';
 import { withRouter } from '../../Utils/withRouter';
 import { Helmet } from "react-helmet";
@@ -13,11 +16,7 @@ export class Videos extends Component {
         this.state =
         {
             videos: [],
-            fetchedVideo:
-            {
-                id: null,
-                video: null
-            },
+            master: [],
             updateVideos: false,
             showPlayer: false,
             userId: props.router ? props.router.location.state ? props.router.location.state.userId : null : this.props.userId,
@@ -31,8 +30,8 @@ export class Videos extends Component {
         if (this.state.userId) {
             this.getVideos();
         }
-        else if (this.state.fetchedVideo.video == null){
-            let vidId = parseInt(this.props.router.params.id);
+        else if (this.state.fetchedVideo?.video == null){
+            let vidId = parseInt(this.props.router?.params.id);
             if (vidId) {
                var res = this.getVideo(vidId);
             }
@@ -68,48 +67,43 @@ export class Videos extends Component {
              reject(e);
          }
      })
+    
     getVideo = async (e) => {
         return await new Promise(resolve => {
-            fetch('/' + process.env.REACT_APP_API + 'video/play/' + e, {
+            fetch('/' + process.env.REACT_APP_API + 'video/master/' + e, {
                 headers: {
                     'Authorization': 'Bearer ' + this.state.token,
-                    'Accept' : '*/*',
+                    'Accept': '*/*',
                     'Accept-Encoding': 'gzip, deflate, br',
-                    'Connection' : 'keep-alive'
+                    'Connection': 'keep-alive'
                 }
 
             })
                 .then(res => {
-                    if (res.status == 200)
-                        return res.blob();
+                    if (res.status == 202)
+                        return res.text();
                     else
                         return;
 
 
                 })
                 .then(data => {
+                    var lines = data.split(/[\r\n]/);
                     
-                    var video = URL.createObjectURL(data);
-                    
-                    this.setState(
-                        ({
-                            fetchedVideo:
-                            {
-                                id: e,
-                                video: video
-                            }
-                        }));
+                    this.setState({ master: lines });
+                    console.log(lines);
                     resolve(data);
                 },
                     (error) => {
+                        console.log(error);
                         resolve(null);
                     }).
                 catch((error) => {
+                    console.log(error);
                     resolve(null);
                 })
         })
     }
-
     getVideos = async () => {
         return await new Promise(resolve => {
             fetch('/' +process.env.REACT_APP_API + 'video/' + this.state.userId , {
@@ -154,21 +148,27 @@ export class Videos extends Component {
                 <VideoTable
                     onPlay={this.onPlay}
                     videos={this.state.videos}
-                    showPlayer={this.state.showPlayer}
-                    video={this.state.fetchedVideo }
                 >{this.props.children }
                 </VideoTable>
-
-            </> : <>{this.state.fetchedVideo.video && (this.state.showPlayer || this.props.router && this.props.router.params.id)
+            </> : <>{(this.state.master && this.state.master.length) && (this.state.showPlayer || this.props.router && this.props.router.params.id)
                     ?
                     <div>
-                        
-                        <p><video className="VideoPlayer" controls muted
-                        src={this.state.fetchedVideo.video} >
-                    </video></p></div>
-                    : this.props.userId ? <>No Videos! Please upload one.</>
+                        <div>
+                            <VideoStream
+                            master={this.state.master }
+                        >
+
+                            </VideoStream>
+                        </div>                       
+                   </div>
+                    : this.props.userId ? <><div className="upload">
+                    <h2 className="noVideoText">No Videos! Please upload one.</h2>
+                    <UploadVideo
+                        profile={this.props.profile}
+                        updateProfile={this.props.updateProfile }
+                    /></div></>
                         : this.state.userId ? <>This Users Videos are Private!</>
-                            : <>This Video Does Not Exist! Please check your Link and Try Again!</>}
+                            : this.props.userId ? <>This Video Does Not Exist! Please check your Link and Try Again!</> :  <></>}
             </>}
             </div>
 

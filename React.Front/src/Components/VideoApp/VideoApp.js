@@ -14,7 +14,7 @@ export class VideoApp extends Component {
         super(props);
         this.login = this.login.bind(this);
         this.logout = this.logout.bind(this);
-        this.updateProfile = this.updateProfile.bind(this);
+        this.updateProfile  = (profile) => this.updateProfile.bind(this);
         this.state = {
             loggedIn: 'false',
             profile: {

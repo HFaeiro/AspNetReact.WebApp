@@ -1,2 +1,36 @@
-body {
+.uploadModal {
+    /*position: relative;*/
+   /* display: flex;*/
+    /*width: 50vw;*/
+    flex-wrap: nowrap;
+    align-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.videoPreview {
+    position: relative;
+    display: flex;
+    width: 100%;
+}
+.progress {
+    height: 100%;   
+    border: 1px solid black;
+    position: relative;
+    padding: 3px;
+    display: flex;
+    flex-direction: column;
+}
+.progressText1 {
+    left: 50%;
+    position: relative;
+}
+.progressText2 {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+}
+.progressBar {
+    height: 20px;
+    background-color: chartreuse;
 }
