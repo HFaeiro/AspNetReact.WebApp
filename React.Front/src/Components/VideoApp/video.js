@@ -150,7 +150,6 @@ export class Videos extends Component {
                     videos={this.state.videos}
                 >{this.props.children }
                 </VideoTable>
-
             </> : <>{(this.state.master && this.state.master.length) && (this.state.showPlayer || this.props.router && this.props.router.params.id)
                     ?
                     <div>
@@ -160,7 +159,7 @@ export class Videos extends Component {
                         >
 
                             </VideoStream>
-                        </div>
+                        </div>                       
                    </div>
                     : this.props.userId ? <><div className="upload">
                     <h2 className="noVideoText">No Videos! Please upload one.</h2>

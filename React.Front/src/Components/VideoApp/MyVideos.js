@@ -62,36 +62,42 @@ export class MyVideos extends Component {
     }
 
     render() {
-        let uploadVideos = 
-            this.props.profile && this.props.profile.userId?
+        let uploadVideos =
+            this.props.profile && this.props.profile.userId ?
                 <div>
-                <Videos
-                                updateProfile={this.props.updateProfile}
-                                profile={this.props.profile}
-                                userId={this.props.profile.userId}
-                                token={this.props.profile.token}>
-                                <EditVideosModal
-                                    token={this.props.profile.token}
-                                />
-                                <button name="Id" className="btn btn-danger"
-                                    onClick={(e) => this.deleteVideo(e).then(() => window.location.reload())}>
-                                    Delete
-                                </button>
-                            </Videos>
+                    <div className="upload">                        
+                        <UploadVideo
+                            profile={this.props.profile}
+                            updateProfile={this.props.updateProfile}
+                        /></div>
+                    <Videos
+                        updateProfile={this.props.updateProfile}
+                        profile={this.props.profile}
+                        userId={this.props.profile.userId}
+                        token={this.props.profile.token}>
+                        <EditVideosModal
+                            token={this.props.profile.token}
+                        />
+                        <button name="Id" className="btn btn-danger"
+                            onClick={(e) => this.deleteVideo(e).then(() => window.location.reload())}>
+                            Delete
+                        </button>
+                    </Videos>
+                  
                 </div>
                 :
-                <>{window.location.href="/videoapp/login"}</>
-        
+                <>{window.location.href = "/videoapp/login"}</>
+
         return (
             <div>
-            <div className="mt-5 justify-content-left">
-                
-                {uploadVideos}
-                    
-                
+                <div className="mt-5 justify-content-left">
+
+                    {uploadVideos}
+
+
                 </div>
-                </div>
-           
+            </div>
+
         );
     }
 }

@@ -1,1 +1,1 @@
--loglevel info -count_frames -show_entries packet=pts_time:stream=codec_type,nb_read_frames,nb_frames,duration -of default=nw=1
+-loglevel error -count_frames -show_entries packet=pts_time:stream=codec_type,nb_read_frames,nb_frames,duration -of default=nw=1

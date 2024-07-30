@@ -1,0 +1,4 @@
+-pix_fmt yuv420p -vcodec libx264
+-crf 30 -b:v 3625k -threads 0 -sc_threshold 0
+-preset medium -profile:v high 
+-tune film -g 48 -x264opts no-scenecut

@@ -277,7 +277,7 @@ export class UploadVideo extends Component {
                                     : <div></div>}
                             </div>
                             : <div>
-                                {(this.state.file && this.state.video && this.props.profile != undefined)
+                                {(this.state.file && this.state.video && this.props.profile !== undefined)
 
                                     ?
                                     <div className=" justify-content-left">
@@ -330,7 +330,7 @@ export class UploadVideo extends Component {
                     </Modal.Body>
                     <Modal.Footer>
                         {this.state.uploaded ?
-                            <button className="btn btn-success" onClick={this.closeModal}>
+                            <button className="btn btn-success" onClick={(e) => { this.closeModal(); window.location.reload() }}>
                                 Finish
                             </button>
                             :
