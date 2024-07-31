@@ -6,7 +6,6 @@ using TeamManiacs.Data;
 using System.Text;
 using ASP.Back.Libraries;
 using System.Security.Principal;
-
 namespace ASP.Back.Controllers
 {
 
@@ -220,39 +219,39 @@ namespace ASP.Back.Controllers
         {
             try
             {
-                Console.WriteLine($"\t\t{nameof(Post)} - {videoIn.File.FileName}");
-                if (videoIn.File.Length / 1024 / 1024 <= 4000)
+                if (this.User.Identity == null)
                 {
-                    if(this.User.Identity == null)
-                    {
-                        return BadRequest();
-                    }
-                    var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
-                    if (userId != null)
-                    {
+                    return BadRequest();
+                }
+                var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
+                if (userId != null)
+                {
+                    IIdentity? identity = this.User.Identity;
+                    Console.WriteLine($"\t\t{nameof(Post)} - {videoIn.file.FileName} uploading for {userId}");
 
-                        IIdentity? identity = this.User.Identity;
+                    if (videoIn.file.Length / 1024 >= 1024 * 1024)
+                    {
                         Stream vod = new System.IO.MemoryStream();
-                        videoIn.File.CopyTo(vod);
+                        videoIn.file.CopyTo(vod);
                         VideoUpload videoUpload = new VideoUpload();
-                        videoUpload.File = new FormFile(vod, 0, vod.Length, "streamFile", videoIn.File.FileName)
+                        videoUpload.file = new FormFile(vod, 0, vod.Length, "streamFile", videoIn.file.FileName)
                         {
                             Headers = new HeaderDictionary(),
-                            ContentType = videoIn.File.ContentType,
-                            ContentDisposition = videoIn.File.ContentDisposition,
+                            ContentType = videoIn.file.ContentType,
+                            ContentDisposition = videoIn.file.ContentDisposition,
                         };
                         mediaManager.setVideoIn(videoUpload);
-                        string uniqueFileName = mediaManager.getUniqueFileName();
-                        IProgress<(int, int)> progress = new Progress<(int, int)>(progress => {
+                        string uniqueFileName = mediaManager.getUniqueFileName(userId.GetHashCode());
+                        IProgress<(int, int)> progress = new Progress<(int, int)>(progress =>
+                        {
 
-                            
-                           // Console.WriteLine($"\t\tEta {progress.Item1} \t\tProgress:{progress.Item2}%");
+
+                            // Console.WriteLine($"\t\tEta {progress.Item1} \t\tProgress:{progress.Item2}%");
                             if (processingList.ContainsKey(this.mediaManager.TaskId))
                             {
                                 MediaTask mediaTask = processingList[this.mediaManager.TaskId];
                                 mediaTask.mediaManager.progress = progress;
                                 processingList[this.mediaManager.TaskId] = mediaTask;
-                                
                             }
 
                         });
@@ -265,18 +264,62 @@ namespace ASP.Back.Controllers
                         mediaTask.iProgress = progress;
 
                         processingList.Add(task.Id, mediaTask);
-                        
+
                         return Ok(task.Id);
+                    }
+                    if (videoIn?.chunkCount > 0)
+                    {
+                        using (var scope = _serviceScopeFactory.CreateScope())
+                        {
+                            TeamManiacsDbContext db = scope.ServiceProvider.GetService<TeamManiacsDbContext>();
+                            if (db == null)
+                            {
+                                return BadRequest("db null 168");
+                            }
+                            //first chunk
+                            if (videoIn.uploadId == null)
+                            {                                
+                                using (var stream = new System.IO.MemoryStream())
+                                {
+                                    await videoIn.file.CopyToAsync(stream);
+                                    videoIn.fileBytes = stream.ToArray();
+                                }
+                                var videoUpload = db.VideoUploads.Add(videoIn);
+                                db.Entry(videoUpload).State = EntityState.Modified;
+                                await db.SaveChangesAsync();
+                                return Ok(videoUpload.Entity.uploadId);
+                            }
+                            //next chunks
+                            else
+                            {
+                                var videoUpload = db.VideoUploads.Find(videoIn.uploadId);
+                                if (videoUpload == null)
+                                {
+                                    return BadRequest("db null 169");
+                                }
+
+                                //dont add to db, write over existing file. we dont want to store a massive video file. Just a tmp buffer so we can recover 
+                                videoUpload.file = videoIn.file;                               
+                                using (var stream = new System.IO.MemoryStream())
+                                {
+                                    await videoIn.file.CopyToAsync(stream);
+                                    videoUpload.fileBytes = stream.ToArray();
+                                }                                
+                                videoUpload.chunkNumber = videoIn.chunkNumber;
+                                db.Entry(videoUpload).State = EntityState.Modified;
+                                await db.SaveChangesAsync();
+                                return Ok(videoUpload.chunkNumber);
+                            }
+                        }
                     }
                 }
                 return BadRequest();
             }
             catch (Exception ex)
             {
-              Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
+                Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
                 return BadRequest(ex);
             }
-
         }
 
         

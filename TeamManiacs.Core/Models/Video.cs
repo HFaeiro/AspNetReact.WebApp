@@ -17,14 +17,14 @@ namespace TeamManiacs.Core.Models
         public Video(VideoUpload videoIn, int uploader, string fileName = "")
         {
 
-            FileName = fileName == "" ? videoIn.File.FileName : fileName;
-            Title = videoIn.File.FileName.Split('_')[0];
+            FileName = fileName == "" ? videoIn.file.FileName : fileName;
+            Title = videoIn.file.FileName.Split('_')[0];
             if (Title?.Length < 0)
-                Title = videoIn.File.FileName;
-            ContentSize = (int)videoIn.File.OpenReadStream().Length;
-            Description = videoIn.File.ContentDisposition != null ? videoIn.File.ContentDisposition : " ";
-            ContentType = videoIn.File.ContentType != null ? videoIn.File.ContentType : " ";
-            ContentDisposition = videoIn.File.ContentDisposition != null ? videoIn.File.ContentDisposition : " ";
+                Title = videoIn.file.FileName;
+            ContentSize = (int)videoIn.file.OpenReadStream().Length;
+            Description = videoIn.file.ContentDisposition != null ? videoIn.file.ContentDisposition : " ";
+            ContentType = videoIn.file.ContentType != null ? videoIn.file.ContentType : " ";
+            ContentDisposition = videoIn.file.ContentDisposition != null ? videoIn.file.ContentDisposition : " ";
             Uploader = uploader;
             isPrivate = true;
         }

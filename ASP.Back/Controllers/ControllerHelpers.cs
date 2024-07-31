@@ -56,12 +56,13 @@ namespace ASP.Back.Controllers
             return context.UserModels.FirstOrDefault(x =>
                                                    x.Username.ToLower() == username.ToLower());
         }
-        static public string GetUniqueFileName(string fileName)
+        static public string GetUniqueFileName(string fileName, int userIdHash)
         {
             fileName = Path.GetFileName(fileName);
             return Path.GetFileNameWithoutExtension(fileName)
                 + "_"
                 + Guid.NewGuid().ToString().Substring(0, 4)
+                + userIdHash.ToString()
                 + Path.GetExtension(fileName);
         }
     }

@@ -64,8 +64,7 @@ namespace ASP.Back.Libraries
                     videoOut = null;
                     return false;
                 }
-                getUniqueFileName();
-                Stream videoStream = videoIn.File.OpenReadStream();
+                Stream videoStream = videoIn.file.OpenReadStream();
 
                 FFMPEG ffmpeg = new FFMPEG(videoStream, Path.Combine(videosPath, this.uniqueVideoName), resolutions, progress);
                 videoStream?.Dispose();
@@ -231,7 +230,7 @@ namespace ASP.Back.Libraries
         { 
             this.videoIn = videoIn;
         }
-        public string getUniqueFileName()
+        public string getUniqueFileName(int userIdHash)
         {
             if (videoIn == null)
             {
@@ -239,7 +238,7 @@ namespace ASP.Back.Libraries
             }
             if (this.uniqueVideoName == "")
             {
-                this.uniqueVideoName = ControllerHelpers.GetUniqueFileName(videoIn.File.FileName);
+                this.uniqueVideoName = ControllerHelpers.GetUniqueFileName(videoIn.file.FileName, userIdHash);
             }
             return this.uniqueVideoName;
         }
@@ -249,11 +248,11 @@ namespace ASP.Back.Libraries
             {
                 return null;
             }
-            Console.WriteLine($"\t\t{nameof(AddVideoToDB)} - Adding {videoIn.File.FileName}");
+            Console.WriteLine($"\t\t{nameof(AddVideoToDB)} - Adding {videoIn.file.FileName}");
             var userId = ControllerHelpers.GetUserIdFromToken(claimsIdentity);
             if (userId != null)
             {
-                getUniqueFileName();
+                getUniqueFileName(userId.GetHashCode());
                  Video video = new Video(videoIn, (int)userId, this.uniqueVideoName);
                 try
                 {
@@ -266,7 +265,7 @@ namespace ASP.Back.Libraries
                         {
                             video.GUID = videoOut.Value.GUID;
                         }
-                        video.VideoLength = (int)videoIn.File.Length;
+                        video.VideoLength = (int)videoIn.file.Length;
                         _context.Videos.Add(video);
                         await _context.SaveChangesAsync();
                     }

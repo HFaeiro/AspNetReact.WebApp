@@ -146,6 +146,36 @@ namespace TeamManiacs.Data.Migrations
                     b.ToTable("VideoRating");
                 });
 
+            modelBuilder.Entity("TeamManiacs.Core.Models.VideoUpload", b =>
+                {
+                    b.Property<Guid?>("uploadId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<int?>("chunkCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("chunkNumber")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("fileBytes")
+                        .IsRequired()
+                        .HasColumnType("longblob");
+
+                    b.Property<int?>("videoDuration")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("videoHeight")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("videoWidth")
+                        .HasColumnType("int");
+
+                    b.HasKey("uploadId");
+
+                    b.ToTable("VideoUploads");
+                });
+
             modelBuilder.Entity("TeamManiacs.Core.Models.VideoRating", b =>
                 {
                     b.HasOne("TeamManiacs.Core.Models.Video", null)
