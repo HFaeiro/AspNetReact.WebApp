@@ -124,6 +124,27 @@ namespace TeamManiacs.Data.Migrations
                     b.ToTable("Videos");
                 });
 
+            modelBuilder.Entity("TeamManiacs.Core.Models.VideoBlob", b =>
+                {
+                    b.Property<Guid?>("uploadId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("chunkCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("chunkNumber")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("file")
+                        .IsRequired()
+                        .HasColumnType("longblob");
+
+                    b.HasKey("uploadId");
+
+                    b.ToTable("VideoBlobs");
+                });
+
             modelBuilder.Entity("TeamManiacs.Core.Models.VideoRating", b =>
                 {
                     b.Property<string>("Category")
@@ -144,36 +165,6 @@ namespace TeamManiacs.Data.Migrations
                     b.HasIndex("VideoID");
 
                     b.ToTable("VideoRating");
-                });
-
-            modelBuilder.Entity("TeamManiacs.Core.Models.VideoUpload", b =>
-                {
-                    b.Property<Guid?>("uploadId")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("char(36)");
-
-                    b.Property<int?>("chunkCount")
-                        .HasColumnType("int");
-
-                    b.Property<int>("chunkNumber")
-                        .HasColumnType("int");
-
-                    b.Property<byte[]>("fileBytes")
-                        .IsRequired()
-                        .HasColumnType("longblob");
-
-                    b.Property<int?>("videoDuration")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("videoHeight")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("videoWidth")
-                        .HasColumnType("int");
-
-                    b.HasKey("uploadId");
-
-                    b.ToTable("VideoUploads");
                 });
 
             modelBuilder.Entity("TeamManiacs.Core.Models.VideoRating", b =>

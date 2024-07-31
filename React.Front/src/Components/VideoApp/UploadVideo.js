@@ -18,7 +18,8 @@ export class UploadVideo extends Component {
             uploaded: false,
             uploadButton: true,
             progress: null,
-            done:false,
+            done: false,
+            uploadId: null
         }
     }
 
@@ -159,8 +160,64 @@ export class UploadVideo extends Component {
         }
     }
 
-    async getChunk(file, chunk, chunkSize) {  
-       return file.slice(chunk * chunkSize, (chunk + 1) * chunkSize);
+    async getChunk(file, chunkIndex, chunkSize) {  
+        return file.slice(chunkIndex * chunkSize, (chunkIndex + 1) * chunkSize);
+    }
+
+    async sendChunk(formData, count = 0) {
+
+
+        try {
+           return await fetch('/' + process.env.REACT_APP_API + 'video/', {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'Authorization': 'Bearer ' + this.token
+                },
+                body: formData
+
+            }).then(
+                response => {
+                    if (response.status === 200) {
+                        return response.json()
+                    }
+                    else if(response.status === 400) {
+                        if (count < 5) {
+                            this.sendChunk(formData, ++count);
+                        }
+                        else {
+                            return false;
+                        }
+                    }
+                })
+                .then(data => {// if the response is a JSON object                   
+                   console.log("Our Video Upload Guid has returned!", data); // Handle the success response object
+                    return data;
+
+                },
+                    (error) => {
+                        window.URL.revokeObjectURL(this.state.video.src);
+                        this.setState(
+                            {
+                                errorMessage: error,
+                                file: null,
+                                video: null
+                            });
+                        return false;
+                    }).catch(
+                    error => {// Handle the error response object
+                        console.log("fetch: " + error);
+                        return false;
+                    }
+                
+
+                );
+
+        }
+        catch (e) {
+            console.log("catch: " + e)     
+            return false;
+        }
     }
 
     async uploadFile() {
@@ -179,81 +236,34 @@ export class UploadVideo extends Component {
         console.log("uploaded filesize is ", this.state.file.size, "with a future chunkCount of", chunkCount, "with chunkSize of", chunkSize);
 
         const formData = new FormData();
+        formData.append("uploadId", null);
+        formData.append("videoDuration", this.state.video.duration);
+        formData.append("videoHeight", this.state.video.videoHeight)
+        formData.append("videoWidth", this.state.video.videoWidth)
+        formData.append("chunkCount", chunkCount);
+        formData.append("chunkNumber", 0);
 
-        formData.append("videoLength", this.state.video.duration);
-        //formData.append("videoHeight", this.state.video.videoHeight)
-        //formData.append("videoWidth", this.state.video.videoWidth)
-        //formData.append("chunkCount", chunkCount);
-        //formData.append("chunkNumber", 0);
-        let chunk = await this.getChunk(this.state.file, 0, chunkSize)
+        for (let i = 0; i < chunkCount; i++) {
 
-        //formData.append("file", chunk, this.state.file.name);
+            let chunk = await this.getChunk(this.state.file, i, chunkSize)
 
-        formData.append("file", this.state.file);
-
-        try {
-            await fetch('/' + process.env.REACT_APP_API + 'video/', {
-                method: 'POST',
-                headers: {
-                    'Accept': 'application/json',
-                    'Authorization': 'Bearer ' + this.token
-                },
-                body: formData
-
-            }).then(
-                response => {
-                    if (response.status == 200) {
-                        return response.json()
-
-                    }
-                    else if
-                        (response.status == 400) {
-                        throw ("Failed to Upload, Please Try Again!")
-                    }
-                })
-                .then(data => {// if the response is a JSON object
-                    if (data) {//we got the task ID back so we can then reference it back for progress updates! 
-                        this.setState({
-                            taskId: data,
-                            uploaded: true
-
-                        });
-                        this.getUploadProcessingStatus(data);
-                    }
-
-                },
-                    (error) => {
-                        window.URL.revokeObjectURL(this.state.video.src);
-                        this.setState(
-                            {
-                                errorMessage: error,
-                                file: null,
-                                video: null
-                            });
-                        success = false;
-                    })
-                .then(() => {
-                    console.log("sent file : ", this.state.file.name); // Handle the success response object
-
-                }).catch(
-                    error => console.log("fetch: " + error), // Handle the error response object
-
-                    /*success = false*/
-                );
-
+            formData.append("file", chunk, this.state.file.name);
+            success = await this.sendChunk(formData);
+            if (!success) {
+                throw new Error("Failed to Upload, Please Try Again!");
+            }
+            else if (this.state.uploadId === null)
+            {
+                
+                this.setState(
+                    {
+                        uploadId: success
+                    });
+                formData.set("uploadId", success);
+            }            
         }
-        catch (e) {
-            console.log("catch: " + e)
-            success = false;
-        }
-        /*        
-        if (success) {
-                    this.setState({ file: null });
-                    this.setState({ video: null });
-        
-        
-                }
-        */
+        throw new Error("Finished Uploading all Chunks!");
+       
     }
 
 

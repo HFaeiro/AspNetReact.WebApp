@@ -20,7 +20,7 @@ public partial class TeamManiacsDbContext : DbContext
     public virtual DbSet<Users> UserModels { get; set; }
     public virtual DbSet<Item> Items { get; set; }
     public virtual DbSet<Video> Videos { get; set; }
-    public virtual DbSet<VideoUpload> VideoUploads { get; set; }
+    public virtual DbSet<VideoBlob> VideoBlobs { get; set; }
     //    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     //#warning To protect potentially sensitive information in your connection string, you should move it out of source code. You can avoid scaffolding the connection string by using the Name= syntax to read it from configuration - see https://go.microsoft.com/fwlink/?linkid=2131148. For more guidance on storing connection strings, see http://go.microsoft.com/fwlink/?LinkId=723263.
     //        => optionsBuilder.UseSqlServer("Server=.;Database=FlySpotsDB;");
@@ -48,7 +48,7 @@ public partial class TeamManiacsDbContext : DbContext
             entity.Property(e => e.ID).ValueGeneratedOnAdd();
 
         });
-        modelBuilder.Entity<VideoUpload>(entity =>
+        modelBuilder.Entity<VideoBlob>(entity =>
         {
             entity.Property(e => e.uploadId).ValueGeneratedOnAdd();
 
