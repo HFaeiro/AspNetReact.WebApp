@@ -230,51 +230,12 @@ namespace ASP.Back.Controllers
                     Console.WriteLine($"\t\t{nameof(Post)} - {videoIn.file.FileName} uploading for {userId}");
                     if (videoIn.file.Length > 0)
                     {
-                        VideoBlob videoBlob = new VideoBlob(videoIn);
-
-                        if (videoIn.file.Length / 1024 >= 1024 * 1024)
-                        {
-                            Stream vod = new System.IO.MemoryStream();
-                            videoIn.file.CopyTo(vod);
-                            VideoUpload videoUpload = new VideoUpload();
-                            videoUpload.file = new FormFile(vod, 0, vod.Length, "streamFile", videoIn.file.FileName)
-                            {
-                                Headers = new HeaderDictionary(),
-                                ContentType = videoIn.file.ContentType,
-                                ContentDisposition = videoIn.file.ContentDisposition,
-                            };
-                            mediaManager.setVideoIn(videoUpload);
-                            string uniqueFileName = mediaManager.getUniqueFileName(userId.GetHashCode());
-                            IProgress<(int, int)> progress = new Progress<(int, int)>(progress =>
-                            {
-
-
-                                // Console.WriteLine($"\t\tEta {progress.Item1} \t\tProgress:{progress.Item2}%");
-                                if (processingList.ContainsKey(this.mediaManager.TaskId))
-                                {
-                                    MediaTask mediaTask = processingList[this.mediaManager.TaskId];
-                                    mediaTask.mediaManager.progress = progress;
-                                    processingList[this.mediaManager.TaskId] = mediaTask;
-                                }
-
-                            });
-                            Task task = UploadVideoAsync(userId.Value, identity, progress);
-                            mediaManager.TaskId = task.Id;
-
-                            MediaTask mediaTask = new MediaTask();
-                            mediaTask.task = task;
-                            mediaTask.mediaManager = mediaManager;
-                            mediaTask.iProgress = progress;
-
-                            processingList.Add(task.Id, mediaTask);
-
-                            return Ok(task.Id);
-                        }
+                        VideoBlob videoBlob = new VideoBlob(videoIn);                       
                         if (videoBlob.chunkCount > 0)
                         {
                             using (var scope = _serviceScopeFactory.CreateScope())
                             {
-                                TeamManiacsDbContext db = scope.ServiceProvider.GetService<TeamManiacsDbContext>();
+                                TeamManiacsDbContext? db = scope.ServiceProvider.GetService<TeamManiacsDbContext>();
                                 if (db == null)
                                 {
                                     return BadRequest("db null 168");
@@ -288,7 +249,7 @@ namespace ASP.Back.Controllers
                                     return Ok(videoUpload.Entity.uploadId);
                                 }
                                 //next chunks
-                                else
+                                else if (videoBlob.chunkNumber < videoBlob.chunkCount)
                                 {
                                     var videoUpload = db.VideoBlobs.Find(videoBlob.uploadId);
                                     if (videoUpload == null)
@@ -296,9 +257,50 @@ namespace ASP.Back.Controllers
                                         return BadRequest("db null 169");
                                     }
                                     //dont add to db, write over existing file. we dont want to store a massive video file. Just a tmp buffer so we can recover 
-                                    videoUpload = videoBlob;  
+                                    videoUpload = videoBlob;
                                     await db.SaveChangesAsync();
-                                    return Ok(videoUpload.uploadId);
+                                    if (mediaManager.SaveBlobToFolder(videoUpload))
+                                    {
+                                        return Ok(videoUpload.uploadId);
+                                    }
+                                }
+                                else
+                                {
+                                    //send file to ffmpeg for processing. 
+                                    Stream vod = new System.IO.MemoryStream();
+                                    videoIn.file.CopyTo(vod);
+                                    VideoUpload videoUpload = new VideoUpload();
+                                    videoUpload.file = new FormFile(vod, 0, vod.Length, "streamFile", videoIn.file.FileName)
+                                    {
+                                        Headers = new HeaderDictionary(),
+                                        ContentType = videoIn.file.ContentType,
+                                        ContentDisposition = videoIn.file.ContentDisposition,
+                                    };
+                                    mediaManager.setVideoIn(videoUpload);
+                                    string uniqueFileName = mediaManager.getUniqueFileName(userId.GetHashCode());
+                                    IProgress<(int, int)> progress = new Progress<(int, int)>(progress => 
+                                    {
+                                        // Console.WriteLine($"\t\tEta {progress.Item1} \t\tProgress:{progress.Item2}%");
+                                        if (processingList.ContainsKey(this.mediaManager.TaskId))
+                                        {
+                                            MediaTask mediaTask = processingList[this.mediaManager.TaskId];
+                                            mediaTask.mediaManager.progress = progress;
+                                            processingList[this.mediaManager.TaskId] = mediaTask;
+                                        }
+
+                                    });
+                                    Task task = UploadVideoAsync(userId.Value, identity, progress);
+                                    mediaManager.TaskId = task.Id;
+
+                                    MediaTask mediaTask = new MediaTask();
+                                    mediaTask.task = task;
+                                    mediaTask.mediaManager = mediaManager;
+                                    mediaTask.iProgress = progress;
+
+                                    processingList.Add(task.Id, mediaTask);
+
+                                    return Ok(task.Id);
+
                                 }
                             }
                         }

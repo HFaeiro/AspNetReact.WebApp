@@ -23,15 +23,21 @@ namespace TeamManiacs.Core.Models
        public VideoBlob(VideoUpload videoUpload) {
             int outChunkCount = 0;
             int outChunkNumber = 0;
+            float outDuration = 0;
             int.TryParse(videoUpload.chunkCount, out outChunkCount);
             int.TryParse(videoUpload.chunkNumber, out outChunkNumber);
-
-            if(!string.IsNullOrEmpty(videoUpload.uploadId) && videoUpload.uploadId.Length == 36)
+            float.TryParse(videoUpload.videoDuration, out outDuration);
+            if (!string.IsNullOrEmpty(videoUpload.uploadId) && videoUpload.uploadId.Length == 36)
             {
                 uploadId = new Guid(videoUpload.uploadId);
             }
+
             chunkCount = outChunkCount;
             chunkNumber = outChunkNumber;
+            videoDuration = outDuration;
+            videoHeight = videoUpload.videoHeight;
+            videoWidth = videoUpload.videoWidth;
+            videoName = videoUpload.file.Name;
 
             using (var stream = new System.IO.MemoryStream())
             {
@@ -42,9 +48,13 @@ namespace TeamManiacs.Core.Models
 
 
         [Key]
-        public Guid? uploadId       { get; set; }
+        public Guid uploadId       { get; set; }
         public int chunkCount { get; set; }
         public int chunkNumber { get; set; }
+        public float videoDuration { get; set; }
+        public string videoHeight { get; set; }
+        public string videoWidth { get; set; }
+        public string videoName {  get; set; }
         public byte[] file  { get; set; }
 
     }

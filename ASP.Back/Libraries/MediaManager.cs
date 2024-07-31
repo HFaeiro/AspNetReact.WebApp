@@ -20,6 +20,7 @@ namespace ASP.Back.Libraries
         private readonly string RootPath;
         public readonly string uploadsPath;
         public readonly string videosPath;
+        public readonly string blobsPath;
         public string uniqueVideoName {get; private set;}
         public VideoUpload? videoIn { get; private set;}
         public int TaskId { get; set; } = 0;
@@ -43,6 +44,7 @@ namespace ASP.Back.Libraries
             RootPath = _hostEnvironment.WebRootPath;
             uploadsPath = Path.Combine(RootPath, "uploads");
             videosPath = Path.Combine(uploadsPath, "videos");
+            blobsPath = Path.Combine(uploadsPath, "blobs");
             Directory.CreateDirectory(uploadsPath);
             Directory.CreateDirectory(videosPath);
 
@@ -55,6 +57,31 @@ namespace ASP.Back.Libraries
         {
             return Path.Combine(RootPath, videosPath, fileName, "stream_" + index, "data" + dataIndex.ToString().PadLeft(6, '0') + ".m4s");
         }
+        public bool SaveBlobToFolder(VideoBlob videoBlob)
+        {
+            try
+            {
+                if (!Directory.Exists(blobsPath))
+                {
+                    Directory.CreateDirectory(blobsPath);
+                }
+                string blobPath = Path.Combine(blobsPath, videoBlob.uploadId.ToString());
+                using (BinaryWriter writer = new BinaryWriter(File.OpenWrite(blobPath)))
+                {
+                    writer.Write(videoBlob.file);
+                    writer.Flush();
+                };
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
+                return false;
+            }
+
+        }
+
+
         public bool SaveVideoToMediaFolder(out FFVideo? videoOut,List<string> resolutions, IProgress<(int, int)> progress)
         {
             try
@@ -74,7 +101,6 @@ namespace ASP.Back.Libraries
                     return false;
                 }
                 return ffmpeg.AppendLineMaster("#GUID=" + ffmpeg._video.GUID, true);
-
             }
             catch (Exception ex)
             {
@@ -143,11 +169,13 @@ namespace ASP.Back.Libraries
 
                 int storedVideoCount = user.Videos.Count;
                 var ID = GetVideosByIDs(user.Videos, claimsIdentity, _context);
-#if !DEBUG //we don't want to delete not found on disk videos if we are in dev environment
+//we don't want to delete not found on disk videos if we are in dev environment
+//TODO: handle opposite case, what if we have video but no matching table entry
+#if !DEBUG            
 
                 if (storedVideoCount > ID.Count)
                 {
-                    //if(ID.Count == 0)
+                    //if(ID.Count == 0) 
                     //{
                     //    user.Videos.Clear();
                     //}
