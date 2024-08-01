@@ -124,6 +124,50 @@ namespace TeamManiacs.Data.Migrations
                     b.ToTable("Videos");
                 });
 
+            modelBuilder.Entity("TeamManiacs.Core.Models.VideoBlob", b =>
+                {
+                    b.Property<Guid>("uploadId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("ContentDisposition")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("ContentType")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("chunkCount")
+                        .HasColumnType("int");
+
+                    b.Property<int>("chunkNumber")
+                        .HasColumnType("int");
+
+                    b.Property<byte[]>("file")
+                        .IsRequired()
+                        .HasColumnType("longblob");
+
+                    b.Property<float>("videoDuration")
+                        .HasColumnType("float");
+
+                    b.Property<string>("videoHeight")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("videoName")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("videoWidth")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.HasKey("uploadId");
+
+                    b.ToTable("VideoBlobs");
+                });
+
             modelBuilder.Entity("TeamManiacs.Core.Models.VideoRating", b =>
                 {
                     b.Property<string>("Category")

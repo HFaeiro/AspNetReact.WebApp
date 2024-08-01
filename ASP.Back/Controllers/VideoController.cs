@@ -6,7 +6,6 @@ using TeamManiacs.Data;
 using System.Text;
 using ASP.Back.Libraries;
 using System.Security.Principal;
-
 namespace ASP.Back.Controllers
 {
 
@@ -22,14 +21,8 @@ namespace ASP.Back.Controllers
         IServiceScopeFactory _serviceScopeFactory;
         private MediaManager mediaManager;
         private StreamOut streamOut;
-        static Dictionary<int, MediaTask> processingList = new Dictionary<int, MediaTask>();
 
-        private struct MediaTask
-            {
-            public IProgress<(int, int)> iProgress;
-            public Task task;
-            public MediaManager mediaManager;
-        }
+
 
 
         ///<Summary>
@@ -152,48 +145,22 @@ namespace ASP.Back.Controllers
         }
 
 
-        private async Task UploadVideoAsync(int userId, IIdentity identity, IProgress<(int, int)> progress)
-        {
-            {
-                using (var scope = _serviceScopeFactory.CreateScope())
-                {
-                    TeamManiacsDbContext db = scope.ServiceProvider.GetService<TeamManiacsDbContext>();
-                    if (db == null)
-                    {
-                        return;
-                    }
-                    var user = await ControllerHelpers.GetUserById((int)userId, db);
-                    if (user != null)
-                    {
-                        int? ID = null;
-                        if (user.Videos == null || user.Videos.Count <= 0)
-                        {
-                            user.Videos = new List<int>();
-                        }
-                        ID = await mediaManager.AddVideoToDB(identity, db, progress);
-                        if (ID != null)
-                        {
-                            user.Videos.Add((int)ID);
-                            db.Entry(user).State = EntityState.Modified;
-                            await db.SaveChangesAsync();
-                        }
-                    }
-                }
-            }
-        }
+       
         [HttpGet("progress/{id}")]
         public async Task<ActionResult<(int,int)>> GetUploadProgress(int id)
         {
             try
             {
-                if (processingList.ContainsKey(id))
+               
+                if (MediaManager.processingList.ContainsKey(id))
                 {
-                    MediaTask mediaTask = processingList[id];
+                    MediaManager.MediaTask mediaTask = MediaManager.processingList[id];
 
                     (int, int) progress = mediaTask.mediaManager.progress;
                     if (progress.Item2 == 100 || mediaTask.task.Status == TaskStatus.RanToCompletion)
                     {
-                        processingList.Remove(id);
+                        //might have multithreading issue with multiple requests
+                        MediaManager.processingList.Remove(id);
                         progress.Item2 = 100;
                     }
                     return Ok(progress.ToTuple<int,int>());                    
@@ -220,63 +187,96 @@ namespace ASP.Back.Controllers
         {
             try
             {
-                Console.WriteLine($"\t\t{nameof(Post)} - {videoIn.File.FileName}");
-                if (videoIn.File.Length / 1024 / 1024 <= 4000)
+                if (this.User.Identity == null)
                 {
-                    if(this.User.Identity == null)
+                    return BadRequest();
+                }
+                var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
+                if (userId != null)
+                {
+                    IIdentity? identity = this.User.Identity;
+                    Console.WriteLine($"\t\t{nameof(Post)} - {videoIn.file.FileName} uploading for {userId}");
+                    if (videoIn.file.Length > 0)
                     {
-                        return BadRequest();
-                    }
-                    var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
-                    if (userId != null)
-                    {
-
-                        IIdentity? identity = this.User.Identity;
-                        Stream vod = new System.IO.MemoryStream();
-                        videoIn.File.CopyTo(vod);
-                        VideoUpload videoUpload = new VideoUpload();
-                        videoUpload.File = new FormFile(vod, 0, vod.Length, "streamFile", videoIn.File.FileName)
+                        VideoBlob videoBlob = new VideoBlob(videoIn);                       
+                        if (videoBlob.chunkCount > 0)
                         {
-                            Headers = new HeaderDictionary(),
-                            ContentType = videoIn.File.ContentType,
-                            ContentDisposition = videoIn.File.ContentDisposition,
-                        };
-                        mediaManager.setVideoIn(videoUpload);
-                        string uniqueFileName = mediaManager.getUniqueFileName();
-                        IProgress<(int, int)> progress = new Progress<(int, int)>(progress => {
-
-                            
-                           // Console.WriteLine($"\t\tEta {progress.Item1} \t\tProgress:{progress.Item2}%");
-                            if (processingList.ContainsKey(this.mediaManager.TaskId))
+                            using (var scope = _serviceScopeFactory.CreateScope())
                             {
-                                MediaTask mediaTask = processingList[this.mediaManager.TaskId];
-                                mediaTask.mediaManager.progress = progress;
-                                processingList[this.mediaManager.TaskId] = mediaTask;
-                                
+                                TeamManiacsDbContext? db = scope.ServiceProvider.GetService<TeamManiacsDbContext>();
+                                if (db == null)
+                                {
+                                    return BadRequest("db null 168");
+                                }
+                                //first chunk
+                                if (videoBlob.uploadId == Guid.Empty && videoBlob.chunkCount > 1)
+                                {
+                                    var dbBlob = db.VideoBlobs.Add(videoBlob);
+                                    //db.Entry(videoUpload).State = EntityState.Modified;
+                                    await db.SaveChangesAsync();
+                                    if (mediaManager.SaveBlobToFolder(videoBlob))
+                                    {
+                                        return Ok(dbBlob.Entity.uploadId);
+                                    }
+
+                                }
+                                //next chunks
+                                else
+                                {
+                                    if (videoBlob.chunkCount > 1)
+                                    {
+                                        var dbblob = db.VideoBlobs.Find(videoBlob.uploadId);
+                                        if (dbblob == null)
+                                        {
+                                            return BadRequest("db null 169");
+                                        }
+                                        //dont add to db, write over existing file. we dont want to store a massive video file. Just a tmp buffer so we can recover 
+                                        dbblob = videoBlob;
+                                        await db.SaveChangesAsync();
+                                        if (mediaManager.SaveBlobToFolder(videoBlob))
+                                        {
+                                            //last chunk was sent 
+                                            if (videoBlob.chunkNumber >= videoBlob.chunkCount - 1)
+                                            {
+                                                //send file to ffmpeg for processing. 
+                                                Task? task = mediaManager.ProcessFinishedBlob(videoBlob, userId.Value, identity);
+                                                if (task != null)
+                                                {
+                                                    return Ok(task.Id);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                return Ok(videoBlob.uploadId);
+                                            }
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (videoBlob.uploadId == Guid.Empty)
+                                        {
+                                            videoBlob.uploadId = Guid.NewGuid();
+                                        }
+                                        //send file to ffmpeg for processing. 
+                                        Task? task = mediaManager.ProcessFinishedBlob(videoIn, userId.Value, identity);
+                                        if (task != null)
+                                        {
+                                            return Ok(task.Id);
+                                        }
+                                    }
+
+                                }                               
                             }
-
-                        });
-                        Task task = UploadVideoAsync(userId.Value, identity, progress);
-                        mediaManager.TaskId = task.Id;
-
-                        MediaTask mediaTask = new MediaTask();
-                        mediaTask.task = task;
-                        mediaTask.mediaManager = mediaManager;
-                        mediaTask.iProgress = progress;
-
-                        processingList.Add(task.Id, mediaTask);
-                        
-                        return Ok(task.Id);
+                        }
                     }
                 }
                 return BadRequest();
             }
             catch (Exception ex)
             {
-              Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
+                Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
                 return BadRequest(ex);
             }
-
         }
 
         

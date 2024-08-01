@@ -18,7 +18,8 @@ export class UploadVideo extends Component {
             uploaded: false,
             uploadButton: true,
             progress: null,
-            done:false,
+            done: false,
+            uploadId: null
         }
     }
 
@@ -53,14 +54,12 @@ export class UploadVideo extends Component {
             video.onloadedmetadata = function () {
 
                 if (video.duration > 900) {
-
                     reject("Invalid Video! Max Video Length is 15m");
                     window.URL.revokeObjectURL(video.src);
                 }
                 resolve(this);
             }
             video.onerror = function () {
-
                 reject("Invalid File Type - Please upload a video file: " + video.error.message)
                 window.URL.revokeObjectURL(video.src);
             }
@@ -72,6 +71,9 @@ export class UploadVideo extends Component {
         }
     })
 
+
+
+
     getExtention = (filename) => {
         return filename.split('.').pop();
     }
@@ -82,8 +84,8 @@ export class UploadVideo extends Component {
 
         }
         let ext = this.getExtention(file.name);
-        if (ext != "avi") {
-            if (ext == 'File') {
+        if (ext !== "avi") {
+            if (ext === 'File') {
                 ext = this.getExtention(file.fileName)
             }
             try {
@@ -97,8 +99,8 @@ export class UploadVideo extends Component {
                 alert("File Too Powerful!, Please upload a file smaller than 2GB");
                 document.getElementById("formFile").value = "";
                 window.URL.revokeObjectURL(video.src);
-
                 }
+
             }
             catch (e) {
                 alert(e);
@@ -158,18 +160,21 @@ export class UploadVideo extends Component {
         }
     }
 
-    async uploadFile() {
-        this.setState(
-            {
-                uploadButton: false
-            }
-        )
-        var success = true;
-        const formData = new FormData();
-        formData.append("VideoLength", this.state.video.duration);
-        formData.append("File", this.state.file);
+    async getChunk(file, chunkIndex, chunkSize) {  
+
+        let begindex = chunkIndex * chunkSize;
+        let endex = (chunkIndex + 1) * chunkSize;
+        if (endex > file.size) {
+            endex = file.size;
+        }
+        return file.slice(begindex, endex);
+    }
+
+    async sendChunk(formData, count = 0) {
+
+
         try {
-            await fetch('/' + process.env.REACT_APP_API + 'video/', {
+           return await fetch('/' + process.env.REACT_APP_API + 'video/', {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
@@ -179,24 +184,21 @@ export class UploadVideo extends Component {
 
             }).then(
                 response => {
-                    if (response.status == 200) {
+                    if (response.status === 200) {
                         return response.json()
-
                     }
-                    else if
-                        (response.status == 400) {
-                        throw ("Failed to Upload, Please Try Again!")
+                    else if(response.status === 400) {
+                        if (count < 5) {
+                            this.sendChunk(formData, ++count);
+                        }
+                        else {
+                            return false;
+                        }
                     }
                 })
-                .then(data => {// if the response is a JSON object
-                    if (data) {//we got the task ID back so we can then reference it back for progress updates! 
-                        this.setState({
-                            taskId: data,
-                            uploaded: true
-
-                        });
-                        this.getUploadProcessingStatus(data);
-                    }
+                .then(data => {// if the response is a JSON object                   
+                   console.log("Our Video Upload has returned!", data); // Handle the success response object
+                    return data;
 
                 },
                     (error) => {
@@ -207,36 +209,82 @@ export class UploadVideo extends Component {
                                 file: null,
                                 video: null
                             });
-                        success = false;
-                    })
-                .then(() => {
-                    console.log("sent file : ", this.state.file.name); // Handle the success response object
+                        return false;
+                    }).catch(
+                    error => {// Handle the error response object
+                        console.log("fetch: " + error);
+                        return false;
+                    }               
 
-                }).catch(
-                    error => console.log("fetch: " + error), // Handle the error response object
-
-                    /*success = false*/
                 );
 
         }
         catch (e) {
-            console.log("catch: " + e)
-            success = false;
+            console.log("catch: " + e)     
+            return false;
         }
-        /*        
+    }
+
+    async uploadFile() {
+        this.setState(
+            {
+                uploadButton: false
+            }
+        )
+        //
+        //video.videoWidth
+        //video.duration
+
+        var success = true;
+        let chunkSize = (1024 * 1024) * 10;
+        let chunkCount = Math.ceil(this.state.file.size / chunkSize, chunkSize);
+        console.log("uploaded filesize is ", this.state.file.size, "with a future chunkCount of", chunkCount, "with chunkSize of", chunkSize);
+
+        const formData = new FormData();
+        formData.append("uploadId", null);
+        formData.append("videoDuration", this.state.video.duration);
+        formData.append("videoHeight", this.state.video.videoHeight)
+        formData.append("videoWidth", this.state.video.videoWidth)
+        formData.append("chunkCount", chunkCount);
+        formData.append("contentType", this.state.file.type);
+        formData.append("chunkNumber", 0);
+
+        for (let i = 0; i < chunkCount; i++) {
+
+            let chunk = await this.getChunk(this.state.file, i, chunkSize)            
+            formData.set("file", chunk, this.state.file.name);
+            //formData.append("file", this.state.file);
+            formData.set("chunkNumber", i);
+            console.log("Sending Chunk Number ", i);
+            success = await this.sendChunk(formData);
+            if (!success) {
+                throw new Error("Failed to Upload, Please Try Again!");
+            }
+            else if (this.state.uploadId === null)
+            {
+                
+                this.setState(
+                    {
+                        uploadId: success
+                    });
+                formData.set("uploadId", success);
+            }            
+        }
         if (success) {
-                    this.setState({ file: null });
-                    this.setState({ video: null });
+            this.setState({
+                taskId: success,
+                uploaded: true
+
+            });
+            this.getUploadProcessingStatus(success);
+        }
         
-        
-                }
-        */
+       
     }
 
 
     render() {
-        let uploadModal = this.state.showModal ?
-            <div>
+        let uploadModal = this.state.showModal ?           
 
                 <Modal className="uploadModal" show={this.state.showModal}
                     onHide={this.closeModal}
@@ -245,7 +293,7 @@ export class UploadVideo extends Component {
                     centered >
                     <Modal.Header >
                         <Modal.Title id="contained-modal-title-vcenter">
-                            {this.state.uploaded ? this.state.done ? "Video Has been Processed! Continue editing or Finish" : "Uploaded! Now Edit Your video while we Process it!" : "Upload Video"}
+                            {this.state.uploaded ? this.state.done ? "Video Has been Processed! Continue editing or Finish" : "Uploaded! Please wait while we Process it!" : "Upload Video"}
                         </Modal.Title>
                     </Modal.Header>
                     <Modal.Body >
@@ -255,7 +303,7 @@ export class UploadVideo extends Component {
                                     showModal={true}
                                     token={this.token}
                                     video={
-                                        this.state.video.isPrivate != undefined ? this.state.video :
+                                        this.state.video.isPrivate !== undefined ? this.state.video :
                                             {
                                                 isPrivate: "True",
                                                 title: this.state.file.name,
@@ -341,13 +389,13 @@ export class UploadVideo extends Component {
                         }
                     </Modal.Footer>
                 </Modal>
-            </div>
+            
 
             :
-            <div>
+            
                 <button className="btn btn-primary" onClick={(e) => this.setState({ showModal: !this.state.showModal })}>
                     Upload!</button>
-            </div>
+            
 
 
         return (

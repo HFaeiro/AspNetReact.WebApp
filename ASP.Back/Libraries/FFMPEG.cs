@@ -699,6 +699,7 @@ namespace ASP.Back.Libraries
             try
             {
                 success = false;
+                
                 bool isWindows = RuntimeInformation.RuntimeIdentifier.StartsWith("win");
                 if(inStream.Position == inStream.Length)
                 {
