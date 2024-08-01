@@ -16,6 +16,14 @@ namespace ASP.Back.Libraries
         private readonly IConfiguration _configuration;
         private readonly ControllerBase _controller;
 
+        static public Dictionary<int, MediaTask> processingList = new Dictionary<int, MediaTask>();
+        public struct MediaTask
+        {
+            public IProgress<(int, int)> iProgress;
+            public Task task;
+            public MediaManager mediaManager;
+        }
+
         IServiceScopeFactory _serviceScopeFactory;
         private readonly string RootPath;
         public readonly string uploadsPath;
@@ -57,6 +65,53 @@ namespace ASP.Back.Libraries
         {
             return Path.Combine(RootPath, videosPath, fileName, "stream_" + index, "data" + dataIndex.ToString().PadLeft(6, '0') + ".m4s");
         }
+        public Task? ProcessFinishedBlob(VideoBlob videoBlob, int userId, IIdentity identity )
+        {
+            try
+            {
+                string blobPath = Path.Combine(blobsPath, videoBlob.uploadId.ToString());
+                Stream vod = new System.IO.FileStream(blobPath,FileMode.Open);
+                
+                VideoUpload videoUpload = new VideoUpload();
+                
+                videoUpload.file = new FormFile(vod, 0, vod.Length, "streamFile",videoBlob.videoName)
+                {
+                    Headers = new HeaderDictionary(),
+                    ContentType = videoBlob.ContentType,
+                    ContentDisposition = videoBlob.ContentDisposition,
+                };
+                this.setVideoIn(videoUpload);
+                string uniqueFileName = this.getUniqueFileName(userId.GetHashCode());
+                IProgress<(int, int)> progress = new Progress<(int, int)>(progress =>
+                {
+                    // Console.WriteLine($"\t\tEta {progress.Item1} \t\tProgress:{progress.Item2}%");
+                    if (processingList.ContainsKey(this.TaskId))
+                    {
+                        MediaTask mediaTask = processingList[this.TaskId];
+                        mediaTask.mediaManager.progress = progress;
+                        processingList[this.TaskId] = mediaTask;
+                    }
+
+                });
+                Task task = UploadVideoAsync(userId, identity, progress);
+                this.TaskId = task.Id;
+
+                MediaTask mediaTask = new MediaTask();
+                mediaTask.task = task;
+                mediaTask.mediaManager = this;
+                mediaTask.iProgress = progress;
+
+                processingList.Add(task.Id, mediaTask);
+
+                return task;
+            }
+            catch
+            (Exception ex)
+            {
+                Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
+                return null;
+            }
+        }
         public bool SaveBlobToFolder(VideoBlob videoBlob)
         {
             try
@@ -70,6 +125,7 @@ namespace ASP.Back.Libraries
                 {
                     writer.Write(videoBlob.file);
                     writer.Flush();
+                    writer.Close();
                 };
                 return true;
             }
@@ -161,6 +217,37 @@ namespace ASP.Back.Libraries
         //    }
 
         //}
+
+        private async Task UploadVideoAsync(int userId, IIdentity identity, IProgress<(int, int)> progress)
+        {
+            {
+                using (var scope = _serviceScopeFactory.CreateScope())
+                {
+                    TeamManiacsDbContext db = scope.ServiceProvider.GetService<TeamManiacsDbContext>();
+                    if (db == null)
+                    {
+                        return;
+                    }
+                    var user = await ControllerHelpers.GetUserById((int)userId, db);
+                    if (user != null)
+                    {
+                        int? ID = null;
+                        if (user.Videos == null || user.Videos.Count <= 0)
+                        {
+                            user.Videos = new List<int>();
+                        }
+                        ID = await this.AddVideoToDB(identity, db, progress);
+                        if (ID != null)
+                        {
+                            user.Videos.Add((int)ID);
+                            db.Entry(user).State = EntityState.Modified;
+                            await db.SaveChangesAsync();
+                        }
+                    }
+                }
+            }
+        }
+
         public async Task<IEnumerable<Video>?> GetVideosByUser(Users user, IIdentity claimsIdentity, TeamManiacsDbContext _context)
         {
             List<Video>? result = null;

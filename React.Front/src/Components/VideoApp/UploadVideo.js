@@ -208,8 +208,7 @@ export class UploadVideo extends Component {
                     error => {// Handle the error response object
                         console.log("fetch: " + error);
                         return false;
-                    }
-                
+                    }               
 
                 );
 
@@ -231,7 +230,7 @@ export class UploadVideo extends Component {
         //video.duration
 
         var success = true;
-        let chunkSize = (1024 * 1024);
+        let chunkSize = (1024 * 1024)**2;
         let chunkCount = Math.ceil(this.state.file.size / chunkSize, chunkSize);
         console.log("uploaded filesize is ", this.state.file.size, "with a future chunkCount of", chunkCount, "with chunkSize of", chunkSize);
 
@@ -241,13 +240,14 @@ export class UploadVideo extends Component {
         formData.append("videoHeight", this.state.video.videoHeight)
         formData.append("videoWidth", this.state.video.videoWidth)
         formData.append("chunkCount", chunkCount);
+        formData.append("contentType", this.state.file.type);
         formData.append("chunkNumber", 0);
 
-        for (let i = 0; i < chunkCount; i++) {
+        for (let i = 0; i <= chunkCount; i++) {
 
-            let chunk = await this.getChunk(this.state.file, i, chunkSize)
-
+            let chunk = await this.getChunk(this.state.file, i, chunkSize)            
             formData.append("file", chunk, this.state.file.name);
+            //formData.append("file", this.state.file);
             success = await this.sendChunk(formData);
             if (!success) {
                 throw new Error("Failed to Upload, Please Try Again!");
@@ -262,7 +262,15 @@ export class UploadVideo extends Component {
                 formData.set("uploadId", success);
             }            
         }
-        throw new Error("Finished Uploading all Chunks!");
+        if (success) {
+            this.setState({
+                taskId: success,
+                uploaded: true
+
+            });
+            this.getUploadProcessingStatus(success);
+        }
+        
        
     }
 

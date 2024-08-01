@@ -3,24 +3,27 @@
 using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Net.Mime;
 
 namespace TeamManiacs.Core.Models
 {
     public partial class VideoUpload
     {
-        public string uploadId       { get; set; }
-        public string videoDuration  { get; set; }
-        public string videoHeight    { get; set; }
-        public string videoWidth     { get; set; }
-        public string chunkCount     { get; set; }
-        public string chunkNumber    { get; set; }
-        public IFormFile file        { get; set; }
+        public string uploadId { get; set; }
+        public string videoDuration { get; set; }
+        public string videoHeight { get; set; }
+        public string videoWidth { get; set; }
+        public string chunkCount { get; set; }
+        public string chunkNumber { get; set; }
+        public string contentType { get; set; }
+        public IFormFile file { get; set; }
 
     }
     public partial class VideoBlob
     {
         public VideoBlob() { }
-       public VideoBlob(VideoUpload videoUpload) {
+        public VideoBlob(VideoUpload videoUpload)
+        {
             int outChunkCount = 0;
             int outChunkNumber = 0;
             float outDuration = 0;
@@ -37,8 +40,9 @@ namespace TeamManiacs.Core.Models
             videoDuration = outDuration;
             videoHeight = videoUpload.videoHeight;
             videoWidth = videoUpload.videoWidth;
-            videoName = videoUpload.file.Name;
-
+            videoName = videoUpload.file.FileName;
+            ContentType = videoUpload.contentType;
+            ContentDisposition = videoUpload.file.ContentDisposition;
             using (var stream = new System.IO.MemoryStream())
             {
                 videoUpload.file.CopyTo(stream);
@@ -48,14 +52,16 @@ namespace TeamManiacs.Core.Models
 
 
         [Key]
-        public Guid uploadId       { get; set; }
+        public Guid uploadId { get; set; }
         public int chunkCount { get; set; }
         public int chunkNumber { get; set; }
         public float videoDuration { get; set; }
         public string videoHeight { get; set; }
         public string videoWidth { get; set; }
-        public string videoName {  get; set; }
-        public byte[] file  { get; set; }
+        public string videoName { get; set; }
+        public string ContentType { get; set; }
+        public string ContentDisposition { get; set; }
+        public byte[] file { get; set; }
 
     }
 
