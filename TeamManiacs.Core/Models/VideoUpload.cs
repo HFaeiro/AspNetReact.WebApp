@@ -46,10 +46,13 @@ namespace TeamManiacs.Core.Models
             ContentType = videoUpload.contentType;
             ContentDisposition = videoUpload.file.ContentDisposition;
 
-            iFormfile = new System.IO.MemoryStream();
+            using (MemoryStream stream = new System.IO.MemoryStream())
+            {
+                videoUpload.file.CopyTo(stream);
+                file = stream.ToArray();
+            };
 
-            videoUpload.file.CopyTo(iFormfile);
-            file = iFormfile.ToArray();
+           
 
         }
 
@@ -65,8 +68,7 @@ namespace TeamManiacs.Core.Models
         public string ContentType { get; set; }
         public string ContentDisposition { get; set; }
         public byte[] file { get; set; }
-        [NotMapped]
-        public MemoryStream iFormfile { get; set; }
+        
 
     }
 

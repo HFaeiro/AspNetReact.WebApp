@@ -214,7 +214,11 @@ namespace ASP.Back.Controllers
                                     var dbBlob = db.VideoBlobs.Add(videoBlob);
                                     //db.Entry(videoUpload).State = EntityState.Modified;
                                     await db.SaveChangesAsync();
-                                    return Ok(dbBlob.Entity.uploadId);
+                                    if (mediaManager.SaveBlobToFolder(videoBlob))
+                                    {
+                                        return Ok(dbBlob.Entity.uploadId);
+                                    }
+
                                 }
                                 //next chunks
                                 else
@@ -231,7 +235,7 @@ namespace ASP.Back.Controllers
                                         await db.SaveChangesAsync();
                                         if (mediaManager.SaveBlobToFolder(videoBlob))
                                         {
-                                            //last chunk was sent
+                                            //last chunk was sent 
                                             if (videoBlob.chunkNumber >= videoBlob.chunkCount - 1)
                                             {
                                                 //send file to ffmpeg for processing. 

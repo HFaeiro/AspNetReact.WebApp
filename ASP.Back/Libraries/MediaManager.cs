@@ -93,26 +93,29 @@ namespace ASP.Back.Libraries
         {
             try
             {
-                Stream? vod = null;
-                if (videoBlob.chunkCount > 1)
-                {
-                    string blobPath = Path.Combine(blobsPath, videoBlob.uploadId.ToString());
-                    vod = new System.IO.FileStream(blobPath, FileMode.Open);
-                }
-                else
-                {
+                MemoryStream vod = new System.IO.MemoryStream();
+                    if (videoBlob.chunkCount > 1)
+                    {
+                        string blobPath = Path.Combine(blobsPath, videoBlob.uploadId.ToString());
+                        new System.IO.FileStream(blobPath, FileMode.Open).CopyTo(vod);
+                    }
+                    else
+                    {
+                        using (var writer = new System.IO.BinaryWriter(vod))
+                        {
+                            writer.Write(videoBlob.chunkCount);
+                            writer.Flush();
+                            writer.Close();
+                        };
+                    }
 
-                    string blobPath = Path.Combine(blobsPath, videoBlob.uploadId.ToString());
-                    vod = videoBlob.iFormfile;
-                }
-
-                videoIn = new FormFile(vod, 0, vod.Length, "streamFile", videoBlob.videoName)
-                {
-                    Headers = new HeaderDictionary(),
-                    ContentType = videoBlob.ContentType,
-                    ContentDisposition = videoBlob.ContentDisposition,
-                };
-
+                    videoIn = new FormFile(vod, 0, vod.Length, "streamFile", videoBlob.videoName)
+                    {
+                        Headers = new HeaderDictionary(),
+                        ContentType = videoBlob.ContentType,
+                        ContentDisposition = videoBlob.ContentDisposition,
+                    };
+                
                 return CreateUploadTask(userId, identity);
             }
             catch
@@ -160,11 +163,13 @@ namespace ASP.Back.Libraries
                     Directory.CreateDirectory(blobsPath);
                 }
                 string blobPath = Path.Combine(blobsPath, videoBlob.uploadId.ToString());
-                using (BinaryWriter writer = new BinaryWriter(File.OpenWrite(blobPath)))
+
+                using (var fileStream = new FileStream(blobPath, FileMode.Append, FileAccess.Write, FileShare.None))
+                using (var bw = new BinaryWriter(fileStream))                
                 {
-                    writer.Write(videoBlob.file);
-                    writer.Flush();
-                    writer.Close();
+                    bw.Write(videoBlob.file);
+                    bw.Flush();
+                    bw.Close();
                 };
                 return true;
             }
