@@ -4,11 +4,13 @@ using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Net.Mime;
+using System.Runtime.InteropServices;
 
 namespace TeamManiacs.Core.Models
 {
     public partial class VideoUpload
     {
+
         public string uploadId { get; set; }
         public string videoDuration { get; set; }
         public string videoHeight { get; set; }
@@ -43,11 +45,12 @@ namespace TeamManiacs.Core.Models
             videoName = videoUpload.file.FileName;
             ContentType = videoUpload.contentType;
             ContentDisposition = videoUpload.file.ContentDisposition;
-            using (var stream = new System.IO.MemoryStream())
-            {
-                videoUpload.file.CopyTo(stream);
-                file = stream.ToArray();
-            }
+
+            iFormfile = new System.IO.MemoryStream();
+
+            videoUpload.file.CopyTo(iFormfile);
+            file = iFormfile.ToArray();
+
         }
 
 
@@ -62,6 +65,8 @@ namespace TeamManiacs.Core.Models
         public string ContentType { get; set; }
         public string ContentDisposition { get; set; }
         public byte[] file { get; set; }
+        [NotMapped]
+        public MemoryStream iFormfile { get; set; }
 
     }
 

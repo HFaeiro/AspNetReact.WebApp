@@ -161,7 +161,10 @@ export class UploadVideo extends Component {
     }
 
     async getChunk(file, chunkIndex, chunkSize) {  
-        return file.slice(chunkIndex * chunkSize, (chunkIndex + 1) * chunkSize);
+
+        let begindex = chunkIndex * chunkSize;
+        let endex = (chunkIndex + 1) * chunkSize;
+        return file.slice(begindex, endex);
     }
 
     async sendChunk(formData, count = 0) {
@@ -246,8 +249,9 @@ export class UploadVideo extends Component {
         for (let i = 0; i <= chunkCount; i++) {
 
             let chunk = await this.getChunk(this.state.file, i, chunkSize)            
-            formData.append("file", chunk, this.state.file.name);
-            //formData.append("file", this.state.file);
+            //formData.append("file", chunk, this.state.file.name);
+            formData.append("file", this.state.file);
+            formData.append("chunkNumber", i);
             success = await this.sendChunk(formData);
             if (!success) {
                 throw new Error("Failed to Upload, Please Try Again!");

@@ -1,5 +1,6 @@
 ﻿// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
+using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -14,17 +15,17 @@ namespace TeamManiacs.Core.Models
         {
 
         }
-        public Video(VideoUpload videoIn, int uploader, string fileName = "")
+        public Video(IFormFile videoIn, int uploader, string fileName = "")
         {
 
-            FileName = fileName == "" ? videoIn.file.FileName : fileName;
-            Title = videoIn.file.FileName.Split('_')[0];
+            FileName = fileName == "" ? videoIn.FileName : fileName;
+            Title = videoIn.FileName.Split('_')[0];
             if (Title?.Length < 0)
-                Title = videoIn.file.FileName;
-            ContentSize = (int)videoIn.file.OpenReadStream().Length;
-            Description = videoIn.file.ContentDisposition != null ? videoIn.file.ContentDisposition : " ";
-            ContentType = videoIn.file.ContentType != null ? videoIn.file.ContentType : " ";
-            ContentDisposition = videoIn.file.ContentDisposition != null ? videoIn.file.ContentDisposition : " ";
+                Title = videoIn.FileName;
+            ContentSize = (int)videoIn.OpenReadStream().Length;
+            Description = videoIn.ContentDisposition != null ? videoIn.ContentDisposition : " ";
+            ContentType = videoIn.ContentType != null ? videoIn.ContentType : " ";
+            ContentDisposition = videoIn.ContentDisposition != null ? videoIn.ContentDisposition : " ";
             Uploader = uploader;
             isPrivate = true;
         }

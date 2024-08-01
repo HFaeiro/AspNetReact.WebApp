@@ -218,7 +218,7 @@ namespace ASP.Back.Controllers
                                 }
                                 //next chunks
                                 else
-                                {                                   
+                                {
                                     if (videoBlob.chunkCount > 1)
                                     {
                                         var dbblob = db.VideoBlobs.Find(videoBlob.uploadId);
@@ -228,29 +228,39 @@ namespace ASP.Back.Controllers
                                         }
                                         //dont add to db, write over existing file. we dont want to store a massive video file. Just a tmp buffer so we can recover 
                                         dbblob = videoBlob;
-                                        await db.SaveChangesAsync();                                        
-                                    }
-                                    if (videoBlob.uploadId == Guid.Empty)
-                                    {
-                                        videoBlob.uploadId = Guid.NewGuid();
-                                    }
-                                    if (mediaManager.SaveBlobToFolder(videoBlob))
-                                    {
-                                        //last chunk was sent
-                                        if (videoBlob.chunkNumber >= videoBlob.chunkCount -1)
+                                        await db.SaveChangesAsync();
+                                        if (mediaManager.SaveBlobToFolder(videoBlob))
                                         {
-                                            //send file to ffmpeg for processing. 
-                                            Task? task = mediaManager.ProcessFinishedBlob(videoBlob, userId.Value, identity);
-                                            if (task != null)
+                                            //last chunk was sent
+                                            if (videoBlob.chunkNumber >= videoBlob.chunkCount - 1)
                                             {
-                                                return Ok(task.Id);
+                                                //send file to ffmpeg for processing. 
+                                                Task? task = mediaManager.ProcessFinishedBlob(videoBlob, userId.Value, identity);
+                                                if (task != null)
+                                                {
+                                                    return Ok(task.Id);
+                                                }
+                                            }
+                                            else
+                                            {
+                                                return Ok(videoBlob.uploadId);
                                             }
                                         }
-                                        else
+                                    }
+                                    else
+                                    {
+                                        if (videoBlob.uploadId == Guid.Empty)
                                         {
-                                            return Ok(videoBlob.uploadId);
+                                            videoBlob.uploadId = Guid.NewGuid();
+                                        }
+                                        //send file to ffmpeg for processing. 
+                                        Task? task = mediaManager.ProcessFinishedBlob(videoIn, userId.Value, identity);
+                                        if (task != null)
+                                        {
+                                            return Ok(task.Id);
                                         }
                                     }
+
                                 }                               
                             }
                         }

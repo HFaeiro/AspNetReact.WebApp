@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.Net.Mime;
 using System.Security.Principal;
 using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
@@ -30,7 +32,7 @@ namespace ASP.Back.Libraries
         public readonly string videosPath;
         public readonly string blobsPath;
         public string uniqueVideoName {get; private set;}
-        public VideoUpload? videoIn { get; private set;}
+        public IFormFile? videoIn { get; private set;}
         public int TaskId { get; set; } = 0;
         public (int,int) progress { get; set; }
         public enum MediaType
@@ -65,45 +67,19 @@ namespace ASP.Back.Libraries
         {
             return Path.Combine(RootPath, videosPath, fileName, "stream_" + index, "data" + dataIndex.ToString().PadLeft(6, '0') + ".m4s");
         }
-        public Task? ProcessFinishedBlob(VideoBlob videoBlob, int userId, IIdentity identity )
+        public Task? ProcessFinishedBlob(VideoUpload videoBlob, int userId, IIdentity identity)
         {
             try
             {
-                string blobPath = Path.Combine(blobsPath, videoBlob.uploadId.ToString());
-                Stream vod = new System.IO.FileStream(blobPath,FileMode.Open);
-                
-                VideoUpload videoUpload = new VideoUpload();
-                
-                videoUpload.file = new FormFile(vod, 0, vod.Length, "streamFile",videoBlob.videoName)
+                Stream vod = new System.IO.MemoryStream();
+                videoBlob.file.CopyTo(vod);               
+                videoIn = new FormFile(vod, 0, vod.Length, "streamFile", videoBlob.file.FileName)
                 {
                     Headers = new HeaderDictionary(),
-                    ContentType = videoBlob.ContentType,
-                    ContentDisposition = videoBlob.ContentDisposition,
+                    ContentType = videoBlob.file.ContentType,
+                    ContentDisposition = videoBlob.file.ContentDisposition,
                 };
-                this.setVideoIn(videoUpload);
-                string uniqueFileName = this.getUniqueFileName(userId.GetHashCode());
-                IProgress<(int, int)> progress = new Progress<(int, int)>(progress =>
-                {
-                    // Console.WriteLine($"\t\tEta {progress.Item1} \t\tProgress:{progress.Item2}%");
-                    if (processingList.ContainsKey(this.TaskId))
-                    {
-                        MediaTask mediaTask = processingList[this.TaskId];
-                        mediaTask.mediaManager.progress = progress;
-                        processingList[this.TaskId] = mediaTask;
-                    }
-
-                });
-                Task task = UploadVideoAsync(userId, identity, progress);
-                this.TaskId = task.Id;
-
-                MediaTask mediaTask = new MediaTask();
-                mediaTask.task = task;
-                mediaTask.mediaManager = this;
-                mediaTask.iProgress = progress;
-
-                processingList.Add(task.Id, mediaTask);
-
-                return task;
+                return CreateUploadTask(userId, identity);
             }
             catch
             (Exception ex)
@@ -112,6 +88,69 @@ namespace ASP.Back.Libraries
                 return null;
             }
         }
+       
+        public Task? ProcessFinishedBlob(VideoBlob videoBlob, int userId, IIdentity identity)
+        {
+            try
+            {
+                Stream? vod = null;
+                if (videoBlob.chunkCount > 1)
+                {
+                    string blobPath = Path.Combine(blobsPath, videoBlob.uploadId.ToString());
+                    vod = new System.IO.FileStream(blobPath, FileMode.Open);
+                }
+                else
+                {
+
+                    string blobPath = Path.Combine(blobsPath, videoBlob.uploadId.ToString());
+                    vod = videoBlob.iFormfile;
+                }
+
+                videoIn = new FormFile(vod, 0, vod.Length, "streamFile", videoBlob.videoName)
+                {
+                    Headers = new HeaderDictionary(),
+                    ContentType = videoBlob.ContentType,
+                    ContentDisposition = videoBlob.ContentDisposition,
+                };
+
+                return CreateUploadTask(userId, identity);
+            }
+            catch
+            (Exception ex)
+            {
+                Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
+                return null;
+            }
+        }
+
+        private Task? CreateUploadTask(int userId, IIdentity identity)
+        {
+            string uniqueFileName = this.getUniqueFileName(userId.GetHashCode());
+            IProgress<(int, int)> progress = new Progress<(int, int)>(progress =>
+            {
+                // Console.WriteLine($"\t\tEta {progress.Item1} \t\tProgress:{progress.Item2}%");
+                if (processingList.ContainsKey(this.TaskId))
+                {
+                    MediaTask mediaTask = processingList[this.TaskId];
+                    mediaTask.mediaManager.progress = progress;
+                    processingList[this.TaskId] = mediaTask;
+                }
+
+            });
+            Task task = UploadVideoAsync(userId, identity, progress);
+            this.TaskId = task.Id;
+
+            MediaTask mediaTask = new MediaTask();
+            mediaTask.task = task;
+            mediaTask.mediaManager = this;
+            mediaTask.iProgress = progress;
+
+            processingList.Add(task.Id, mediaTask);
+
+            return task;
+        }
+
+
         public bool SaveBlobToFolder(VideoBlob videoBlob)
         {
             try
@@ -147,7 +186,7 @@ namespace ASP.Back.Libraries
                     videoOut = null;
                     return false;
                 }
-                Stream videoStream = videoIn.file.OpenReadStream();
+                Stream videoStream = videoIn.OpenReadStream();
 
                 FFMPEG ffmpeg = new FFMPEG(videoStream, Path.Combine(videosPath, this.uniqueVideoName), resolutions, progress);
                 videoStream?.Dispose();
@@ -243,6 +282,10 @@ namespace ASP.Back.Libraries
                             db.Entry(user).State = EntityState.Modified;
                             await db.SaveChangesAsync();
                         }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"\t\t{nameof(UploadVideoAsync)} - Found no users in db for {userId}");
                     }
                 }
             }
@@ -341,7 +384,7 @@ namespace ASP.Back.Libraries
         {
             return GetMedia(MediaType.Master, fileName) as FileStream;
         }
-        public void setVideoIn(VideoUpload videoIn)
+        public void setVideoIn(IFormFile videoIn)
         { 
             this.videoIn = videoIn;
         }
@@ -353,7 +396,7 @@ namespace ASP.Back.Libraries
             }
             if (this.uniqueVideoName == "")
             {
-                this.uniqueVideoName = ControllerHelpers.GetUniqueFileName(videoIn.file.FileName, userIdHash);
+                this.uniqueVideoName = ControllerHelpers.GetUniqueFileName(videoIn.FileName, userIdHash);
             }
             return this.uniqueVideoName;
         }
@@ -363,7 +406,7 @@ namespace ASP.Back.Libraries
             {
                 return null;
             }
-            Console.WriteLine($"\t\t{nameof(AddVideoToDB)} - Adding {videoIn.file.FileName}");
+            Console.WriteLine($"\t\t{nameof(AddVideoToDB)} - Adding {videoIn.FileName}");
             var userId = ControllerHelpers.GetUserIdFromToken(claimsIdentity);
             if (userId != null)
             {
@@ -380,7 +423,7 @@ namespace ASP.Back.Libraries
                         {
                             video.GUID = videoOut.Value.GUID;
                         }
-                        video.VideoLength = (int)videoIn.file.Length;
+                        video.VideoLength = (int)videoIn.Length;
                         _context.Videos.Add(video);
                         await _context.SaveChangesAsync();
                     }
