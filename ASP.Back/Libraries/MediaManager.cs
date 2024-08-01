@@ -93,21 +93,21 @@ namespace ASP.Back.Libraries
         {
             try
             {
-                MemoryStream vod = new System.IO.MemoryStream();
-                    if (videoBlob.chunkCount > 1)
-                    {
+                //MemoryStream vod = new System.IO.MemoryStream();
+                   // if (videoBlob.chunkCount > 1)
+                   // {
                         string blobPath = Path.Combine(blobsPath, videoBlob.uploadId.ToString());
-                        new System.IO.FileStream(blobPath, FileMode.Open).CopyTo(vod);
-                    }
-                    else
-                    {
-                        using (var writer = new System.IO.BinaryWriter(vod))
-                        {
-                            writer.Write(videoBlob.chunkCount);
-                            writer.Flush();
-                            writer.Close();
-                        };
-                    }
+                FileStream vod = new System.IO.FileStream(blobPath, FileMode.Open);
+                    //}
+                    //else
+                    //{
+                    //    using (var writer = new System.IO.BinaryWriter(vod))
+                    //    {
+                    //        writer.Write(videoBlob.chunkCount);
+                    //        writer.Flush();
+                    //        writer.Close();
+                    //    };
+                    //}
 
                     videoIn = new FormFile(vod, 0, vod.Length, "streamFile", videoBlob.videoName)
                     {
