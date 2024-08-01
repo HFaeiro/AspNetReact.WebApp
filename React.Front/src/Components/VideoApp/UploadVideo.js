@@ -197,7 +197,7 @@ export class UploadVideo extends Component {
                     }
                 })
                 .then(data => {// if the response is a JSON object                   
-                   console.log("Our Video Upload Guid has returned!", data); // Handle the success response object
+                   console.log("Our Video Upload has returned!", data); // Handle the success response object
                     return data;
 
                 },
@@ -255,6 +255,7 @@ export class UploadVideo extends Component {
             formData.set("file", chunk, this.state.file.name);
             //formData.append("file", this.state.file);
             formData.set("chunkNumber", i);
+            console.log("Sending Chunk Number ", i);
             success = await this.sendChunk(formData);
             if (!success) {
                 throw new Error("Failed to Upload, Please Try Again!");
