@@ -1,2 +1,2 @@
--loglevel fatal -y -i
--c:v copy -map 0:v -c:a copy -movflags faststart
+-loglevel info -y -i
+-c:v copy -map 0:v -c:a copy -map 0:a:0 -movflags faststart
