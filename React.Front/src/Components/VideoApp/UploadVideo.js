@@ -13,6 +13,7 @@ export class UploadVideo extends Component {
             errorMessage: null,
             showModal: false,
             file: null,
+            filetype : null,
             video: null,
             showResults: false,
             uploaded: false,
@@ -84,16 +85,38 @@ export class UploadVideo extends Component {
 
         }
         let ext = this.getExtention(file.name);
-        if (ext !== "avi") {
+        if (ext && file) {
             if (ext === 'File') {
                 ext = this.getExtention(file.fileName)
             }
             try {
                 let video = await this.loadVideo(file);
 
-                if (video && fileInMB <= 21474836480) {
-                this.setState({ file: file });
-                this.setState({ video: video });
+                if (!file.type || file.type.length === 0) {
+                    this.fileType = "";
+                    switch (ext) {
+                        case "mov":
+                            this.fileType = "video/quicktime";
+                            break;
+                        case "avi":
+                            this.fileType = "video/x-msvideo"
+                            break;
+                        default:
+                            alert("please upload a different file. sorry.");
+                            break;
+                    }
+                } else {
+                    this.fileType = file.type;
+                }
+                if (file.type.length !== 0 || this.fileType.length !== 0) {
+
+                    if (video && fileInMB <= 21474836480) {
+                        this.setState({ file: file });
+                        this.setState({ video: video });
+                        this.setState({ fileType: this.fileType });
+
+
+                    }
                 }
                 else {
                 alert("File Too Powerful!, Please upload a file smaller than 2GB");
@@ -236,7 +259,7 @@ export class UploadVideo extends Component {
         //video.duration
 
         var success = true;
-        let chunkSize = (1024 * 1024) * 10;
+        let chunkSize = (1024 * 1024) * 100;
         let chunkCount = Math.ceil(this.state.file.size / chunkSize, chunkSize);
         console.log("uploaded filesize is ", this.state.file.size, "with a future chunkCount of", chunkCount, "with chunkSize of", chunkSize);
 
@@ -246,7 +269,7 @@ export class UploadVideo extends Component {
         formData.append("videoHeight", this.state.video.videoHeight)
         formData.append("videoWidth", this.state.video.videoWidth)
         formData.append("chunkCount", chunkCount);
-        formData.append("contentType", this.state.file.type);
+        formData.append("contentType", this.state.fileType);
         formData.append("chunkNumber", 0);
 
         for (let i = 0; i < chunkCount; i++) {

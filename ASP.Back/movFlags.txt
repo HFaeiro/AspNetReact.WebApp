@@ -1,2 +1,6 @@
--loglevel info -y -i
--c:v copy -map 0:v -c:a copy -map 0:a:0 -movflags faststart
+-loglevel fatal -y -probesize 8448 -analyzeduration 99 -i
+-c:v copy -map 0:v -c:a copy -map 0:a:0 -max_muxing_queue_size 9999 -movflags frag_keyframe+empty_moov
+-c:v copy -map 0:v -spatial_aq:v 1 -rc-lookahead:v 32 -c:a copy -c:s copy -max_muxing_queue_size 9999 -movflags faststart
+
+
+-c:v h264_cuvid -i  -map 0 -c:v hevc_nvenc -rc:v vbr_hq -cq:v 19 -b:v 1302k -minrate 911k -maxrate 1692k -bufsize 2604k -spatial_aq:v 1 -rc-lookahead:v 32 -c:a copy -c:s copy -max_muxing_queue_size 9999 /temp/Transcode/Aliens (1986) [h264 1080p 2.5 Mbps AAC]-TdarrCacheFile-VFaX5UklM.mkv
