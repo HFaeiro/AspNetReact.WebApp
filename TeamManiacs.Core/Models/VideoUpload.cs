@@ -67,6 +67,7 @@ namespace TeamManiacs.Core.Models
         public string videoName { get; set; }
         public string ContentType { get; set; }
         public string ContentDisposition { get; set; }
+        [NotMapped]
         public byte[] file { get; set; }
         
 
