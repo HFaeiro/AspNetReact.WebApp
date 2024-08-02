@@ -944,6 +944,7 @@ namespace ASP.Back.Libraries
                             if (sline.StartsWith("! >Conversion failed!") || sline.StartsWith("! >Stream specifier") ||
                                 sline.Contains("Cannot determine format") || sline.Contains("Output file is empty") 
                                 || sline.Contains("moov atom not found") || sline.Contains("Invalid data")
+                                || sline.Contains("Unknown decoder")
                                 )
                             {
                                 ConsoleColor originalColor = Console.ForegroundColor;

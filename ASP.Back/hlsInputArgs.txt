@@ -1,5 +1,5 @@
--err_detect aggressive -fflags discardcorrupt -probesize 8192 -analyzeduration 999
--pix_fmt yuv420p -vcodec libx264
+-err_detect aggressive -fflags discardcorrupt -probesize 10485760 -analyzeduration 999
+
 -crf 30 -b:v 3625k -threads 0 -sc_threshold 0
 -bufsize 2604k 
 -preset medium -profile:v high 
