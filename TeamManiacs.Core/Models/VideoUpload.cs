@@ -3,8 +3,7 @@
 using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using System.Net.Mime;
-using System.Runtime.InteropServices;
+
 
 namespace TeamManiacs.Core.Models
 {
@@ -24,6 +23,20 @@ namespace TeamManiacs.Core.Models
     public partial class VideoBlob
     {
         public VideoBlob() { }
+        public VideoBlob(VideoBlob vBlob)
+        {
+            uploadId = vBlob.uploadId;
+            chunkCount = vBlob.chunkCount;
+            chunkNumber = vBlob.chunkNumber;
+            collectedChunks = vBlob.collectedChunks;
+            videoDuration = vBlob.videoDuration;
+            videoHeight = vBlob.videoHeight;
+            videoWidth = vBlob.videoWidth;
+            videoName = vBlob.videoName;
+            ContentType = vBlob.ContentType;
+            ContentDisposition = vBlob.ContentDisposition;
+        }
+
         public VideoBlob(VideoUpload videoUpload)
         {
             int outChunkCount = 0;
@@ -61,6 +74,7 @@ namespace TeamManiacs.Core.Models
         public Guid uploadId { get; set; }
         public int chunkCount { get; set; }
         public int chunkNumber { get; set; }
+        public int collectedChunks { get; set; }
         public float videoDuration { get; set; }
         public string videoHeight { get; set; }
         public string videoWidth { get; set; }
