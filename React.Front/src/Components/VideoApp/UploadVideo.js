@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import { Form, Modal } from 'react-bootstrap'
 import './UploadVideo.css';
 import { EditVideosModal } from './EditVideosModal';
+
 export class UploadVideo extends Component {
     constructor(props) {
         super(props);
@@ -18,9 +19,18 @@ export class UploadVideo extends Component {
             showResults: false,
             uploaded: false,
             uploadButton: true,
-            progress: null,
-            done: false,
-            uploadId: null
+            uploadId: null,
+            chunkCount: null,
+            currentChunk: null,
+            chunkSize: null,
+            uploading: false,
+            updateBlob: null,
+        }
+    }
+
+    async componentDidMount() {
+        if (this.state.uploading && !this.state.uploaded && !this.sending) {
+            this.setChunkData();
         }
     }
 
@@ -73,8 +83,6 @@ export class UploadVideo extends Component {
     })
 
 
-
-
     getExtention = (filename) => {
         return filename.split('.').pop();
     }
@@ -110,12 +118,10 @@ export class UploadVideo extends Component {
                 }
                 if (file.type.length !== 0 || this.fileType.length !== 0) {
 
-                    if (video && fileInMB <= 21474836480) {
+                    if (video && fileInMB <= 2147483648) {
                         this.setState({ file: file });
                         this.setState({ video: video });
                         this.setState({ fileType: this.fileType });
-
-
                     }
                 }
                 else {
@@ -141,47 +147,7 @@ export class UploadVideo extends Component {
         let file = e.target.files[0];
         this.loadFile(file)
     }
-
-    async getUploadProcessingStatus(taskId) {
-        try {
-            await fetch('/' + process.env.REACT_APP_API + 'video/progress/' + taskId, {
-                headers: {
-                    'Accept': 'application/json',
-                    'Authorization': 'Bearer ' + this.token
-                }
-            }).then(response => {
-                if (response.status == 200) {
-                    return response.json();
-                }
-            }, (error) => {
-                console.log(error);
-            }).then(progress => {
-                if (progress) {
-                    this.setState(
-                        {
-                            progress: progress
-                        }
-                    );
-                    if (progress.item2 < 100) {
-                        setTimeout(1000)
-                        this.getUploadProcessingStatus(taskId);
-                    }
-                    else {
-                        this.setState(
-                            {
-                                done: true
-                            }
-                        );
-                    }
-                }
-
-            });
-
-        } catch (e) {
-            console.log("catch: " + e)
-            this.state.success = false;
-        }
-    }
+    
 
     async getChunk(file, chunkIndex, chunkSize) {  
 
@@ -194,8 +160,6 @@ export class UploadVideo extends Component {
     }
 
     async sendChunk(formData, count = 0) {
-
-
         try {
            return await fetch('/' + process.env.REACT_APP_API + 'video/', {
                 method: 'POST',
@@ -217,11 +181,18 @@ export class UploadVideo extends Component {
                         else {
                             return false;
                         }
+                    } else {
+                        return false;
                     }
                 })
-                .then(data => {// if the response is a JSON object                   
-                   console.log("Our Video Upload has returned!", data); // Handle the success response object
-                    return data;
+               .then(data => {// if the response is a JSON object 
+                   if (data && data !== undefined && data !== "undefined") {
+                       console.log("Our Video Upload has returned!", data); // Handle the success response object
+                       return data;
+                   }
+                   else {
+                       throw new Error("waduheck");
+                   }
 
                 },
                     (error) => {
@@ -235,8 +206,7 @@ export class UploadVideo extends Component {
                         return false;
                     }).catch(
                     error => {// Handle the error response object
-                        console.log("fetch: " + error);
-                        return false;
+                            throw new Error("waduheck");
                     }               
 
                 );
@@ -248,65 +218,135 @@ export class UploadVideo extends Component {
         }
     }
 
-    async uploadFile() {
-        this.setState(
-            {
-                uploadButton: false
-            }
-        )
-        //
-        //video.videoWidth
-        //video.duration
 
-        var success = true;
-        let chunkSize = (1024 * 1024) * 100;
-        let chunkCount = Math.ceil(this.state.file.size / chunkSize, chunkSize);
-        console.log("uploaded filesize is ", this.state.file.size, "with a future chunkCount of", chunkCount, "with chunkSize of", chunkSize);
 
-        const formData = new FormData();
-        formData.append("uploadId", null);
-        formData.append("videoDuration", this.state.video.duration);
-        formData.append("videoHeight", this.state.video.videoHeight)
-        formData.append("videoWidth", this.state.video.videoWidth)
-        formData.append("chunkCount", chunkCount);
-        formData.append("contentType", this.state.fileType);
-        formData.append("chunkNumber", 0);
+    async setChunkData() {
+        if (!this.chunkCount && (this.currentChunk === null || this.currentChunk === undefined) && !this.state.chunkSize) {
 
-        for (let i = 0; i < chunkCount; i++) {
-
-            let chunk = await this.getChunk(this.state.file, i, chunkSize)            
-            formData.set("file", chunk, this.state.file.name);
-            //formData.append("file", this.state.file);
-            formData.set("chunkNumber", i);
-            console.log("Sending Chunk Number ", i);
-            success = await this.sendChunk(formData);
-            if (!success) {
-                throw new Error("Failed to Upload, Please Try Again!");
-            }
-            else if (this.state.uploadId === null)
-            {
+            this.chunkSize = (1024 * 1024) * 100;
+            this.chunkCount = Math.ceil(this.state.file.size / this.chunkSize, this.chunkSize);
+            console.log("Calculated Chunks \n\nuploaded filesize is ", this.state.file.size, "with a future chunkCount of", this.chunkCount, "with chunkSize of", this.chunkSize);
+            this.uploadBlob = new FormData();
+            this.uploadBlob.append("uploadId", null);
+            this.uploadBlob.append("videoDuration", this.state.video.duration);
+            this.uploadBlob.append("videoHeight", this.state.video.videoHeight)
+            this.uploadBlob.append("videoWidth", this.state.video.videoWidth)
+            this.uploadBlob.append("chunkCount", this.chunkCount);
+            this.uploadBlob.append("contentType", this.state.fileType);
+            this.uploadBlob.append("chunkNumber", 0);
+            this.currentChunk = 0;
+            this.setState(
+                {
+                    chunkSize: this.chunkSize,
+                    chunkCount: this.chunkCount,
+                    currentChunk: 0,
+                    uploading: true,                   
+                    uploadButton: false,
+                    
+                }
+            )
+        }
+        else {
+            if (this.currentChunk < this.chunkCount && this.lastChunk !== this.currentChunk && !this.sending ) {
                 
-                this.setState(
-                    {
-                        uploadId: success
-                    });
-                formData.set("uploadId", success);
-            }            
+                if (this.lastChunk === this.currentChunk - 1 || this.lastChunk === undefined) {
+                    this.uploadBlob.set("chunkNumber", this.currentChunk);
+                    if (this.uploadId || this.currentChunk === 0) {
+                        this.sending = true;
+                        await this.uploadFile().then(retVal => {
+                            this.lastChunk = this.currentChunk;
+                            this.currentChunk++;
+                            this.setState(
+                                {
+                                    currentChunk: this.currentChunk
+                                }
+                            )
+                        }
+                        );
+                    }
+                    else {
+                        
+                    }
+                   
+                }
+                else if (this.lastChunk > this.currentChunk)
+                {
+                    throw new Error("Ooops!")
+                }
+                else {
+                    this.currentChunk = this.lastChunk + 1;
+                    
+                }
+            }
         }
-        if (success) {
-            this.setState({
-                taskId: success,
-                uploaded: true
+    }
 
+   async uploadFile() {
+        return await this.getChunk(this.state.file, this.currentChunk, this.chunkSize)
+            .then(chunk => {
+                this.uploadBlob.set("file", chunk, this.state.file.name);
+
+                this.uploadBlob.set("uploadId", this.uploadId);
+                console.log("Sending Chunk Number ", this.currentChunk, " of size:", chunk.size, " for uploadId:", this.state.uploadId);
+                this.sendChunk(this.uploadBlob)
+                    .then(result => {
+                        if (!result) {
+                            this.setState({
+                                uploading: false,
+                                uploaded: false,
+                                errorMessage: "Failed to Upload, Please Try Again!",
+                                uploadButton: true
+                            });
+                            throw new Error("Failed to Upload, Please Try Again!");
+                        }
+                        if (this.currentChunk >= this.chunkCount) {                             
+                            this.setState({
+                                taskId: result,
+                                uploaded: true,
+                                uploading: false
+                            });
+                        }
+                        else {
+                            this.uploadId = result;
+                            this.setState(
+                                {
+                                    uploadId: result
+                                });
+                           this.uploadBlob.set("uploadId", result);
+                        }
+                    }).catch(
+                        error => {// Handle the error response object
+                            console.log(error);
+                            
+                                this.lastChunk = undefined;
+                                this.chunkCount= null;
+                                this.chunkSize= null;
+                                this.currentChunk = null;
+                                this.sending = false;
+                                this.setState(
+                                    {
+
+                                        uploadButton: true,
+                                        chunkCount: null,
+                                        chunkSize: null,
+                                        currentChunk: null,
+                                    }
+                                );
+                                return false;
+                            }
+                       
+
+                );
+                this.sending = false;
             });
-            this.getUploadProcessingStatus(success);
-        }
-        
-       
+
     }
 
 
     render() {
+        if (this.state.uploading && !this.state.uploaded && !this.sending) {
+            this.setChunkData();
+        }
         let uploadModal = this.state.showModal ?           
 
                 <Modal className="uploadModal" show={this.state.showModal}
@@ -319,7 +359,8 @@ export class UploadVideo extends Component {
                             {this.state.uploaded ? this.state.done ? "Video Has been Processed! Continue editing or Finish" : "Uploaded! Please wait while we Process it!" : "Upload Video"}
                         </Modal.Title>
                     </Modal.Header>
-                    <Modal.Body >
+                <Modal.Body >
+
                         {this.state.uploaded
                             ? <div>
                                 <EditVideosModal
@@ -334,18 +375,9 @@ export class UploadVideo extends Component {
                                     }
                                     taskId={this.state.taskId}
                                     editParent={this.updateVideoInfo}
-                                />
-
-                                {this.state.progress ?
-                                    <div className="progress">
-                                        <div className="progressText1">ETA:{this.state.progress.item1}s</div>
-
-                                        <span className="progressText2" >{this.state.progress.item2}%</span>
-                                        <span className="progressBar" style={{ width: this.state.progress.item2 + '%' }}> </span>
-
-
-                                    </div>
-                                    : <div></div>}
+                            />
+                            
+                            
                             </div>
                             : <div>
                                 {(this.state.file && this.state.video && this.props.profile !== undefined)
@@ -382,7 +414,7 @@ export class UploadVideo extends Component {
                                         </table>
 
                                         <div >
-                                            <button className="btn btn-primary" disabled={!this.state.uploadButton} onClick={(e) => { this.uploadFile(); }}>
+                                        <button className="btn btn-primary" disabled={!this.state.uploadButton} onClick={(e) => { this.setChunkData(); }}>
                                                 Upload
                                             </button>
                                             <button className="btn btn-danger" disabled={!this.state.uploadButton} onClick={(e) => { this.clearFile() }}>

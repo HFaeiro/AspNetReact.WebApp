@@ -6,6 +6,7 @@ using TeamManiacs.Data;
 using System.Text;
 using ASP.Back.Libraries;
 using System.Security.Principal;
+using System.Reflection.Metadata;
 namespace ASP.Back.Controllers
 {
 
@@ -195,7 +196,7 @@ namespace ASP.Back.Controllers
                 if (userId != null)
                 {
                     IIdentity? identity = this.User.Identity;
-                    Console.WriteLine($"\t\t{nameof(Post)} - {videoIn.file.FileName} uploading for {userId}");
+                    Console.WriteLine($"\t\t{nameof(Post)} - {videoIn.file.FileName} Processing chunk number {videoIn.chunkNumber} for {userId}");
                     if (videoIn.file.Length > 0)
                     {
                         VideoBlob videoBlob = new VideoBlob(videoIn);                       
@@ -212,11 +213,18 @@ namespace ASP.Back.Controllers
                                 if (videoBlob.uploadId == Guid.Empty && videoBlob.chunkCount > 1)
                                 {
                                     var dbBlob = db.VideoBlobs.Add(videoBlob);
+                                    
                                     //db.Entry(videoUpload).State = EntityState.Modified;
-                                    await db.SaveChangesAsync();
-                                    if (mediaManager.SaveBlobToFolder(videoBlob))
+                                    
+                                    if (mediaManager.SaveBlobToFolder(videoBlob, userId.Value))
                                     {
+                                        dbBlob.Entity.collectedChunks++;
+                                        await db.SaveChangesAsync();
                                         return Ok(dbBlob.Entity.uploadId);
+                                    }
+                                    else
+                                    {
+                                        mediaManager.CleanUpBlob( userId.Value, videoBlob.uploadId, videoBlob.chunkNumber);                                        
                                     }
 
                                 }
@@ -225,30 +233,43 @@ namespace ASP.Back.Controllers
                                 {
                                     if (videoBlob.chunkCount > 1)
                                     {
-                                        var dbblob = db.VideoBlobs.Find(videoBlob.uploadId);
-                                        if (dbblob == null)
+
+                                        if (mediaManager.SaveBlobToFolder(videoBlob, userId.Value))
                                         {
-                                            return BadRequest("db null 169");
-                                        }
-                                        //dont add to db, write over existing file. we dont want to store a massive video file. Just a tmp buffer so we can recover 
-                                        dbblob = videoBlob;
-                                        await db.SaveChangesAsync();
-                                        if (mediaManager.SaveBlobToFolder(videoBlob))
-                                        {
+                                            var dbBlob = db.VideoBlobs.Find(videoBlob.uploadId);
+                                            if (dbBlob == null)
+                                            {
+                                                return BadRequest("db null 169");
+                                            }
+                                            dbBlob.collectedChunks++;
+                                            await db.SaveChangesAsync();
                                             //last chunk was sent 
-                                            if (videoBlob.chunkNumber >= videoBlob.chunkCount - 1)
+                                            if (dbBlob.collectedChunks >= dbBlob.chunkCount)
                                             {
                                                 //send file to ffmpeg for processing. 
                                                 Task? task = mediaManager.ProcessFinishedBlob(videoBlob, userId.Value, identity);
                                                 if (task != null)
                                                 {
+                                                    
                                                     return Ok(task.Id);
+                                                }
+                                                else
+                                                {
+                                                    dbBlob.collectedChunks--;
+                                                    mediaManager.CleanUpFailedUpload(userId.Value, videoBlob.uploadId);
+                                                    return StatusCode(401);
                                                 }
                                             }
                                             else
-                                            {
+                                            {                                                
                                                 return Ok(videoBlob.uploadId);
                                             }
+                                        }
+                                        else
+                                        {
+                                            
+                                            await db.SaveChangesAsync();
+                                            mediaManager.CleanUpBlob(userId.Value, videoBlob.uploadId, videoBlob.chunkNumber);                                            
                                         }
                                     }
                                     else
@@ -263,8 +284,11 @@ namespace ASP.Back.Controllers
                                         {
                                             return Ok(task.Id);
                                         }
+                                        else
+                                        {
+                                            return StatusCode(401);
+                                        }
                                     }
-
                                 }                               
                             }
                         }

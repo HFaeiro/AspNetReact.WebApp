@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualBasic;
 using System;
 using System.Net.Mime;
 using System.Security.Principal;
@@ -88,34 +89,44 @@ namespace ASP.Back.Libraries
                 return null;
             }
         }
-       
+
         public Task? ProcessFinishedBlob(VideoBlob videoBlob, int userId, IIdentity identity)
         {
             try
             {
-                //MemoryStream vod = new System.IO.MemoryStream();
-                   // if (videoBlob.chunkCount > 1)
-                   // {
-                        string blobPath = Path.Combine(blobsPath, videoBlob.uploadId.ToString());
-                FileStream vod = new System.IO.FileStream(blobPath, FileMode.Open);
-                    //}
-                    //else
-                    //{
-                    //    using (var writer = new System.IO.BinaryWriter(vod))
-                    //    {
-                    //        writer.Write(videoBlob.chunkCount);
-                    //        writer.Flush();
-                    //        writer.Close();
-                    //    };
-                    //}
-
-                    videoIn = new FormFile(vod, 0, vod.Length, "streamFile", videoBlob.videoName)
+                string identityBlobPath = GetIdentityBlobFolder(userId, videoBlob.uploadId, true);
+                string completeFilePath = Path.Combine(identityBlobPath, videoBlob.uploadId.ToString());
+                DirectoryInfo directoryInfo = new DirectoryInfo(identityBlobPath);
+                if (directoryInfo.Exists)
+                {
+                    if (directoryInfo.GetFiles().Length > 1)
                     {
-                        Headers = new HeaderDictionary(),
-                        ContentType = videoBlob.ContentType,
-                        ContentDisposition = videoBlob.ContentDisposition,
-                    };
-                
+                        //need to merge the files together. 
+
+                        using (var completeFile = new FileStream(completeFilePath, FileMode.Append, FileAccess.Write, FileShare.None))
+                        {
+                            for (int i = 0; i < videoBlob.chunkCount; i++)
+                            {
+                                string chunkedBlobPath = Path.Combine(identityBlobPath, i.ToString());
+                                using (var fileStream = new FileStream(chunkedBlobPath, FileMode.Open, FileAccess.Read, FileShare.None))
+                                {
+                                    fileStream.CopyTo(completeFile);
+                                    fileStream.Flush();
+                                    fileStream.Close();
+                                };
+                                CleanUpBlob(userId, videoBlob.uploadId, i);
+                            }
+                        }
+                    }
+                }
+                FileStream vod = new System.IO.FileStream(completeFilePath, FileMode.Open);
+                videoIn = new FormFile(vod, 0, vod.Length, "streamFile", videoBlob.videoName)
+                {
+                    Headers = new HeaderDictionary(),
+                    ContentType = videoBlob.ContentType,
+                    ContentDisposition = videoBlob.ContentDisposition,
+                };
+
                 return CreateUploadTask(userId, identity);
             }
             catch
@@ -152,19 +163,56 @@ namespace ASP.Back.Libraries
 
             return task;
         }
+        private string GetIdentityBlobFolder(int userId, Guid uploadId, bool create = false)
+        {
+            string identityBlobPath = Path.Combine(blobsPath, userId.ToString(), uploadId.ToString());
+            bool directoryExists = Directory.Exists(identityBlobPath);
+            if (!directoryExists && create)
+            {
+                Directory.CreateDirectory(identityBlobPath).Attributes = System.IO.FileAttributes.Normal;
+            }
+            else if(!directoryExists && !create)
+            {
+                identityBlobPath = "";
+            }
+            return identityBlobPath;
+        }
+        public void CleanUpFailedUpload( int userId, Guid uploadId)
+        {
+            string identityBlobPath = GetIdentityBlobFolder(userId, uploadId);
+            if (String.IsNullOrEmpty(identityBlobPath))
+            {
+                return;
+            }
+            if (Directory.Exists(identityBlobPath))
+            {
+                Directory.Delete(identityBlobPath,true);
+               
+            }
+        }
+        public void CleanUpBlob(int userId, Guid uploadId, int blobNumber)
+        {
+            string identityBlobPath = GetIdentityBlobFolder(userId, uploadId);
+            if (String.IsNullOrEmpty(identityBlobPath))
+            {
+                return;
+            }
 
+            string chunkedBlobPath = Path.Combine(identityBlobPath, blobNumber.ToString());
+            if(File.Exists(chunkedBlobPath))
+            {
+                File.SetAttributes(chunkedBlobPath, FileAttributes.Normal);
+                File.Delete(chunkedBlobPath);
+            }
+        }
 
-        public bool SaveBlobToFolder(VideoBlob videoBlob)
+        public bool SaveBlobToFolder(VideoBlob videoBlob, int userId)
         {
             try
             {
-                if (!Directory.Exists(blobsPath))
-                {
-                    Directory.CreateDirectory(blobsPath);
-                }
-                string blobPath = Path.Combine(blobsPath, videoBlob.uploadId.ToString());
-
-                using (var fileStream = new FileStream(blobPath, FileMode.Append, FileAccess.Write, FileShare.None))
+                string identityBlobPath = GetIdentityBlobFolder(userId, videoBlob.uploadId, true);
+                string chunkedBlobPath = Path.Combine(identityBlobPath, videoBlob.chunkNumber.ToString());
+                using (var fileStream = new FileStream(chunkedBlobPath, FileMode.Append, FileAccess.Write, FileShare.None))
                 using (var bw = new BinaryWriter(fileStream))                
                 {
                     bw.Write(videoBlob.file);
@@ -415,10 +463,11 @@ namespace ASP.Back.Libraries
             var userId = ControllerHelpers.GetUserIdFromToken(claimsIdentity);
             if (userId != null)
             {
-                getUniqueFileName(userId.GetHashCode());
-                 Video video = new Video(videoIn, (int)userId, this.uniqueVideoName);
                 try
                 {
+                getUniqueFileName(userId.GetHashCode());
+                 Video video = new Video(videoIn, (int)userId, this.uniqueVideoName);
+
 
                     FFVideo? videoOut = new FFVideo();
                     List<string> resolutions = new List<string> { "1920x1080", "1280x720", "720x480", "480x360", "360x240" };
@@ -433,12 +482,13 @@ namespace ASP.Back.Libraries
                         await _context.SaveChangesAsync();
                     }
 
+                return video.ID;
                 }
                 catch (Exception ex)
                 {
                     Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
+                    return null;
                 }
-                return video.ID;
             }
             return null;
         }
