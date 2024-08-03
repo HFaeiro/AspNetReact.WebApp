@@ -181,6 +181,8 @@ export class UploadVideo extends Component {
                         else {
                             return false;
                         }
+                    } else {
+                        return false;
                     }
                 })
                .then(data => {// if the response is a JSON object 
@@ -250,6 +252,7 @@ export class UploadVideo extends Component {
                 if (this.lastChunk === this.currentChunk - 1 || this.lastChunk === undefined) {
                     this.uploadBlob.set("chunkNumber", this.currentChunk);
                     if (this.uploadId || this.currentChunk === 0) {
+                        this.sending = true;
                         await this.uploadFile().then(retVal => {
                             this.lastChunk = this.currentChunk;
                             this.currentChunk++;
@@ -333,7 +336,8 @@ export class UploadVideo extends Component {
                             }
                        
 
-                    );
+                );
+                this.sending = false;
             });
 
     }
