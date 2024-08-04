@@ -144,9 +144,8 @@ namespace TeamManiacs.Data.Migrations
                     b.Property<int>("chunkNumber")
                         .HasColumnType("int");
 
-                    b.Property<byte[]>("file")
-                        .IsRequired()
-                        .HasColumnType("longblob");
+                    b.Property<int>("collectedChunks")
+                        .HasColumnType("int");
 
                     b.Property<float>("videoDuration")
                         .HasColumnType("float");

@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { Form, Modal } from 'react-bootstrap'
+import { UploadProgress } from './UploadProgress'
 import './UploadVideo.css';
 import { EditVideosModal } from './EditVideosModal';
 
@@ -25,6 +26,22 @@ export class UploadVideo extends Component {
             chunkSize: null,
             uploading: false,
             updateBlob: null,
+            confirmedSent : null,
+        }
+        this.sendRetVal =
+        {
+            success: false,
+            taskId: null,
+            errorMessage: null,
+            uploaded: false,
+            uploadButton: true,
+            uploadId: null,
+            chunkCount: null,
+            currentChunk: null,
+            chunkSize: null,
+            uploading: false,
+            updateBlob: null,
+            confirmedSent: 0,
         }
     }
 
@@ -174,15 +191,27 @@ export class UploadVideo extends Component {
                     if (response.status === 200) {
                         return response.json()
                     }
-                    else if(response.status === 400) {
+                    else if (response.status === 400) {
                         if (count < 5) {
                             this.sendChunk(formData, ++count);
                         }
                         else {
                             return false;
                         }
-                    } else {
+                    } else if (response.status === 500) {
                         return false;
+                    }
+                    else if (response.status === 201) {
+                        return response.json().then
+                            (
+                                taskId => {
+                                    this.taskId = taskId;
+                                    this.setState({
+                                        taskId: this.taskId
+                                    });
+                                    return taskId;
+                                }
+                            );
                     }
                 })
                .then(data => {// if the response is a JSON object 
@@ -210,7 +239,6 @@ export class UploadVideo extends Component {
                     }               
 
                 );
-
         }
         catch (e) {
             console.log("catch: " + e)     
@@ -235,6 +263,9 @@ export class UploadVideo extends Component {
             this.uploadBlob.append("contentType", this.state.fileType);
             this.uploadBlob.append("chunkNumber", 0);
             this.currentChunk = 0;
+            this.confirmedSent = 0;
+            this.sendRetVal.uploading = true;
+            this.sendRetVal.uploadButton = false;
             this.setState(
                 {
                     chunkSize: this.chunkSize,
@@ -254,20 +285,47 @@ export class UploadVideo extends Component {
                     if (this.uploadId || this.currentChunk === 0) {
                         this.sending = true;
                         await this.uploadFile().then(retVal => {
-                            this.lastChunk = this.currentChunk;
-                            this.currentChunk++;
-                            this.setState(
-                                {
-                                    currentChunk: this.currentChunk
-                                }
-                            )
+
+                            if (retVal.success) {
+                                this.lastChunk = this.currentChunk;
+                                this.currentChunk++;
+
+                                this.setState(
+                                    {
+                                        currentChunk: this.currentChunk,
+                                        uploadId: retVal.uploadId,
+                                        confirmedSent: retVal.confirmedSent,
+                                        uploaded: retVal.uploaded,
+                                        uploading: retVal.uploading,
+                                    }
+                                )
+                            }
+                            else {
+                                this.lastChunk = undefined;
+                                this.chunkCount = null;
+                                this.chunkSize = null;
+                                this.currentChunk = null;
+                                this.sending = false;
+                                this.uploadId = null;
+                                this.taskId = null;
+                                this.confirmedSent = 0;
+                                this.setState(
+                                    {
+                                        confirmedSent: 0,
+                                        uploadButton: true,
+                                        chunkCount: null,
+                                        chunkSize: null,
+                                        currentChunk: null,
+                                        uploading: false,
+                                        uploaded: false,
+                                        errorMessage: "Failed to Upload, Please Try Again!",                                        
+                                        success: false
+                                    }
+                                );
+                            }
                         }
                         );
-                    }
-                    else {
-                        
-                    }
-                   
+                    }                   
                 }
                 else if (this.lastChunk > this.currentChunk)
                 {
@@ -285,60 +343,40 @@ export class UploadVideo extends Component {
         return await this.getChunk(this.state.file, this.currentChunk, this.chunkSize)
             .then(chunk => {
                 this.uploadBlob.set("file", chunk, this.state.file.name);
-
                 this.uploadBlob.set("uploadId", this.uploadId);
                 console.log("Sending Chunk Number ", this.currentChunk, " of size:", chunk.size, " for uploadId:", this.state.uploadId);
-                this.sendChunk(this.uploadBlob)
+            }).then(function (){ 
+               return this.sendChunk(this.uploadBlob)
                     .then(result => {
-                        if (!result) {
-                            this.setState({
-                                uploading: false,
-                                uploaded: false,
-                                errorMessage: "Failed to Upload, Please Try Again!",
-                                uploadButton: true
-                            });
+                        if (!result) {                            
                             throw new Error("Failed to Upload, Please Try Again!");
                         }
-                        if (this.currentChunk >= this.chunkCount) {                             
-                            this.setState({
-                                taskId: result,
-                                uploaded: true,
-                                uploading: false
-                            });
-                        }
-                        else {
+                        if (this.currentChunk < this.chunkCount) {
                             this.uploadId = result;
-                            this.setState(
-                                {
-                                    uploadId: result
-                                });
-                           this.uploadBlob.set("uploadId", result);
+                            this.confirmedSent++;
+                            this.sendRetVal.uploadId = result;
+                            this.sendRetVal.confirmedSent = this.confirmedSent;
+                            this.sendRetVal.success = true;
+                                
+                            this.uploadBlob.set("uploadId", result);
+                        } else if (this.confirmedSent >= this.chunkCount){
+                            this.sendRetVal.uploaded = true;
+                            this.sendRetVal.uploading = false;
+                            this.sendRetVal.confirmedSent = this.confirmedSent;
+                            this.sendRetVal.success = true;
+                            
                         }
+                        this.sending = false;
+                        return this.sendRetVal;
                     }).catch(
                         error => {// Handle the error response object
-                            console.log(error);
-                            
-                                this.lastChunk = undefined;
-                                this.chunkCount= null;
-                                this.chunkSize= null;
-                                this.currentChunk = null;
-                                this.sending = false;
-                                this.setState(
-                                    {
-
-                                        uploadButton: true,
-                                        chunkCount: null,
-                                        chunkSize: null,
-                                        currentChunk: null,
-                                    }
-                                );
-                                return false;
-                            }
-                       
-
+                            console.log(error);                            
+                            this.sendRetVal.success = false;
+                            this.sending = false;
+                            return this.sendRetVal;
+                        }
                 );
-                this.sending = false;
-            });
+            }.bind(this));
 
     }
 
@@ -346,6 +384,9 @@ export class UploadVideo extends Component {
     render() {
         if (this.state.uploading && !this.state.uploaded && !this.sending) {
             this.setChunkData();
+        }
+        else if (this.taskId) {
+            console.log("Task Id! %d", this.taskId);
         }
         let uploadModal = this.state.showModal ?           
 
@@ -360,7 +401,16 @@ export class UploadVideo extends Component {
                         </Modal.Title>
                     </Modal.Header>
                 <Modal.Body >
+                    {this.state.confirmedSent ?
+                       <UploadProgress
+                            taskId={this.state.taskId}
+                            token={this.token}
+                            chunkCount={this.state.chunkCount}
+                           // currentChunk={this.currentChunk}
+                            confirmedSent={this.state.confirmedSent }
 
+                        />: <></>
+                            }
                         {this.state.uploaded
                             ? <div>
                                 <EditVideosModal

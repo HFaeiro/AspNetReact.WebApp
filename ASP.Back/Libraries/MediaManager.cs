@@ -56,8 +56,8 @@ namespace ASP.Back.Libraries
             uploadsPath = Path.Combine(RootPath, "uploads");
             videosPath = Path.Combine(uploadsPath, "videos");
             blobsPath = Path.Combine(uploadsPath, "blobs");
-            Directory.CreateDirectory(uploadsPath);
-            Directory.CreateDirectory(videosPath);
+            Directory.CreateDirectory(uploadsPath).Attributes = System.IO.FileAttributes.Normal; 
+            Directory.CreateDirectory(videosPath).Attributes = System.IO.FileAttributes.Normal;
 
         }
 
@@ -177,7 +177,7 @@ namespace ASP.Back.Libraries
             }
             return identityBlobPath;
         }
-        public void CleanUpFailedUpload( int userId, Guid uploadId)
+        public void CleanUpUpload( int userId, Guid uploadId)
         {
             string identityBlobPath = GetIdentityBlobFolder(userId, uploadId);
             if (String.IsNullOrEmpty(identityBlobPath))
@@ -480,8 +480,8 @@ namespace ASP.Back.Libraries
                         video.VideoLength = (int)videoIn.Length;
                         _context.Videos.Add(video);
                         await _context.SaveChangesAsync();
-                    }
-
+                    }                    
+                    videoIn = null;
                 return video.ID;
                 }
                 catch (Exception ex)
