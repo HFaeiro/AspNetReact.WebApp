@@ -195,7 +195,7 @@ namespace ASP.Back.Libraries
                     if (!Directory.Exists(workingDirectory))
                     {
                         Console.WriteLine($"\t\t{nameof(CreatePipe)} - workingDirectory:{Path.Combine(workingDirectory)} Doesn't Exist! Creating it. ");
-                        Directory.CreateDirectory(workingDirectory);
+                        Directory.CreateDirectory(workingDirectory).Attributes = System.IO.FileAttributes.Normal;
                     }
 
                 }
@@ -219,7 +219,7 @@ namespace ASP.Back.Libraries
                         if (!Directory.Exists(pipePath))
                         {
                             Console.WriteLine($"\t\t{nameof(CreatePipe)} - pipeDirectory:{pipePath} Doesn't Exist! Creating it. ");
-                            Directory.CreateDirectory(pipePath);
+                            Directory.CreateDirectory(pipePath).Attributes = System.IO.FileAttributes.Normal;
                         }
 
                         pipe.PipePath = Path.Combine(pipePath, pipe.PipeName);

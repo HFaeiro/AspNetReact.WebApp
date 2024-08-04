@@ -250,14 +250,14 @@ namespace ASP.Back.Controllers
                                                 Task? task = mediaManager.ProcessFinishedBlob(videoBlob, userId.Value, identity);
                                                 if (task != null)
                                                 {
-                                                    
-                                                    return Ok(task.Id);
+
+                                                    return new ObjectResult(task.Id) { StatusCode = 201 };
                                                 }
                                                 else
                                                 {
                                                     dbBlob.collectedChunks--;
-                                                    mediaManager.CleanUpFailedUpload(userId.Value, videoBlob.uploadId);
-                                                    return StatusCode(401);
+                                                    mediaManager.CleanUpUpload(userId.Value, videoBlob.uploadId);
+                                                    return StatusCode(500);
                                                 }
                                             }
                                             else
@@ -282,11 +282,11 @@ namespace ASP.Back.Controllers
                                         Task? task = mediaManager.ProcessFinishedBlob(videoIn, userId.Value, identity);
                                         if (task != null)
                                         {
-                                            return Ok(task.Id);
+                                            return new ObjectResult(task.Id) { StatusCode = 201 };                                            
                                         }
                                         else
                                         {
-                                            return StatusCode(401);
+                                            return StatusCode(500);
                                         }
                                     }
                                 }                               
@@ -390,24 +390,27 @@ namespace ASP.Back.Controllers
         {
             try
             {
-                Video? video = GetVideoById(id);
-                if (video != null)
+                var userId = ControllerHelpers.GetUserIdFromToken(this.User.Identity);
+                if (userId != null)
                 {
-                    using (var scope = _serviceScopeFactory.CreateScope())
+                    Video? video = GetVideoById(id);
+                    if (video != null)
                     {
-                        TeamManiacsDbContext db = scope.ServiceProvider.GetService<TeamManiacsDbContext>();
-                        if (db == null)
+                        using (var scope = _serviceScopeFactory.CreateScope())
                         {
-                            return;
+                            TeamManiacsDbContext db = scope.ServiceProvider.GetService<TeamManiacsDbContext>();
+                            if (db == null)
+                            {
+                                return;
+                            }
+                            db.Videos.Remove(video);
+                            db.SaveChanges();
                         }
-                        db.Videos.Remove(video);
-                        db.SaveChanges();
-                    }
-                    var fullFilePath = Path.Combine(mediaManager.videosPath, video.VideoName);
-                    if (System.IO.File.Exists(fullFilePath))
-                    {
-
-                        System.IO.File.Delete(fullFilePath);
+                        var fullFilePath = Path.Combine(mediaManager.videosPath, video.GUID );
+                        if (System.IO.Directory.Exists(fullFilePath))
+                        {
+                            System.IO.Directory.Delete(fullFilePath, true);
+                        }
                     }
                 }
             }
