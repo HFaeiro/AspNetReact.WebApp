@@ -374,3 +374,4 @@ FodyWeavers.xsd
 /React.Front/'/ASP.Back/wwwroot/'
 /ASP.Back/appsettings.json
 /ASP.Back/uploads/videos
+/React.Front/package-lock.json
