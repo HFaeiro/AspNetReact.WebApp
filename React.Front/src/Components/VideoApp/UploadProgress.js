@@ -1,12 +1,14 @@
 import React, { Component } from 'react';
 import { Form, Modal } from 'react-bootstrap'
 import './UploadProgress.css';
+import { EditVideosModal } from './EditVideosModal';
 export class UploadProgress extends Component {
     constructor(props) {
         super(props);
         this.token = this.props.token;
         this.state =
         {
+            showModal: true,
             processingProgress: null,
             taskId: this.props.taskId,
             done: null,
@@ -18,9 +20,13 @@ export class UploadProgress extends Component {
             },
             chunkCount: this.props.chunkCount,           
             canceled: null,
-            confirmedSent : this.props.confirmedSent,
+            confirmedSent: this.props.confirmedSent,
+            uploaded: false,
         }
     }
+    openModal = () => this.setState({ showModal: true });
+    closeModal = () => this.setState({ showModal: false });
+
     async componentDidMount() {
 
     }
@@ -28,15 +34,22 @@ export class UploadProgress extends Component {
     async calculateUploadProgress() {
         try {
             if (this.state.chunkCount && this.state.confirmedSent >= 0) {
-                    let uploadProgress =
-                        {
-                        percentDone:  (this.props.confirmedSent / this.state.chunkCount) * 100,
-                        eta: "Not Calculated",
-                        speed: "not Calulated"
-                        };
-                    this.uploadProgress = uploadProgress;
+                let uploadProgress =
+                {
+                    percentDone: (this.props.confirmedSent / this.state.chunkCount) * 100,
+                    eta: "Not Calculated",
+                    speed: "not Calulated"
+                };
+                this.uploadProgress = uploadProgress;
 
-                }
+            }
+            else {
+                this.setState(
+                    {
+                        uploaded: true
+                    }
+                );
+            }
         } catch (e) {
             console.log("catch: " + e)
             
@@ -85,11 +98,11 @@ export class UploadProgress extends Component {
 
 
     render() {
-        if ((!this.processingProgress || this.processingProgress.percentDone < 100) && this.props.taskId && (this.uploadProgress && this.uploadProgress.percentDone >= 100)) {
+        if ((!this.processingProgress || this.processingProgress.percentDone < 100) && this.props.taskId && (this.uploadProgress && this.uploadProgress.percentDone >= 100) && !this.state.done) {
             this.getUploadProcessingStatus(this.props.taskId);
         }
 
-        if (!this.calcuating && (!this.uploadProgress || this.uploadProgress.percentDone < 100) && this.lastChunk !== this.props.confirmedSent && this.props.confirmedSent >= 0) {
+        if (!this.calcuating && this.lastChunk !== this.props.confirmedSent && this.props.confirmedSent >= 0) {
             this.calcuating = true;
             this.calculateUploadProgress()
                 .then(function () {
@@ -121,8 +134,7 @@ export class UploadProgress extends Component {
                                 < span className="progressBar" style={{ width: this.state.processingProgress.item2 + '%' }}> </span>
                                 </div>
                             :
-                            <div>
-                            <div>Uploading! Please don't close this window </div>
+                            <div>                            
                                 {
                                     this.uploadProgress && this.uploadProgress.percentDone
                                     ?
@@ -134,15 +146,61 @@ export class UploadProgress extends Component {
                                     </div>
                                     : <></>
                                 }
-                            </div>
-                            
+                            </div>                            
                         :
-                        <div> Finished! </div>
+                        <>
+                                    {/*    <EditVideosModal*/}
+                                    {/*        showModal={false}*/}
+                                    {/*        token={this.props.token}*/}
+                                    {/*        video={*/}
+                                    {/*            this.props.video.isPrivate !== undefined ? this.props.video :*/}
+                                    {/*                {*/}
+                                    {/*                    isPrivate: "True",*/}
+                                    {/*                    title: this.state.file.name,*/}
+                                    {/*                }*/}
+                                    {/*        }*/}
+                                    {/*        taskId={this.props.taskId}*/}
+                                    {/*        editParent={this.updateVideoInfo}*/}
+                            {/*/>*/}
+                                    </>
+
                 }
             </>
+
+
+
+       let uploadModal = 
+            <Modal className="uploadProgressModal" show={this.state.showModal}
+                onHide={this.closeModal}
+                size="lg"
+                aria-labelledby="contained-modal-title-vcenter"
+                centered >
+                <Modal.Header >
+                    <Modal.Title id="contained-modal-title-vcenter">
+                       {
+                         this.state.done ?
+                               "Video Has been Processed! Continue editing or Finish" : this.uploadProgress && this.uploadProgress.percentDone >= 100
+                                   ? "Uploaded! Please wait while we Process it!" : " Uploading! Please don't close this window!"}
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body >
+                    <div>                        
+                        {progressBar}
+                    </div>
+                </Modal.Body>
+                <Modal.Footer>
+                    {this.state.done ?
+                        <button className="btn btn-success" onClick={(e) => { this.closeModal(); window.location.reload() }}>
+                            Finish
+                        </button>
+                        : <></>
+                    }
+                </Modal.Footer>
+            </Modal>            
+
         return (
             <div>
-                {progressBar}
+                {uploadModal}
             </div>
 
         );

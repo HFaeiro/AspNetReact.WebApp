@@ -2,7 +2,6 @@ import React, { Component } from 'react';
 import { Form, Modal } from 'react-bootstrap'
 import { UploadProgress } from './UploadProgress'
 import './UploadVideo.css';
-import { EditVideosModal } from './EditVideosModal';
 
 export class UploadVideo extends Component {
     constructor(props) {
@@ -388,7 +387,23 @@ export class UploadVideo extends Component {
         else if (this.taskId) {
             console.log("Task Id! %d", this.taskId);
         }
-        let uploadModal = this.state.showModal ?           
+
+        let uploadStatus = 
+            this.state.uploading && this.state.confirmedSent ?
+                <UploadProgress
+                    taskId={this.state.taskId}
+                    token={this.token}
+                    chunkCount={this.state.chunkCount}
+                    // currentChunk={this.currentChunk}
+                    confirmedSent={this.state.confirmedSent}
+
+                /> : <></>
+
+
+                //
+        
+
+        let uploadModal = this.state.showModal && !this.state.uploading ?           
 
                 <Modal className="uploadModal" show={this.state.showModal}
                     onHide={this.closeModal}
@@ -397,41 +412,12 @@ export class UploadVideo extends Component {
                     centered >
                     <Modal.Header >
                         <Modal.Title id="contained-modal-title-vcenter">
-                            {this.state.uploaded ? this.state.done ? "Video Has been Processed! Continue editing or Finish" : "Uploaded! Please wait while we Process it!" : "Upload Video"}
+                            {"Upload Video"}
                         </Modal.Title>
                     </Modal.Header>
                 <Modal.Body >
-                    {this.state.confirmedSent ?
-                       <UploadProgress
-                            taskId={this.state.taskId}
-                            token={this.token}
-                            chunkCount={this.state.chunkCount}
-                           // currentChunk={this.currentChunk}
-                            confirmedSent={this.state.confirmedSent }
-
-                        />: <></>
-                            }
-                        {this.state.uploaded
-                            ? <div>
-                                <EditVideosModal
-                                    showModal={true}
-                                    token={this.token}
-                                    video={
-                                        this.state.video.isPrivate !== undefined ? this.state.video :
-                                            {
-                                                isPrivate: "True",
-                                                title: this.state.file.name,
-                                            }
-                                    }
-                                    taskId={this.state.taskId}
-                                    editParent={this.updateVideoInfo}
-                            />
-                            
-                            
-                            </div>
-                            : <div>
+                         <div>
                                 {(this.state.file && this.state.video && this.props.profile !== undefined)
-
                                     ?
                                     <div className=" justify-content-left">
                                         <button className="btn btn-primary" onClick={(e) => this.setState({ showResults: !this.state.showResults })}>
@@ -478,26 +464,19 @@ export class UploadVideo extends Component {
                                             <Form.Label>{this.state.errorMessage ? this.state.errorMessage : "Upload a Video!"}</Form.Label>
                                             <Form.Control type="file" name="file_source" size="40" accept="video/*" onChange={(e) => this.handleFileChange(e)} />
                                         </Form.Group>
-
-                                    </div>} </div>}
+                            </div>}
+                    </div>
                     </Modal.Body>
-                    <Modal.Footer>
-                        {this.state.uploaded ?
-                            <button className="btn btn-success" onClick={(e) => { this.closeModal(); window.location.reload() }}>
-                                Finish
-                            </button>
-                            :
+                    <Modal.Footer>                        
                             <button className="btn btn-danger" disabled={!this.state.uploadButton} onClick={this.closeModal}>
                                 Cancel
                             </button>
 
-                        }
+                        
                     </Modal.Footer>
-                </Modal>
-            
+                </Modal>            
 
-            :
-            
+            :            
                 <button className="btn btn-primary" onClick={(e) => this.setState({ showModal: !this.state.showModal })}>
                     Upload!</button>
             
@@ -506,6 +485,7 @@ export class UploadVideo extends Component {
         return (
             <div>
                 {uploadModal}
+                {uploadStatus}
             </div>
 
         );
