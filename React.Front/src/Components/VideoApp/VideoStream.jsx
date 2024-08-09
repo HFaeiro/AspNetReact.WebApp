@@ -69,7 +69,7 @@ export class VideoStream extends Component {
 
             retQuery += attributes[a].name + '=' + attributes[a].value + '&';
         }
-        if (retQuery[retQuery.length - 1] == '&') {
+        if (retQuery[retQuery.length - 1] === '&') {
             retQuery = retQuery.substr(0, retQuery.length - 1);
         }
         return retQuery;
@@ -83,7 +83,7 @@ export class VideoStream extends Component {
                 GUID: null,
                 indecies: [],
             };
-            for (var i in Master) {
+            for (var i in Master) 
                 {
                     var line = this.props.master[i];
                     if (/GUID/.test(line)) {
@@ -95,8 +95,9 @@ export class VideoStream extends Component {
 
                         var c1 = line.split(',')[2];
                         var c2 = line.split(',')[3];
-                        var keyVal = c1 + (c2 != undefined ?  ',' + c2 : '');
+                        var keyVal = c1 + (c2 !== undefined ? ',' + c2 : '');
                         master.codex = keyVal;
+                        continue;
                     }
                     if (/STREAM-INF/.test(line)) {
                         var keyVal = line.split(':')[1];
@@ -108,9 +109,10 @@ export class VideoStream extends Component {
 
                             console.log("Resolution Found : " + resolution);
                         }
+                        continue;
                     }
                 }
-            }
+            
             this.master.GUID = master.GUID;
             this.master.index = master.indecies;
             this.master.codex = master.codex;
@@ -160,7 +162,7 @@ export class VideoStream extends Component {
     }
     setupNewIndexAndSetNewChunk = async () => {
         console.log("Setting up Index :" + (this.master.currentIndex));
-       this.index =  await this.getIndex(this.master.GUID, this.master.currentIndex);
+        this.index = await this.getIndex(this.master.GUID, this.master.currentIndex);
 
         //if (index && index.playList && index.playList.length) {
         /* let video = await this.getVideo(this.master.GUID, this.master.currentIndex, this.master.currentTsIndex);
@@ -195,17 +197,17 @@ export class VideoStream extends Component {
                 )
                 await this.setupNewIndexAndSetNewChunk();
                 this.init = await this.getVideo(this.master.GUID, this.master.currentIndex, -1);
-                if(this.init){
+                if (this.init) {
                     this.init = await this.init.arrayBuffer();
-                this.mediaSource.addEventListener('sourceopen', this.sourceopen);
+                    this.mediaSource.addEventListener('sourceopen', this.sourceopen);
 
 
 
-                this.setState(
-                    {
-                        videoSrc: URL.createObjectURL(this.mediaSource)
-                    });
-                    }
+                    this.setState(
+                        {
+                            videoSrc: URL.createObjectURL(this.mediaSource)
+                        });
+                }
 
             }
         }
@@ -232,38 +234,20 @@ export class VideoStream extends Component {
     }
     onSeek(eTarget) {
         console.log('seek! to :', eTarget.currentTime);
-        if (eTarget.currentTime > this.totalReceivedChunkTime) {
-            let currentChunkTime = 0;
-            if (this.indecies.index[this.master.currentIndex]) {
-                currentChunkTime = parseFloat(this.indecies.index[this.master.currentIndex].playList[this.chunkCount])
-                if (currentChunkTime > 0) {
-                    let estimatedRequestedIndex = eTarget.currentTime / currentChunkTime
-
-                    if(estimatedRequestedIndex < this.master.index.length)
-                    {
-                        this.
-                    }
-
-
-                }
-
-
-            }
-        }
+ 
     }
     onPlay(eTarget) {
 
     }
     sourceopen = async (event) => {
 
-        this.master.codex = "video/mp4; " + ( this.master.codex ? this.master.codex : 'codecs="avc1.640028, mp4a.40.2"');
+        this.master.codex = "video/mp4; " + (this.master.codex ? this.master.codex : 'codecs="avc1.640028, mp4a.40.2"');
         if (MediaSource.isTypeSupported(this.master.codex)) {
-            
+
             const sourceBuffer = this.mediaSource.addSourceBuffer(this.master.codex);
             sourceBuffer.mode = 'segments';
             sourceBuffer.appendBuffer(this.init);
-            await this.onTimeUpdate();
-            
+
             sourceBuffer.addEventListener('updateend', this.updateEnd);
 
             var video = document.getElementsByClassName("VideoPlayer");
@@ -283,11 +267,11 @@ export class VideoStream extends Component {
             console.warn(this.master.codex + " not supported");
 
             this.setState(
-                    {
-                        videoSrc: null
-                    });
+                {
+                    videoSrc: null
+                });
         }
-        
+
     }
     get = async (query) => {
         return await new Promise(resolve => {
@@ -344,8 +328,8 @@ export class VideoStream extends Component {
             .then(data => {
                 if (data) {
                     //var video = URL.createObjectURL(data);
-                    if(DataIndex >= 0)
-                        this.chunkCount ++;
+                    if (DataIndex >= 0)
+                        this.chunkCount++;
                     return data;
                 }
             })
@@ -372,7 +356,6 @@ export class VideoStream extends Component {
                     this.totalExpectedChunkTime = this.indecies.index[0].length;
                 }
             })
-        return;
     }
     onLoadStart = async () => {
         if (!this.vRef || !this.vRef.current) {
@@ -386,10 +369,10 @@ export class VideoStream extends Component {
         if (!this.vRef || !this.vRef.current) {
             return;
         }
-       /* if (this.vRef.current.currentTime === 0 && this.master.currentTsIndex != 0) {
-            this.vRef.current.play();
-            return;
-        }*/
+        /* if (this.vRef.current.currentTime === 0 && this.master.currentTsIndex != 0) {
+             this.vRef.current.play();
+             return;
+         }*/
 
         if ((this.vRef.current.duration == NaN || this.vRef.current.duration == undefined) &&
             (this.vRef.current.currentTime >= (this.vRef.current.duration) * .5)) {
@@ -398,12 +381,10 @@ export class VideoStream extends Component {
         }
         let currentChunkTime = 0;
         var video = null;
-        if(this.indecies.index[this.master.currentIndex])
-        {
-        currentChunkTime = parseFloat(this.indecies.index[this.master.currentIndex].playList[this.chunkCount])
+        if (this.indecies.index[this.master.currentIndex]) {
+            currentChunkTime = parseFloat(this.indecies.index[this.master.currentIndex].playList[this.chunkCount])
         }
-        else
-        {
+        else {
             return setTimeout(this.onTimeUpdate, 2600);
         }
         if (this.totalReceivedChunkTime !== 0 && this.vRef.current.currentTime >= this.totalReceivedChunkTime - (currentChunkTime * .2)) {
@@ -411,7 +392,7 @@ export class VideoStream extends Component {
             /*deprecated by mediaSource
             if (!this.fetchedVideo.video[this.master.currentTsIndex + 1] || this.fetchedVideo.video[this.master.currentTsIndex + 1] == undefined || this.fetchedVideo.video[this.master.currentTsIndex + 1] == NaN) {
            */
-                
+
             if (this.chunkCount <= this.master.currentTsIndex) {
 
                 if (this.indecies.index[this.master.currentIndex].playList.length > this.master.currentTsIndex + 1) {
@@ -482,7 +463,7 @@ export class VideoStream extends Component {
             if (!this.indecies || !this.indecies.index || this.indecies.index.length < 1 || !this.indecies.index[this.master.currentIndex].playList) {
                 return setTimeout(this.onTimeUpdate, 2600);
             }
-            if (this.indecies.index[this.master.currentIndex].playList.length > this.chunkCount ) {
+            if (this.indecies.index[this.master.currentIndex].playList.length > this.chunkCount) {
 
                 if (this.vRef.current.currentTime - this.timeOfLastFrameRequest > .5 && !this.frameRequestLock || this.timeOfLastFrameRequest == 0) {
                     this.frameRequestLock = true;
@@ -493,7 +474,7 @@ export class VideoStream extends Component {
                     if (video) {
                         if (this.frameRequestLock) {
                             //this.pushVideoToCache(this.master.GUID, video)
-                            console.log("Received Frame #" + (this.chunkCount ));
+                            console.log("Received Frame #" + (this.chunkCount));
                         }
                         else {
                             console.log("Received Frame #" + (this.chunkCount) + " but frame lock was over written. No longer safe to push this video to buffer. ");
@@ -512,14 +493,13 @@ export class VideoStream extends Component {
             if (video) {
                 if (this.mediaSource.sourceBuffers.length) {
                     this.totalReceivedChunkTime += currentChunkTime;
-                this.mediaSource.sourceBuffers[0].timestampOffset = this.master.currentIndex ? currentChunkTime : 0;
-                let buffer = await video.arrayBuffer();
+                    this.mediaSource.sourceBuffers[0].timestampOffset = this.master.currentIndex ? currentChunkTime : 0;
+                    let buffer = await video.arrayBuffer();
                     await this.mediaSource.sourceBuffers[0].appendBuffer(buffer);
                     this.mediaSource.sourceBuffers[0].addEventListener('updateend', this.updateEnd);
-                                  
+
                 }
             }
-            
             return video;
         }
     }
