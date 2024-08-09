@@ -17,7 +17,8 @@ export class VideoStream extends Component {
         this.mediaSource = new MediaSource();
         this.init = null;
         this.chunkCount = 0;
-        this.totalChunkDuration = 0;
+        this.totalReceivedChunkTime = 0;
+        this.totalExpectedChunkTime = 0;
         /*//replaced by chunkcount by mediaSource update
         this.fetchedVideo =
         {
@@ -125,13 +126,15 @@ export class VideoStream extends Component {
             {
                 targetDuration: null,
                 playList: [],
+                length: 0,
             };
             for (var i in Index) {
 
                 var line = Index[i];
                 if (/EXTINF/.test(line)) {
-                    index.playList.push(Index[i].split(':')[1].split(',')[0]);
-                    //console.log("Added to play list : " + Index[i]);
+                    var chunkLength = Index[i].split(':')[1].split(',')[0];
+                    index.playList.push(chunkLength);
+                    index.length += parseFloat(chunkLength);
                     continue;
                 }
                 if (/X-END/.test(line)) {
@@ -195,9 +198,9 @@ export class VideoStream extends Component {
                 if(this.init){
                     this.init = await this.init.arrayBuffer();
                 this.mediaSource.addEventListener('sourceopen', this.sourceopen);
-                this.mediaSource.addEventListener('updateend', function(){
-                            this.mediaSource.endOfStream();
-                });
+
+
+
                 this.setState(
                     {
                         videoSrc: URL.createObjectURL(this.mediaSource)
@@ -206,6 +209,50 @@ export class VideoStream extends Component {
 
             }
         }
+    }
+
+    updateEnd = async (event) => {
+        console.log('updateend');
+        this.mediaSource.activeSourceBuffers[0].removeEventListener("updateend", this.updateEnd);
+        await this.onTimeUpdate();
+        if (this.totalReceivedChunkTime === this.totalExpectedChunkTime) {
+            var eos = true;
+            for (var i = 0; i < this.mediaSource.activeSourceBuffers.length; i++) {
+                if (this.mediaSource.activeSourceBuffers[i].updating) {
+                    eos = false;
+                    break;
+                }
+            };
+            if (eos) {
+                if (this.mediaSource.readyState == 'open') {
+                    this.mediaSource.endOfStream();
+                }
+            }
+        }
+    }
+    onSeek(eTarget) {
+        console.log('seek! to :', eTarget.currentTime);
+        if (eTarget.currentTime > this.totalReceivedChunkTime) {
+            let currentChunkTime = 0;
+            if (this.indecies.index[this.master.currentIndex]) {
+                currentChunkTime = parseFloat(this.indecies.index[this.master.currentIndex].playList[this.chunkCount])
+                if (currentChunkTime > 0) {
+                    let estimatedRequestedIndex = eTarget.currentTime / currentChunkTime
+
+                    if(estimatedRequestedIndex < this.master.index.length)
+                    {
+                        this.
+                    }
+
+
+                }
+
+
+            }
+        }
+    }
+    onPlay(eTarget) {
+
     }
     sourceopen = async (event) => {
 
@@ -217,6 +264,20 @@ export class VideoStream extends Component {
             sourceBuffer.appendBuffer(this.init);
             await this.onTimeUpdate();
             
+            sourceBuffer.addEventListener('updateend', this.updateEnd);
+
+            var video = document.getElementsByClassName("VideoPlayer");
+            if (video) {
+
+                video[0].addEventListener("seeking", (e) => this.onSeek(e.target));
+                video[0].addEventListener("play", (e) => this.onPlay(e.target));
+                if (this.totalExpectedChunkTime > 0) {
+                    var videoLength = this.totalExpectedChunkTime;
+                    if (this.mediaSource.readyState === 'open') {
+                        this.mediaSource.setLiveSeekableRange(videoLength, videoLength);
+                    }
+                }
+            }
 
         } else {
             console.warn(this.master.codex + " not supported");
@@ -306,7 +367,10 @@ export class VideoStream extends Component {
                 }
             })
             .then(data => {
-                return this.parseIndex(data);
+                this.parseIndex(data);
+                if (this.indecies.index[0] && this.indecies.index[0].length) {
+                    this.totalExpectedChunkTime = this.indecies.index[0].length;
+                }
             })
         return;
     }
@@ -342,13 +406,13 @@ export class VideoStream extends Component {
         {
             return setTimeout(this.onTimeUpdate, 2600);
         }
-        if (this.vRef.current.currentTime >= this.totalChunkDuration - (currentChunkTime * .2) && this.totalChunkDuration != 0) {
+        if (this.totalReceivedChunkTime !== 0 && this.vRef.current.currentTime >= this.totalReceivedChunkTime - (currentChunkTime * .2)) {
 
             /*deprecated by mediaSource
             if (!this.fetchedVideo.video[this.master.currentTsIndex + 1] || this.fetchedVideo.video[this.master.currentTsIndex + 1] == undefined || this.fetchedVideo.video[this.master.currentTsIndex + 1] == NaN) {
            */
                 
-          if (this.chunkCount < this.master.currentTsIndex) {
+            if (this.chunkCount <= this.master.currentTsIndex) {
 
                 if (this.indecies.index[this.master.currentIndex].playList.length > this.master.currentTsIndex + 1) {
                     if (!this.frameRequestLock) {
@@ -425,7 +489,7 @@ export class VideoStream extends Component {
                     this.timeOfLastFrameRequest = this.vRef.current.currentTime;
 
 
-                    video = await this.getVideo(this.master.GUID, this.master.currentIndex, this.chunkCount )
+                    video = await this.getVideo(this.master.GUID, this.master.currentIndex, this.chunkCount)
                     if (video) {
                         if (this.frameRequestLock) {
                             //this.pushVideoToCache(this.master.GUID, video)
@@ -446,14 +510,12 @@ export class VideoStream extends Component {
                 */
             }
             if (video) {
-                if(this.mediaSource.sourceBuffers.length)
-                {
-                    this.totalChunkDuration += currentChunkTime;
+                if (this.mediaSource.sourceBuffers.length) {
+                    this.totalReceivedChunkTime += currentChunkTime;
                 this.mediaSource.sourceBuffers[0].timestampOffset = this.master.currentIndex ? currentChunkTime : 0;
                 let buffer = await video.arrayBuffer();
-
-                this.mediaSource.sourceBuffers[0].appendBuffer(buffer);
-                 const videoElement = document.querySelector("video");
+                    await this.mediaSource.sourceBuffers[0].appendBuffer(buffer);
+                    this.mediaSource.sourceBuffers[0].addEventListener('updateend', this.updateEnd);
                                   
                 }
             }
