@@ -1,8 +1,4 @@
 import React, { useRef, Component } from 'react';
-import { Table } from 'react-bootstrap'
-import { Navigate, useParams } from 'react-router-dom';
-import { withRouter } from '../../Utils/withRouter';
-import { Helmet } from "react-helmet";
 import './Video.css';
 
 export class VideoStream extends Component {
@@ -12,21 +8,15 @@ export class VideoStream extends Component {
         this.vRef = React.createRef();
         this.frameRequestLock = false;
         this.timeSinceLastFrameRequest = 0;
-        this.timeOfLastFrameRequest = 0;
-        this.frameLockCount = 0;
+        this.timeOfThisFrameRequest = 0;
+        this.timeSinceLastFrameRequest = 0;
+        this.frameLockCount = new Map();
         this.mediaSource = new MediaSource();
         this.init = null;
-        this.chunkCount = 0;
         this.totalReceivedChunkTime = 0;
         this.totalExpectedChunkTime = 0;
-        /*//replaced by chunkcount by mediaSource update
-        this.fetchedVideo =
-        {
-            id: null,
-            video: [],
-
-        };
-        */
+        this.receivedChunksArray = new Array(0);
+        this.seeked = false;
         this.master =
         {
             GUID: this.props.GUID,
@@ -83,36 +73,35 @@ export class VideoStream extends Component {
                 GUID: null,
                 indecies: [],
             };
-            for (var i in Master) 
-                {
-                    var line = this.props.master[i];
-                    if (/GUID/.test(line)) {
-                        var keyVal = line.split('=')[1];
-                        master.GUID = keyVal;
-                        continue;
-                    }
-                    if (/CODECS/.test(line)) {
-
-                        var c1 = line.split(',')[2];
-                        var c2 = line.split(',')[3];
-                        var keyVal = c1 + (c2 !== undefined ? ',' + c2 : '');
-                        master.codex = keyVal;
-                        continue;
-                    }
-                    if (/STREAM-INF/.test(line)) {
-                        var keyVal = line.split(':')[1];
-                        if (/BANDWIDTH/.test(keyVal)) {
-                            var bandwidth = keyVal.split('=')[1].split(',')[0],
-                                resolution = keyVal.split(',')[1].split(',')[0].split('=')[1];
-
-                            master.indecies.push({ bandwidth, resolution });
-
-                            console.log("Resolution Found : " + resolution);
-                        }
-                        continue;
-                    }
+            for (var i in Master) {
+                var line = this.props.master[i];
+                if (/GUID/.test(line)) {
+                    var keyVal = line.split('=')[1];
+                    master.GUID = keyVal;
+                    continue;
                 }
-            
+                if (/CODECS/.test(line)) {
+
+                    var c1 = line.split(',')[2];
+                    var c2 = line.split(',')[3];
+                    var keyVal = c1 + (c2 !== undefined ? ',' + c2 : '');
+                    master.codex = keyVal;
+
+                }
+                if (/STREAM-INF/.test(line)) {
+                    var keyVal = line.split(':')[1];
+                    if (/BANDWIDTH/.test(keyVal)) {
+                        var bandwidth = keyVal.split('=')[1].split(',')[0],
+                            resolution = keyVal.split(',')[1].split(',')[0].split('=')[1];
+
+                        master.indecies.push({ bandwidth, resolution });
+
+                        console.log("Resolution Found : " + resolution);
+                    }
+                    continue;
+                }
+            }
+
             this.master.GUID = master.GUID;
             this.master.index = master.indecies;
             this.master.codex = master.codex;
@@ -163,28 +152,7 @@ export class VideoStream extends Component {
     setupNewIndexAndSetNewChunk = async () => {
         console.log("Setting up Index :" + (this.master.currentIndex));
         this.index = await this.getIndex(this.master.GUID, this.master.currentIndex);
-
-        //if (index && index.playList && index.playList.length) {
-        /* let video = await this.getVideo(this.master.GUID, this.master.currentIndex, this.master.currentTsIndex);
-         if (video) {
-             this.pushVideoToCache(this.master.GUID, video);
- 
-          
-          const videoElement = document.querySelector("video");
-          if(videoElement){
-          videoElement.src = video;
-          }
-          else
-          {
-                              this.setState(
-                 { currentViewingChunk: video }
-             )
-              }
- 
-              
- 
-         }*/
-        //}
+       
     }
     async componentDidMount() {
         if (!this.state.currentViewingChunk) {
@@ -214,10 +182,15 @@ export class VideoStream extends Component {
     }
 
     updateEnd = async (event) => {
-        console.log('updateend');
-        this.mediaSource.activeSourceBuffers[0].removeEventListener("updateend", this.updateEnd);
-        await this.onTimeUpdate();
-        if (this.totalReceivedChunkTime === this.totalExpectedChunkTime) {
+        //console.log('updateend');
+        let activeSource = this.mediaSource.activeSourceBuffers[0];
+        if (activeSource) {
+            activeSource.removeEventListener("updateend", this.updateEnd);
+        }
+        if(this.master.currentTsIndex < 1){
+            await this.onTimeUpdate();
+        }
+        if (this.totalReceivedChunkTime === this.totalExpectedChunkTime || this.master.currentTsIndex >= this.indecies.index[this.master.currentIndex]?.playList.length) {
             var eos = true;
             for (var i = 0; i < this.mediaSource.activeSourceBuffers.length; i++) {
                 if (this.mediaSource.activeSourceBuffers[i].updating) {
@@ -232,10 +205,45 @@ export class VideoStream extends Component {
             }
         }
     }
-    onSeek(eTarget) {
-        console.log('seek! to :', eTarget.currentTime);
- 
+    async onSeek(eTarget) {
+        let video = null;
+        //if (eTarget.currentTime > this.totalReceivedChunkTime) {
+        let chunkTime = 0;
+        if (this.indecies.index[this.master.currentIndex]) {
+            chunkTime = parseFloat(this.indecies.index[this.master.currentIndex].playList[Math.round(0)])
+            if (chunkTime > 0) {
+                let estimatedRequestedIndex = Math.round(eTarget.currentTime / chunkTime);
+                if (estimatedRequestedIndex != this.master.currentTsIndex) {
+                    let haveChunk = false;
+                    await this.receivedChunksArray.forEach(chunk => {
+                        if (chunk == estimatedRequestedIndex) {
+                            haveChunk = true;
+                            return;
+                        }
+                    });
+                    if (!haveChunk) {
+                        //video = await this.getVideo(this.master.GUID, this.master.currentIndex, estimatedRequestedIndex);
+                       // if (video) {
+                            this.master.currentTsIndex = estimatedRequestedIndex--;
+                       //     this.appendBuffer(video, this.getChunkTime());
+                            console.log("We Seekith a new Chunk! #", estimatedRequestedIndex);
+                            this.seeked = true;
+                            this.onTimeUpdate();
+                       // }
+                    }
+                    else {
+
+                    }
+                }
+
+
+            }
+
+        }
+        //}
+
     }
+
     onPlay(eTarget) {
 
     }
@@ -301,21 +309,9 @@ export class VideoStream extends Component {
                 })
         })
     }
-    /*Deprecated by MediaSource
-    addVideoToCacheAt = async (guid, video, index) => {
 
-        this.fetchedVideo.video[index] = video;
-        this.fetchedVideo.id = this.master.GUID;
-
-    }
-
-    pushVideoToCache = async (guid, video) => {
-        this.fetchedVideo.video.push(video);
-        this.fetchedVideo.id = this.master.GUID;
-    }
-    */
     getVideo = async (GUID, Index, DataIndex) => {
-        console.log("Requesting New Frame #" + (DataIndex));
+        console.log("Requesting New Chunk #" + (DataIndex));
         let query = [
 
             { name: "guid", value: GUID },
@@ -327,13 +323,14 @@ export class VideoStream extends Component {
         return await this.get("data?" + query)
             .then(data => {
                 if (data) {
-                    //var video = URL.createObjectURL(data);
-                    if (DataIndex >= 0)
-                        this.chunkCount++;
+                    if (DataIndex) {
+                        this.receivedChunksArray.push(DataIndex);
+                        console.log("pushed chunk #", DataIndex);
+
+                    }
                     return data;
                 }
             })
-        return null;
     }
 
     getIndex = async (GUID, Index) => {
@@ -364,63 +361,83 @@ export class VideoStream extends Component {
 
 
     }
-
+    getChunkTime() {
+        let currentChunkTime = 0;
+        if (this.indecies.index[this.master.currentIndex]) {
+            currentChunkTime = parseFloat(this.indecies.index[this.master.currentIndex].playList[this.master.currentTsIndex])
+        }
+        return currentChunkTime;
+    }
     onTimeUpdate = async () => {
         if (!this.vRef || !this.vRef.current) {
             return;
         }
-        /* if (this.vRef.current.currentTime === 0 && this.master.currentTsIndex != 0) {
-             this.vRef.current.play();
-             return;
-         }*/
 
         if ((this.vRef.current.duration == NaN || this.vRef.current.duration == undefined) &&
             (this.vRef.current.currentTime >= (this.vRef.current.duration) * .5)) {
             return;
 
         }
-        let currentChunkTime = 0;
+        let currentChunkTime = this.getChunkTime();
         var video = null;
-        if (this.indecies.index[this.master.currentIndex]) {
-            currentChunkTime = parseFloat(this.indecies.index[this.master.currentIndex].playList[this.chunkCount])
-        }
-        else {
+        if (currentChunkTime == 0) {
             return setTimeout(this.onTimeUpdate, 2600);
         }
-        if (this.totalReceivedChunkTime !== 0 && this.vRef.current.currentTime >= this.totalReceivedChunkTime - (currentChunkTime * .2)) {
+        this.timeSinceLastFrameRequest = this.vRef.current.currentTime - this.timeOfThisFrameRequest;
+        this.timeOfThisFrameRequest = this.vRef.current.currentTime;
+        let estimatedCurrentIndex = Math.round(this.vRef.current.currentTime / currentChunkTime);
+        let collectedChunksAfterCurrent = 0;
+        let tmpChunkIndex = estimatedCurrentIndex;
+        this.receivedChunksArray.forEach(chunk => {
+            if (chunk == tmpChunkIndex) {
+                tmpChunkIndex++;
+                collectedChunksAfterCurrent++;   
+                if(tmpChunkIndex > estimatedCurrentIndex + 5)
+                    {
+                        return;
+                    }             
+            }
+        });
+        this.receivedChunkTimeOffset = currentChunkTime * collectedChunksAfterCurrent; 
 
-            /*deprecated by mediaSource
-            if (!this.fetchedVideo.video[this.master.currentTsIndex + 1] || this.fetchedVideo.video[this.master.currentTsIndex + 1] == undefined || this.fetchedVideo.video[this.master.currentTsIndex + 1] == NaN) {
-           */
 
-            if (this.chunkCount <= this.master.currentTsIndex) {
 
-                if (this.indecies.index[this.master.currentIndex].playList.length > this.master.currentTsIndex + 1) {
-                    if (!this.frameRequestLock) {
+        if ((this.totalReceivedChunkTime !== 0 &&  (this.receivedChunkTimeOffset <= currentChunkTime  || this.timeSinceLastFrameRequest > 1)) ) {   
+                if (this.indecies.index[this.master.currentIndex].playList.length > this.master.currentTsIndex) {
+                    if (!this.frameRequestLock && (this.timeSinceLastFrameRequest > .0025 || this.timeSinceLastFrameRequest == 0)){
                         this.frameRequestLock = true;
-                        this.master.currentTsIndex++;
-                        console.log("Requesting and switching to next frame #" + (this.master.currentTsIndex));
-                        video = await this.getVideo(this.master.GUID, this.master.currentIndex, this.master.currentTsIndex);
-
-                        this.frameRequestLock = false;
+                        console.log("Requesting and switching to next Chunk #" + (this.master.currentTsIndex));
+                        video = await this.getChunk();                        
+                        if (video) {
+                            await this.appendBuffer(video, currentChunkTime);
+                            this.master.currentTsIndex++;                            
+                            this.frameRequestLock = false;
+                            this.frameLockCount.set(this.master.currentTsIndex, 0);
+                        }
+                        else
+                        {
+                            this.frameRequestLock = false;
+                            this.frameLockCount.set(this.master.currentTsIndex, 0);
+                            return this.onTimeUpdate();
+                        }
                     }
-                    else {
-                        if (this.frameLockCount < 1) {
-                            console.log("Frame Locked Trying For Frame " + (this.master.currentTsIndex + 1) + " Again ");
-                            this.frameLockCount++;
+                    else if (this.timeSinceLastFrameRequest > 1){
+                        let currentFrameLock = this.getFrameLockCount(this.master.currentTsIndex);
+                        if (currentFrameLock < 4) {
+                            console.log("Frame Locked Trying For Chunk " + (this.master.currentTsIndex) + " Again ");
+                            currentFrameLock++
+                            this.frameLockCount.set(this.master.currentTsIndex,currentFrameLock);
                             return setTimeout(this.onTimeUpdate, 2600);
                         }
                         else {
-                            console.log("Attempted Frame " + (this.master.currentTsIndex + 1) + " Too Many Times Checking for new Index");
-                            if (this.master.currentIndex + 1 < this.master.index.length) {
-                                this.master.currentIndex++;
-                                this.master.currentTsIndex++;
-                                this.frameLockCount = 0;
+                            console.log("Attempted Chunk " + (this.master.currentTsIndex) + " Too Many Times Checking for new Index");
+                            if (this.master.currentIndex + 1 < this.master.index.length) { 
                                 this.frameRequestLock = false;
+                                this.frameLockCount.set(this.master.currentTsIndex,0);
+                                this.master.currentIndex++;
                                 this.setupNewIndexAndSetNewChunk();
                             }
                             else {
-
                                 console.log("cannot lower quality any further will wait for frame.");
                                 return setTimeout(this.onTimeUpdate, 2600);
                             }
@@ -429,88 +446,87 @@ export class VideoStream extends Component {
                     }
                 }
                 else {
-                    //not sure I need this anymore with the media source stuff?
-                    /*this.setState(
-                        { currentViewingChunk: this.fetchedVideo.video[this.master.currentTsIndex] }
-                    );*/
-
-                    this.master.currentTsIndex = 0;
-                    console.log("Reseting Video index to #" + (this.master.currentTsIndex));
-                }
-
-
-            }
-            else {
-
-                this.master.currentTsIndex++;
-                this.timeOfLastFrameRequest = this.timeOfLastFrameRequest - currentChunkTime;
-                console.log("Switching to new Frame #" + (this.master.currentTsIndex + 1));
-                this.frameLockCount--;
-
-                /* //not sure I need this anymore with the media source stuff?
-                const videoElement = document.querySelector("video");
-                if (videoElement) {
-                    videoElement.src = this.fetchedVideo.video[this.master.currentTsIndex];
-                }
-                */
-
-                // this.vRef.srcObject = this.fetchedVideo.video[this.master.currentTsIndex];
-            }
+                    return setTimeout(this.onTimeUpdate, 2600);
+                }            
         }
-
-
         else {
             if (!this.indecies || !this.indecies.index || this.indecies.index.length < 1 || !this.indecies.index[this.master.currentIndex].playList) {
                 return setTimeout(this.onTimeUpdate, 2600);
             }
-            if (this.indecies.index[this.master.currentIndex].playList.length > this.chunkCount) {
+            if (this.indecies.index[this.master.currentIndex].playList.length > this.master.currentTsIndex) {
 
-                if (this.vRef.current.currentTime - this.timeOfLastFrameRequest > .5 && !this.frameRequestLock || this.timeOfLastFrameRequest == 0) {
+                if (!this.frameRequestLock && (this.timeSinceLastFrameRequest > .05 || this.timeSinceLastFrameRequest == 0)) {
                     this.frameRequestLock = true;
-                    this.timeOfLastFrameRequest = this.vRef.current.currentTime;
-
-
-                    video = await this.getVideo(this.master.GUID, this.master.currentIndex, this.chunkCount)
-                    if (video) {
-                        if (this.frameRequestLock) {
-                            //this.pushVideoToCache(this.master.GUID, video)
-                            console.log("Received Frame #" + (this.chunkCount));
-                        }
-                        else {
-                            console.log("Received Frame #" + (this.chunkCount) + " but frame lock was over written. No longer safe to push this video to buffer. ");
-                            video = null;
-                        }
-                    }
+                    video = video = await this.getChunk();
+                    
+                    if (!video) {
+                        this.frameRequestLock = false;
+                        return this.onTimeUpdate();
+                    }            
                     this.frameRequestLock = false;
                 }
-                /*
-                else {
-                    //try again? 
-                    return setTimeout(this.onTimeUpdate, 2600);
-                }
-                */
             }
             if (video) {
-                if (this.mediaSource.sourceBuffers.length) {
-                    this.totalReceivedChunkTime += currentChunkTime;
-                    this.mediaSource.sourceBuffers[0].timestampOffset = this.master.currentIndex ? currentChunkTime : 0;
-                    let buffer = await video.arrayBuffer();
-                    await this.mediaSource.sourceBuffers[0].appendBuffer(buffer);
-                    this.mediaSource.sourceBuffers[0].addEventListener('updateend', this.updateEnd);
-
+                await this.appendBuffer(video, currentChunkTime);
+                this.master.currentTsIndex++;
+                if(this.seeked)
+                {
+                    this.seeked = false;
+                    return this.onTimeUpdate();
                 }
             }
-            return video;
+            
+        }
+
+    }
+
+    getFrameLockCount(chunkNumber)
+    {
+        let currentFrameLock = this.frameLockCount.get(chunkNumber);
+        if(currentFrameLock == undefined)
+        {
+            currentFrameLock = 0;
+        }
+        return currentFrameLock;
+    }
+    async getChunk() {
+        let requestedChunk = this.master.currentTsIndex;
+        let video = await this.getVideo(this.master.GUID, this.master.currentIndex, requestedChunk)
+        if (video) {
+            if (this.frameRequestLock && requestedChunk === this.master.currentTsIndex) {
+                console.log("Received Chunk #" + (this.master.currentTsIndex));
+            }
+            else {
+                console.log("Received Chunk #" + (requestedChunk) + " No longer safe to push this video to buffer. ");
+                video = null;
+                let index = 0;
+                this.receivedChunksArray.forEach(chunk => {
+                    if (chunk == requestedChunk) {                        
+                        return;
+                    }
+                    index++;
+                });
+                if (this.receivedChunksArray[index] === requestedChunk) {
+                    this.receivedChunksArray.splice(index, index);
+                }
+                    return null;
+            }
+        }
+        return video;
+    }
+    async appendBuffer(video, chunkTime) {
+        if (this.mediaSource.sourceBuffers.length) {
+            this.totalReceivedChunkTime += chunkTime;
+            //this.mediaSource.sourceBuffers[0].timestampOffset = this.master.currentIndex ? chunkTime : 0;
+            let buffer = await video.arrayBuffer();
+            console.log("appending buffer!");
+            await this.mediaSource.sourceBuffers[0].appendBuffer(buffer);
+            this.mediaSource.sourceBuffers[0].addEventListener('updateend', this.updateEnd);
         }
     }
 
 
-
     render() {
-
-        //if (this.state.currentViewingChunk) {
-        //     console.log(this.state.currentViewingChunk);
-        // }
         var content = this.state.videoSrc ?
             <>
                 <video className="VideoPlayer" controls muted ref={this.vRef} onTimeUpdate={this.onTimeUpdate}
