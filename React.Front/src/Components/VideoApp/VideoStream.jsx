@@ -15,8 +15,11 @@ export class VideoStream extends Component {
         this.init = null;
         this.totalReceivedChunkTime = 0;
         this.totalExpectedChunkTime = 0;
-        this.receivedChunksArray = new Array(0);
+        this.receivedChunksArray = new Map();
         this.seeked = false;
+        this.collectedChunksAfterCurrent = 0;
+        this.lastIndex = 0;
+        this.seekAheadLimit = 8;
         this.master =
         {
             GUID: this.props.GUID,
@@ -152,7 +155,7 @@ export class VideoStream extends Component {
     setupNewIndexAndSetNewChunk = async () => {
         console.log("Setting up Index :" + (this.master.currentIndex));
         this.index = await this.getIndex(this.master.GUID, this.master.currentIndex);
-       
+
     }
     async componentDidMount() {
         if (!this.state.currentViewingChunk) {
@@ -187,7 +190,7 @@ export class VideoStream extends Component {
         if (activeSource) {
             activeSource.removeEventListener("updateend", this.updateEnd);
         }
-        if(this.master.currentTsIndex < 1){
+        if (this.master.currentTsIndex < 1) {
             await this.onTimeUpdate();
         }
         if (this.totalReceivedChunkTime === this.totalExpectedChunkTime || this.master.currentTsIndex >= this.indecies.index[this.master.currentIndex]?.playList.length) {
@@ -214,63 +217,54 @@ export class VideoStream extends Component {
             if (chunkTime > 0) {
                 let estimatedRequestedIndex = Math.round(eTarget.currentTime / chunkTime);
                 if (estimatedRequestedIndex != this.master.currentTsIndex) {
-                    let haveChunk = false;
-                    await this.receivedChunksArray.forEach(chunk => {
-                        if (chunk == estimatedRequestedIndex) {
-                            haveChunk = true;
-                            return;
-                        }
-                    });
-                    if (!haveChunk) {
-                        //video = await this.getVideo(this.master.GUID, this.master.currentIndex, estimatedRequestedIndex);
-                       // if (video) {
-                            this.master.currentTsIndex = estimatedRequestedIndex--;
-                       //     this.appendBuffer(video, this.getChunkTime());
-                            console.log("We Seekith a new Chunk! #", estimatedRequestedIndex);
-                            this.seeked = true;
-                            this.onTimeUpdate();
-                       // }
-                    }
-                    else {
-
-                    }
+                    this.master.currentTsIndex = estimatedRequestedIndex - 1;
+                    console.log("We Seekith a new Chunk! #", this.master.currentTsIndex);
+                    this.seeked = true;
+                    this.onTimeUpdate();
+                    return;
                 }
-
-
             }
-
         }
-        //}
-
+        this.seeked = true;
     }
 
     onPlay(eTarget) {
 
     }
+
     sourceopen = async (event) => {
 
         this.master.codex = "video/mp4; " + (this.master.codex ? this.master.codex : 'codecs="avc1.640028, mp4a.40.2"');
         if (MediaSource.isTypeSupported(this.master.codex)) {
+            let sourceBuffer = null;
+            if (!this.mediaSource.activeSourceBuffers || !(this.mediaSource.activeSourceBuffers.length > 0)) {
+                sourceBuffer = this.mediaSource.addSourceBuffer(this.master.codex);
+            }
+            else {
+                sourceBuffer = this.mediaSource.activeSourceBuffers[0];
+            }
+            if (sourceBuffer == null) {
+                return;
+            }
+            if (sourceBuffer.updating == false) {
+                sourceBuffer.mode = 'segments';
+                sourceBuffer.appendBuffer(this.init);
 
-            const sourceBuffer = this.mediaSource.addSourceBuffer(this.master.codex);
-            sourceBuffer.mode = 'segments';
-            sourceBuffer.appendBuffer(this.init);
+                sourceBuffer.addEventListener('updateend', this.updateEnd);
 
-            sourceBuffer.addEventListener('updateend', this.updateEnd);
+                var video = document.getElementsByClassName("VideoPlayer");
+                if (video) {
 
-            var video = document.getElementsByClassName("VideoPlayer");
-            if (video) {
-
-                video[0].addEventListener("seeking", (e) => this.onSeek(e.target));
-                video[0].addEventListener("play", (e) => this.onPlay(e.target));
-                if (this.totalExpectedChunkTime > 0) {
-                    var videoLength = this.totalExpectedChunkTime;
-                    if (this.mediaSource.readyState === 'open') {
-                        this.mediaSource.setLiveSeekableRange(videoLength, videoLength);
+                    video[0].addEventListener("seeking", (e) => this.onSeek(e.target));
+                    video[0].addEventListener("seeked", (e) => this.onSeek(e.target));
+                    if (this.totalExpectedChunkTime > 0) {
+                        var videoLength = this.totalExpectedChunkTime;
+                        if (this.mediaSource.readyState === 'open') {
+                            this.mediaSource.setLiveSeekableRange(videoLength, videoLength);
+                        }
                     }
                 }
             }
-
         } else {
             console.warn(this.master.codex + " not supported");
 
@@ -281,6 +275,7 @@ export class VideoStream extends Component {
         }
 
     }
+
     get = async (query) => {
         return await new Promise(resolve => {
             fetch('/' + process.env.REACT_APP_API + 'stream/' + query, {
@@ -323,11 +318,6 @@ export class VideoStream extends Component {
         return await this.get("data?" + query)
             .then(data => {
                 if (data) {
-                    if (DataIndex) {
-                        this.receivedChunksArray.push(DataIndex);
-                        console.log("pushed chunk #", DataIndex);
-
-                    }
                     return data;
                 }
             })
@@ -385,106 +375,134 @@ export class VideoStream extends Component {
         }
         this.timeSinceLastFrameRequest = this.vRef.current.currentTime - this.timeOfThisFrameRequest;
         this.timeOfThisFrameRequest = this.vRef.current.currentTime;
+
         let estimatedCurrentIndex = Math.round(this.vRef.current.currentTime / currentChunkTime);
-        let collectedChunksAfterCurrent = 0;
-        let tmpChunkIndex = estimatedCurrentIndex;
-        this.receivedChunksArray.forEach(chunk => {
-            if (chunk == tmpChunkIndex) {
-                tmpChunkIndex++;
-                collectedChunksAfterCurrent++;   
-                if(tmpChunkIndex > estimatedCurrentIndex + 5)
-                    {
+        if (this.vRef.current.currentTime < currentChunkTime) {
+            estimatedCurrentIndex = 0;
+        }
+        if (this.lastIndex != estimatedCurrentIndex) {
+            let newCollectedCount = this.collectedChunksAfterCurrent - (estimatedCurrentIndex - this.lastIndex);
+            this.collectedChunksAfterCurrent = newCollectedCount > 0 ? newCollectedCount : 0;
+        }
+        if (this.seeked == true || !this.collectedChunksAfterCurrent) {
+
+            let tmpChunkIndex = estimatedCurrentIndex;
+            this.collectedChunksAfterCurrent = 0;
+            this.receivedChunksArray.forEach(function(chunkvalue, chunk) {
+                if (chunk == tmpChunkIndex) {
+                    tmpChunkIndex++;
+                    this.collectedChunksAfterCurrent++;
+                    if (tmpChunkIndex > estimatedCurrentIndex + this.seekAheadLimit) {
                         return;
-                    }             
-            }
-        });
-        this.receivedChunkTimeOffset = currentChunkTime * collectedChunksAfterCurrent; 
-
-
-
-        if ((this.totalReceivedChunkTime !== 0 &&  (this.receivedChunkTimeOffset <= currentChunkTime  || this.timeSinceLastFrameRequest > 1)) ) {   
-                if (this.indecies.index[this.master.currentIndex].playList.length > this.master.currentTsIndex) {
-                    if (!this.frameRequestLock && (this.timeSinceLastFrameRequest > .0025 || this.timeSinceLastFrameRequest == 0)){
-                        this.frameRequestLock = true;
-                        console.log("Requesting and switching to next Chunk #" + (this.master.currentTsIndex));
-                        video = await this.getChunk();                        
-                        if (video) {
-                            await this.appendBuffer(video, currentChunkTime);
-                            this.master.currentTsIndex++;                            
-                            this.frameRequestLock = false;
-                            this.frameLockCount.set(this.master.currentTsIndex, 0);
-                        }
-                        else
-                        {
-                            this.frameRequestLock = false;
-                            this.frameLockCount.set(this.master.currentTsIndex, 0);
-                            return this.onTimeUpdate();
-                        }
-                    }
-                    else if (this.timeSinceLastFrameRequest > 1){
-                        let currentFrameLock = this.getFrameLockCount(this.master.currentTsIndex);
-                        if (currentFrameLock < 4) {
-                            console.log("Frame Locked Trying For Chunk " + (this.master.currentTsIndex) + " Again ");
-                            currentFrameLock++
-                            this.frameLockCount.set(this.master.currentTsIndex,currentFrameLock);
-                            return setTimeout(this.onTimeUpdate, 2600);
-                        }
-                        else {
-                            console.log("Attempted Chunk " + (this.master.currentTsIndex) + " Too Many Times Checking for new Index");
-                            if (this.master.currentIndex + 1 < this.master.index.length) { 
-                                this.frameRequestLock = false;
-                                this.frameLockCount.set(this.master.currentTsIndex,0);
-                                this.master.currentIndex++;
-                                this.setupNewIndexAndSetNewChunk();
-                            }
-                            else {
-                                console.log("cannot lower quality any further will wait for frame.");
-                                return setTimeout(this.onTimeUpdate, 2600);
-                            }
-
-                        }
                     }
                 }
-                else {
-                    return setTimeout(this.onTimeUpdate, 2600);
-                }            
+            }.bind(this));
+        }
+
+
+
+
+
+        this.lastIndex = estimatedCurrentIndex;
+
+        this.receivedChunkTimeOffset = currentChunkTime * this.collectedChunksAfterCurrent;
+        let haveChunk = this.receivedChunksArray.get(this.master.currentTsIndex);
+        if (haveChunk == 1) {
+            console.log("Already Have chunk : ", this.master.currentTsIndex);
+            this.collectedChunksAfterCurrent++;
+            this.master.currentTsIndex++;
+            return;
+        }
+        if (this.collectedChunksAfterCurrent > this.seekAheadLimit || (this.master.currentTsIndex - estimatedCurrentIndex > this.seekAheadLimit)) {
+            console.log("got too many chunks! returning")
+            return;// setTimeout(this.onTimeUpdate, 600);
+        }
+
+
+
+
+        if ((this.totalReceivedChunkTime !== 0 && (this.receivedChunkTimeOffset <= currentChunkTime || this.timeSinceLastFrameRequest > 1)) && !this.seeked) {
+            if (this.indecies.index[this.master.currentIndex].playList.length > this.master.currentTsIndex) {
+                if (!this.frameRequestLock && (this.timeSinceLastFrameRequest > .0025 || this.timeSinceLastFrameRequest == 0)) {
+                    this.frameRequestLock = true;
+                    console.log("Requesting and switching to next Chunk #" + (this.master.currentTsIndex));
+                    video = await this.getChunk();
+                    if (video) {
+                        await this.appendBuffer(video, currentChunkTime);
+                        this.collectedChunksAfterCurrent++;
+                        this.master.currentTsIndex++;
+                        this.frameRequestLock = false;
+                        this.frameLockCount.set(this.master.currentTsIndex, 0);
+                    }
+                    else {
+                        this.frameRequestLock = false;
+                        this.frameLockCount.set(this.master.currentTsIndex, 0);
+                    }
+                    return this.onTimeUpdate();
+                }
+                else if (this.timeSinceLastFrameRequest > 1) {
+                    let currentFrameLock = this.getFrameLockCount(this.master.currentTsIndex);
+                    if (currentFrameLock < 4) {
+                        console.log("Frame Locked Trying For Chunk " + (this.master.currentTsIndex) + " Again ");
+                        currentFrameLock++
+                        this.frameLockCount.set(this.master.currentTsIndex, currentFrameLock);
+                        return setTimeout(this.onTimeUpdate, 2600);
+                    }
+                    else {
+                        console.log("Attempted Chunk " + (this.master.currentTsIndex) + " Too Many Times Checking for new Index");
+                        if (this.master.currentIndex + 1 < this.master.index.length) {
+                            this.frameRequestLock = false;
+                            this.frameLockCount.set(this.master.currentTsIndex, 0);
+                            this.master.currentIndex++;
+                            this.setupNewIndexAndSetNewChunk();
+                        }
+                        else {
+                            console.log("cannot lower quality any further will wait for frame.");
+                            return setTimeout(this.onTimeUpdate, 2600);
+                        }
+
+                    }
+                }
+            }
+            else {
+                return setTimeout(this.onTimeUpdate, 2600);
+            }
         }
         else {
             if (!this.indecies || !this.indecies.index || this.indecies.index.length < 1 || !this.indecies.index[this.master.currentIndex].playList) {
                 return setTimeout(this.onTimeUpdate, 2600);
             }
+            
             if (this.indecies.index[this.master.currentIndex].playList.length > this.master.currentTsIndex) {
 
                 if (!this.frameRequestLock && (this.timeSinceLastFrameRequest > .05 || this.timeSinceLastFrameRequest == 0)) {
                     this.frameRequestLock = true;
                     video = video = await this.getChunk();
-                    
+
                     if (!video) {
                         this.frameRequestLock = false;
                         return this.onTimeUpdate();
-                    }            
+                    }
                     this.frameRequestLock = false;
                 }
             }
             if (video) {
                 await this.appendBuffer(video, currentChunkTime);
+                this.collectedChunksAfterCurrent++;
                 this.master.currentTsIndex++;
-                if(this.seeked)
-                {
+                if (this.seeked) {
                     this.seeked = false;
                     return this.onTimeUpdate();
                 }
             }
-            
+
         }
 
     }
 
-    getFrameLockCount(chunkNumber)
-    {
+    getFrameLockCount(chunkNumber) {
         let currentFrameLock = this.frameLockCount.get(chunkNumber);
-        if(currentFrameLock == undefined)
-        {
+        if (currentFrameLock == undefined) {
             currentFrameLock = 0;
         }
         return currentFrameLock;
@@ -495,21 +513,14 @@ export class VideoStream extends Component {
         if (video) {
             if (this.frameRequestLock && requestedChunk === this.master.currentTsIndex) {
                 console.log("Received Chunk #" + (this.master.currentTsIndex));
+                if (requestedChunk) {
+                    this.receivedChunksArray.set(requestedChunk, 1);
+                    console.log("pushed chunk #", requestedChunk);
+                }
             }
             else {
                 console.log("Received Chunk #" + (requestedChunk) + " No longer safe to push this video to buffer. ");
-                video = null;
-                let index = 0;
-                this.receivedChunksArray.forEach(chunk => {
-                    if (chunk == requestedChunk) {                        
-                        return;
-                    }
-                    index++;
-                });
-                if (this.receivedChunksArray[index] === requestedChunk) {
-                    this.receivedChunksArray.splice(index, index);
-                }
-                    return null;
+                return null;
             }
         }
         return video;
