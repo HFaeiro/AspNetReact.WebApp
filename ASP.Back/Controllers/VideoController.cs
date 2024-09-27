@@ -196,7 +196,7 @@ namespace ASP.Back.Controllers
                 if (userId != null)
                 {
                     IIdentity? identity = this.User.Identity;
-                    Console.WriteLine($"\t\t{nameof(Post)} - {videoIn.file.FileName} Processing chunk number {videoIn.chunkNumber} for {userId}");
+                    Console.WriteLine($"\t\t{nameof(Post)} - {videoIn.file.FileName} Processing chunk number {videoIn.chunkNumber} for userId:{userId}");
                     if (videoIn.file.Length > 0)
                     {
                         VideoBlob videoBlob = new VideoBlob(videoIn);                       
