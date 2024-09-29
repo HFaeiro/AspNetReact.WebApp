@@ -64,32 +64,7 @@ namespace ASP.Back.Libraries
                         string codec = value[i];
                         if (codec == null)
                             continue;
-                        if(codec == "codec_type=video")
-                        {
-                            var videoData = FindFramesAndDuration(i, value, _desiredFps);
-                            if(videoData.Item1 > _frames)
-                            {  _frames = videoData.Item1; }
-                            if (videoData.Item2 > _duration)
-                            { _duration = videoData.Item2; }
-                        }                        
-                        else if (codec.Contains("nb_read_frames") && _frames == 0)
-                        {
-                            int totalFrames = 0;
-                            bool frames = int.TryParse(codec.Split('=')[1], out totalFrames);
-                            if (frames)
-                            {
-                                if (this._duration > 0)
-                                {
-                                    this._frames = (int)(this._duration * this._desiredFps);
-                                }
-                                else
-                                {
-                                    this._frames = totalFrames;
-                                }
-
-                            }
-                        }
-                        else if (codec.Contains("pts_time"))
+                        if (codec.StartsWith("pts_time"))
                         {
                             float duration = 0;
                             bool tryDuration = float.TryParse(codec.Split('=')[1], out duration);
@@ -105,6 +80,31 @@ namespace ASP.Back.Libraries
                                 }
                             }
                         }
+                        else if (codec == "codec_type=video")
+                        {
+                            var videoData = FindFramesAndDuration(i, value, _desiredFps);
+                            if(videoData.Item1 > _frames)
+                            {  _frames = videoData.Item1; }
+                            if (videoData.Item2 > _duration)
+                            { _duration = videoData.Item2; }
+                        }                        
+                        else if (_frames == 0 && codec.Contains("nb_read_frames"))
+                        {
+                            int totalFrames = 0;
+                            bool frames = int.TryParse(codec.Split('=')[1], out totalFrames);
+                            if (frames)
+                            {
+                                if (this._duration > 0)
+                                {
+                                    this._frames = (int)(this._duration * this._desiredFps);
+                                }
+                                else
+                                {
+                                    this._frames = totalFrames;
+                                }
+
+                            }
+                        }                        
                         if (codec.Contains("codec_type"))
                         {
                             var codecType = codec.Split('=');
