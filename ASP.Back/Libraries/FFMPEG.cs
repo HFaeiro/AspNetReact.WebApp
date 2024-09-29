@@ -1,5 +1,6 @@
 ﻿using System.Collections.Specialized;
 using System.Diagnostics;
+using System.IO.Pipelines;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
 
@@ -362,6 +363,7 @@ namespace ASP.Back.Libraries
 
         public Stream? GetWebStream()
         {
+            FFPipe? ffPipe = null;
             try
             {
                 bool isWindows = RuntimeInformation.RuntimeIdentifier.StartsWith("win");
@@ -371,7 +373,7 @@ namespace ASP.Back.Libraries
                 currentDirectory = _video.folder;
 
                 // We use Guid for PipeNames
-                FFPipe? ffPipe = CreatePipe(PipeDirection.Out);
+                ffPipe = CreatePipe(PipeDirection.Out);
                 if (ffPipe == null)
                 {
                     return null;
@@ -498,12 +500,24 @@ namespace ASP.Back.Libraries
                         }
                     }
                 }
+                if(File.Exists(ffPipe.Value.PipePath))
+                {
+                    File.Delete(ffPipe.Value.PipePath);
+                }
+
                 return _video.stream;
 
             }
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
+                if (ffPipe != null)
+                {
+                    if (File.Exists(ffPipe.Value.PipePath))
+                    {
+                        File.Delete(ffPipe.Value.PipePath);
+                    }
+                }
                 return null;
             }
         }
@@ -651,6 +665,7 @@ namespace ASP.Back.Libraries
         {
             Stopwatch sw = Stopwatch.StartNew();
             int actualErr = 0;
+            FFPipe? ffPipe = null;
             try
             {
                 bool isWindows = RuntimeInformation.RuntimeIdentifier.StartsWith("win");
@@ -664,7 +679,8 @@ namespace ASP.Back.Libraries
                     sw.Stop();
                     return output;
                 }
-                FFPipe? ffPipe = pipe.Item2; if (ffPipe == null)
+                ffPipe = pipe.Item2; 
+                if (ffPipe == null)
                 {
                     sw.Stop();
                     return output;
@@ -707,6 +723,10 @@ namespace ASP.Back.Libraries
                     ffPipe.Value.Npss?.Dispose();
 
                 }
+                if (File.Exists(ffPipe.Value.PipePath))
+                {
+                    File.Delete(ffPipe.Value.PipePath);
+                }
                 sw.Stop();
                 Console.WriteLine($"\t\t{nameof(probeForCodecsAndFrames)} - Exiting after {sw.Elapsed.ToString("mm\\:ss\\.ff")}");
                 if (actualErr > 0)
@@ -721,6 +741,13 @@ namespace ASP.Back.Libraries
             catch (Exception ex)
             {
                 Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
+                if (ffPipe != null)
+                {
+                    if (File.Exists(ffPipe.Value.PipePath))
+                    {
+                        File.Delete(ffPipe.Value.PipePath);
+                    }
+                }
                 return null;
             }
         }
@@ -908,12 +935,12 @@ namespace ASP.Back.Libraries
 
                 currentDirectory = _video.folder;
 
-                this._video.GUID = Guid.NewGuid().ToString("N"); 
+                this._video.GUID = Guid.NewGuid().ToString("N");
                 currentDirectory += _video.GUID;
                 currentDirectory += Path.DirectorySeparatorChar;
                 Directory.CreateDirectory(currentDirectory);
 
-               List<string> completeArgs = buildHlsArgs(resolutions, videoPath, containsAudio);
+                List<string> completeArgs = buildHlsArgs(resolutions, videoPath, containsAudio);
 
                 StringCollection values = new StringCollection();
                 StringCollection genOutput = new StringCollection();
@@ -1043,13 +1070,19 @@ namespace ASP.Back.Libraries
                 }
                 Console.WriteLine($"\t\t{nameof(BuildHLS)} - Total Time Taken to do job - {sw.Elapsed.ToString("mm\\:ss\\.ff")}");
 
+                if (File.Exists(videoPath))
+                {
+                    File.Delete(videoPath);
+                }
                 return success;
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"\t\t{nameof(BuildHLS)} - Time Elapsed till Exception {sw.Elapsed.ToString("mm\\:ss\\.ff")} {ex.Message} \n\n {ex.StackTrace} \n\n");
-
-
+                if (File.Exists(videoPath))
+                {
+                    File.Delete(videoPath);
+                }
                 return false;
             }
         }
