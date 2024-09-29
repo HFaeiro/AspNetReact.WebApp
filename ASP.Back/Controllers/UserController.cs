@@ -2,9 +2,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Hosting;
-using System.Security.Claims;
-using TeamManiacs.Core;
 using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
 

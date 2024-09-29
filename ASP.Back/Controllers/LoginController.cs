@@ -1,21 +1,12 @@
 ﻿
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-
 using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
 using System.Text;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
 using ASP.Back.Libraries;
-using Microsoft.Extensions.Hosting;
 
 namespace ASP.Back.Controllers
 {

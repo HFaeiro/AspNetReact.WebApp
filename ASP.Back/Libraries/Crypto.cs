@@ -1,9 +1,4 @@
-﻿using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.Extensions.Hosting;
-using Mono.Unix.Native;
-using System.IO;
-using System.Security.Cryptography;
-using System.Security.Cryptography.Xml;
+﻿using System.Security.Cryptography;
 
 namespace ASP.Back.Libraries
 {
