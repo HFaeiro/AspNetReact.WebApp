@@ -380,10 +380,6 @@ export class VideoStream extends Component {
         if (this.vRef.current.currentTime < currentChunkTime) {
             estimatedCurrentIndex = 0;
         }
-        if (this.lastIndex != estimatedCurrentIndex) {
-            let newCollectedCount = this.collectedChunksAfterCurrent - (estimatedCurrentIndex - this.lastIndex);
-            this.collectedChunksAfterCurrent = newCollectedCount > 0 ? newCollectedCount : 0;
-        }
         if (this.seeked == true || !this.collectedChunksAfterCurrent) {
 
             let tmpChunkIndex = estimatedCurrentIndex;
@@ -399,9 +395,10 @@ export class VideoStream extends Component {
             }.bind(this));
         }
 
-
-
-
+        if (this.lastIndex != estimatedCurrentIndex) {
+            let newCollectedCount = this.collectedChunksAfterCurrent - (estimatedCurrentIndex - this.lastIndex);
+            this.collectedChunksAfterCurrent = newCollectedCount > 0 ? newCollectedCount : 0;
+        }
 
         this.lastIndex = estimatedCurrentIndex;
 
@@ -413,9 +410,10 @@ export class VideoStream extends Component {
             this.master.currentTsIndex++;
             return;
         }
-        if (this.collectedChunksAfterCurrent > this.seekAheadLimit || (this.master.currentTsIndex - estimatedCurrentIndex > this.seekAheadLimit)) {
-            console.log("got too many chunks! returning")
-            return;// setTimeout(this.onTimeUpdate, 600);
+        if ((this.collectedChunksAfterCurrent > this.seekAheadLimit || (this.master.currentTsIndex - estimatedCurrentIndex > this.seekAheadLimit)) && !this.seeked) {
+            console.log("got too many chunks! returning, estimatedCurrentIndex:", estimatedCurrentIndex, " chunks ahead:", this.collectedChunksAfterCurrent)
+            setTimeout(currentChunkTime * 1000);
+            return;
         }
 
 
@@ -512,10 +510,10 @@ export class VideoStream extends Component {
         let video = await this.getVideo(this.master.GUID, this.master.currentIndex, requestedChunk)
         if (video) {
             if (this.frameRequestLock && requestedChunk === this.master.currentTsIndex) {
-                console.log("Received Chunk #" + (this.master.currentTsIndex));
+                //onsole.log("Received Chunk #" + (this.master.currentTsIndex));
                 if (requestedChunk) {
                     this.receivedChunksArray.set(requestedChunk, 1);
-                    console.log("pushed chunk #", requestedChunk);
+                    //console.log("pushed chunk #", requestedChunk);
                 }
             }
             else {
@@ -530,7 +528,7 @@ export class VideoStream extends Component {
             this.totalReceivedChunkTime += chunkTime;
             //this.mediaSource.sourceBuffers[0].timestampOffset = this.master.currentIndex ? chunkTime : 0;
             let buffer = await video.arrayBuffer();
-            console.log("appending buffer!");
+            //console.log("appending buffer!");
             await this.mediaSource.sourceBuffers[0].appendBuffer(buffer);
             this.mediaSource.sourceBuffers[0].addEventListener('updateend', this.updateEnd);
         }

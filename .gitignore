@@ -375,3 +375,5 @@ FodyWeavers.xsd
 /ASP.Back/appsettings.json
 /ASP.Back/uploads/videos
 /React.Front/package-lock.json
+/ASP.Back/appsettings.Development.json
+/ASP.Back/appsettings.Production.json

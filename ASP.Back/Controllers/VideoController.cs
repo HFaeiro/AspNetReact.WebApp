@@ -196,7 +196,7 @@ namespace ASP.Back.Controllers
                 if (userId != null)
                 {
                     IIdentity? identity = this.User.Identity;
-                    Console.WriteLine($"\t\t{nameof(Post)} - {videoIn.file.FileName} Processing chunk number {videoIn.chunkNumber} for {userId}");
+                    Console.WriteLine($"\t\t{nameof(Post)} - {videoIn.file.FileName} Processing chunk number {videoIn.chunkNumber} for userId:{userId}");
                     if (videoIn.file.Length > 0)
                     {
                         VideoBlob videoBlob = new VideoBlob(videoIn);                       
@@ -216,7 +216,7 @@ namespace ASP.Back.Controllers
                                     
                                     //db.Entry(videoUpload).State = EntityState.Modified;
                                     
-                                    if (mediaManager.SaveBlobToFolder(videoBlob, userId.Value))
+                                    if (mediaManager.SaveBlobToFolder(videoBlob, userId.Value, true))
                                     {
                                         dbBlob.Entity.collectedChunks++;
                                         await db.SaveChangesAsync();
@@ -234,7 +234,7 @@ namespace ASP.Back.Controllers
                                     if (videoBlob.chunkCount > 1)
                                     {
 
-                                        if (mediaManager.SaveBlobToFolder(videoBlob, userId.Value))
+                                        if (mediaManager.SaveBlobToFolder(videoBlob, userId.Value, true))
                                         {
                                             var dbBlob = db.VideoBlobs.Find(videoBlob.uploadId);
                                             if (dbBlob == null)
