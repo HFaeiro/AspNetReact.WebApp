@@ -99,7 +99,14 @@ export class EditVideosModal extends Component {
                         <Modal.Body>
                             <Container fluid="lg">
 
-                                <Row className="mb-3">                                    
+                                <Row className="mb-3">  
+                                    <Form.Group controlId="Id">
+                                        <Form.Control type="text" name="Id" required hidden
+                                            disabled
+                                            defaultValue={this.props.video.id}
+                                            placeholder={this.props.video.id}>
+                                        </Form.Control>
+                                    </Form.Group>
                                     <Col>
                                         <Form.Group controlid="Title">
                                             <FloatingLabel controlid="floatingInput" label="Video Title"
