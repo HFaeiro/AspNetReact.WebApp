@@ -20,11 +20,20 @@ public partial class Users
         this.UserId = obj.UserId;
         this.Username= obj.Username;
         this.Privileges = obj.Privileges;
-        if (obj.Password != "")
+        if (obj.Password != null)
         {
             this.Password = obj.Password;
         }
         return this;
+    }
+    public Users()
+    {
+
+    }
+    public Users (string username, byte[] password)
+    {
+        this.Password= password;
+        this.Username= username;
     }
 
         
@@ -39,7 +48,7 @@ public partial class Users
 
     [StringLength(200)]
     [Unicode(false)]
-    public string Password { get; set; }
+    public byte[] Password { get; set; }
     [JsonConverter(typeof(JsonStringEnumMemberConverter))]
     public PrivTypes Privileges { get; set; }
 

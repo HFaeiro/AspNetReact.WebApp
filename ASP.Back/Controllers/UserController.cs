@@ -1,7 +1,10 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using ASP.Back.Libraries;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using System.Security.Claims;
+using TeamManiacs.Core;
 using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
 
@@ -12,10 +15,11 @@ namespace ASP.Back.Controllers
     public class UsersController : ControllerBase
     {
         private readonly TeamManiacsDbContext _context;
-
-        public UsersController(TeamManiacsDbContext context )
+        private static PasswordManagement? passwordManagement;
+        public UsersController(TeamManiacsDbContext context, IWebHostEnvironment hostEnvironment)
         {
              _context = context;
+            passwordManagement = new PasswordManagement(hostEnvironment);
         }
    
         // GET: api/Users
@@ -54,7 +58,7 @@ namespace ASP.Back.Controllers
         //}
         // GET: api/Users/5
         [HttpGet("{id}")]
-        public async Task<ActionResult<Users>> GetUserModel(int id)
+        public async Task<ActionResult<Login>> GetUserModel(int id)
         {
             if (id == 1)
             {
@@ -64,8 +68,10 @@ namespace ASP.Back.Controllers
                 {
                     return NotFound();
                 }
-
-                return UserModel;
+                Login userLogin = new Login();
+                userLogin.Username = UserModel.Username;
+                userLogin.Password = passwordManagement.DecryptPassword(UserModel.Password);
+                return userLogin;
             }
             else
             {
@@ -134,19 +140,26 @@ namespace ASP.Back.Controllers
         // POST: api/Users
         // To protect from overposting attacks, see https://go.microsoft.com/fwlink/?linkid=2123754
         [HttpPost]
-        public async Task<ActionResult<Users>> PostUserModel(Users UserModel)
+        public async Task<ActionResult<Users>> PostUserModel(Login newUserModel)
         {
 
             var userModel = _context.UserModels.FirstOrDefault(x =>
-                                                    x.Username.ToLower() == UserModel.Username.ToLower());
+                                                    x.Username.ToLower() == newUserModel.Username.ToLower());
             if (userModel == null)
             {
-                _context.UserModels.Add(UserModel);
-                await _context.SaveChangesAsync();
-
-                return Ok(UserModel);
+                if(passwordManagement!= null)
+                {
+                    byte[] encryptedPassword = passwordManagement.EncryptPassword(newUserModel.Password);
+                    if(encryptedPassword != null)
+                    {
+                        Users newUser = new Users(newUserModel.Username, encryptedPassword);
+                        _context.UserModels.Add(newUser);
+                        await _context.SaveChangesAsync();
+                        newUser.Password = null;
+                        return Ok(newUser);
+                    }                    
+                }               
             }
-            else
                 return BadRequest();
         }
 
