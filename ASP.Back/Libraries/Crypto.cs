@@ -23,7 +23,7 @@ namespace ASP.Back.Libraries
             {
                 case ObjectType.Password:
                     {
-                        currentVaultPath = Path.Combine(vaultRootPath, objType.GetTypeCode().ToString());
+                        currentVaultPath = Path.Combine(vaultRootPath, ((int)ObjectType.Password).ToString());
                         break;
                     }
                 default: { return; }
