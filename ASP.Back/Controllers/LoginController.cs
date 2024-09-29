@@ -1,19 +1,12 @@
 ﻿
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-
 using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
 using System.Text;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
+using ASP.Back.Libraries;
 
 namespace ASP.Back.Controllers
 {
@@ -25,13 +18,13 @@ namespace ASP.Back.Controllers
         private readonly IHttpContextAccessor _httpContext;
         private readonly TeamManiacsDbContext _context;
 
+        private static PasswordManagement? passwordManagement;
 
-        public LoginController(TeamManiacsDbContext context, IConfiguration config)
+        public LoginController(TeamManiacsDbContext context, IConfiguration config, IWebHostEnvironment hostEnvironment)
         {
             _context = context;
             _config = config;
-
-            
+            passwordManagement = new PasswordManagement(hostEnvironment);
         }
 
 
@@ -40,6 +33,7 @@ namespace ASP.Back.Controllers
         [HttpPost]
         public ActionResult PostUserModel(Login login)
         {
+
             var user = Authenticate(login);
             if(user != null)
             {
@@ -78,10 +72,20 @@ namespace ASP.Back.Controllers
 
         private Users? Authenticate(Login login)
         {
+            if (passwordManagement == null)
+            {
+                return null;
+            }
+            byte[] encryptedPassweord = passwordManagement.EncryptPassword(login.Password);
+            if(encryptedPassweord == null)
+            {
+                return null;
+            }            
+
             var currentUser = _context.UserModels.
                                 FirstOrDefault(x => 
                                 x.Username.ToLower() == login.Username.ToLower()
-                             && x.Password == login.Password);
+                             && x.Password == encryptedPassweord);
             return currentUser;
 
         }
