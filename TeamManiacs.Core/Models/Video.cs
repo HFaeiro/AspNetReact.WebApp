@@ -17,10 +17,9 @@ namespace TeamManiacs.Core.Models
         }
         public Video(IFormFile videoIn, int uploader, string fileName = "")
         {
-
             FileName = fileName == "" ? videoIn.FileName : fileName;
             Title = videoIn.FileName.Split('_')[0];
-            if (Title?.Length < 0)
+            if (Title?.Length <= 0)
                 Title = videoIn.FileName;
             ContentSize = (int)videoIn.OpenReadStream().Length;
             Description = videoIn.ContentDisposition != null ? videoIn.ContentDisposition : " ";
@@ -28,6 +27,28 @@ namespace TeamManiacs.Core.Models
             ContentDisposition = videoIn.ContentDisposition != null ? videoIn.ContentDisposition : " ";
             Uploader = uploader;
             isPrivate = true;
+            VideoLength = (int)videoIn.Length;
+        }
+        public Video(VideoBlob videoIn, int uploader, string filePath)
+        {
+
+            GUID = videoIn.uploadId.ToString();
+
+            FileName = videoIn.uploadId.ToString() + Path.GetExtension(videoIn.videoName);
+            Title = videoIn.videoName.Split('_')[0];
+            if (Title?.Length <= 0)
+                Title = videoIn.videoName;
+            if(File.Exists(filePath))
+            {
+                ContentSize = (int)new FileInfo(filePath).Length;
+            }
+            
+            Description = videoIn.ContentDisposition != null ? videoIn.ContentDisposition : " ";
+            ContentType = videoIn.ContentType != null ? videoIn.ContentType : " ";
+            ContentDisposition = videoIn.ContentDisposition != null ? videoIn.ContentDisposition : " ";
+            Uploader = uploader;
+            isPrivate = true;
+            VideoLength = (int)videoIn.videoDuration;
         }
         [NotMapped]
         public string VideoName

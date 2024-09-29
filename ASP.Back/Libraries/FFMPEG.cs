@@ -512,9 +512,14 @@ namespace ASP.Back.Libraries
         {
             FFVideo video = new FFVideo();
 
-            int fileExtIndex = fullFilePath.LastIndexOf('.');
+
             int folderIndex = fullFilePath.LastIndexOf(Path.DirectorySeparatorChar);
-            video.extention = fullFilePath.Substring(fileExtIndex);
+
+            int fileExtIndex = fullFilePath.LastIndexOf('.');
+            if (fileExtIndex > 0)
+            {
+                video.extention = fullFilePath.Substring(fileExtIndex);
+            }
             video.folder = fullFilePath.Substring(0, folderIndex + 1);
             string pathWithFileName = fullFilePath.Substring(0, fileExtIndex);
 
@@ -567,7 +572,7 @@ namespace ASP.Back.Libraries
                 lock (codecs)
                 {
                     codecs.Add(e.Data);
-                    Console.WriteLine(e.Data);
+                    //Console.WriteLine(e.Data);
                 }
             };
             proc.ErrorDataReceived += (s, e) =>
@@ -1015,13 +1020,16 @@ namespace ASP.Back.Libraries
                     //Console.WriteLine($"\t\t{nameof(BuildHLS)} - FFMPEG Failed to Convert media To HLS format - Time Elapsed {sw.Elapsed.ToString("mm\\:ss\\.ff")}");
                     if (recursed)
                     {
-                        Console.WriteLine($"\t\t{nameof(BuildHLS)} - We've already attempted this twice. lets not push things futher.");
+                        Console.WriteLine($"\t\t{nameof(BuildHLS)} - We've already attempted this twice. lets not push things futher. {_video.videoName}");
 
                         return false;
                     }
                     else
                     {
                         // return CallRecoveryStream(inStream, fileOut, resolutions);
+                        Console.WriteLine($"\t\t{nameof(BuildHLS)} - We've Decided not to recover. Video Failed to Convert {_video.videoName}");
+
+                        return false;
                     }
                 }
                 else
@@ -1353,6 +1361,19 @@ namespace ASP.Back.Libraries
             }
         }
 
+        public FFMPEG(string fileIn, string fileOut, List<string> resolutions, IProgress<(int, int)> progress)
+        {
+            try
+            {
+                this.progress = progress;
+                this.success = BuildHLS(fileIn, fileOut, resolutions);
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
+            }
+        }
         public FFMPEG(Stream inStream, string fileOut, List<string> resolutions, IProgress<(int, int)> progress)
         {
             try
@@ -1365,7 +1386,6 @@ namespace ASP.Back.Libraries
             {
                 Console.WriteLine(ex.Message + "\n\n" + ex.StackTrace + "\n\n");
             }
-
         }
         private string? MoveFlags(Stream videoIn)
         {

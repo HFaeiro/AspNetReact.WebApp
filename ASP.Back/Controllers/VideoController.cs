@@ -216,7 +216,7 @@ namespace ASP.Back.Controllers
                                     
                                     //db.Entry(videoUpload).State = EntityState.Modified;
                                     
-                                    if (mediaManager.SaveBlobToFolder(videoBlob, userId.Value))
+                                    if (mediaManager.SaveBlobToFolder(videoBlob, userId.Value, true))
                                     {
                                         dbBlob.Entity.collectedChunks++;
                                         await db.SaveChangesAsync();
@@ -234,7 +234,7 @@ namespace ASP.Back.Controllers
                                     if (videoBlob.chunkCount > 1)
                                     {
 
-                                        if (mediaManager.SaveBlobToFolder(videoBlob, userId.Value))
+                                        if (mediaManager.SaveBlobToFolder(videoBlob, userId.Value, true))
                                         {
                                             var dbBlob = db.VideoBlobs.Find(videoBlob.uploadId);
                                             if (dbBlob == null)
