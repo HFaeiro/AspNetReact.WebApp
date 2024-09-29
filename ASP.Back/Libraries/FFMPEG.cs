@@ -1,6 +1,5 @@
 ﻿using System.Collections.Specialized;
 using System.Diagnostics;
-using System.IO.Pipelines;
 using System.IO.Pipes;
 using System.Runtime.InteropServices;
 
