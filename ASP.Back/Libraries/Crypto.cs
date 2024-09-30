@@ -73,7 +73,7 @@ namespace ASP.Back.Libraries
                 {
                     aes.Key = this.key;
                     aes.IV = this.iv;
-
+                    aes.Padding = PaddingMode.PKCS7;
                     ICryptoTransform encryptor = aes.CreateEncryptor();
                     using (MemoryStream msEncrypt = new MemoryStream())
                     {
@@ -106,7 +106,7 @@ namespace ASP.Back.Libraries
                 {
                     aes.Key = this.key;
                     aes.IV = this.iv;
-
+                    aes.Padding = PaddingMode.PKCS7;
                     ICryptoTransform decryptor = aes.CreateDecryptor();
                     using (MemoryStream msDecrypt = new MemoryStream(dataToDecrypt))
                     {

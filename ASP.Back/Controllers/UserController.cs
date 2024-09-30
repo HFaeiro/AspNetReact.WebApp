@@ -141,23 +141,25 @@ namespace ASP.Back.Controllers
         {
 
             var userModel = _context.UserModels.FirstOrDefault(x =>
-                                                    x.Username.ToLower() == newUserModel.Username.ToLower());
+                x.Username == newUserModel.Username || x.Email.ToLower() == newUserModel.Email.ToLower()
+           );
+
             if (userModel == null)
             {
-                if(passwordManagement!= null)
+                if (passwordManagement != null)
                 {
                     byte[] encryptedPassword = passwordManagement.EncryptPassword(newUserModel.Password);
-                    if(encryptedPassword != null)
+                    if (encryptedPassword != null)
                     {
-                        Users newUser = new Users(newUserModel.Username, encryptedPassword);
+                        Users newUser = new Users(newUserModel.Email, encryptedPassword, newUserModel.Username);
                         _context.UserModels.Add(newUser);
                         await _context.SaveChangesAsync();
                         newUser.Password = null;
                         return Ok(newUser);
-                    }                    
-                }               
+                    }
+                }
             }
-                return BadRequest();
+            return BadRequest();
         }
 
         // DELETE: api/Users/5
