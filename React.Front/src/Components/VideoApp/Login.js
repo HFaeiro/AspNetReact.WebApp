@@ -12,6 +12,17 @@ export class Login extends Component {
     }
     //attempt to get profile data back from server with login data
     getPostResponse = async (event) => {
+
+
+        if (!event.target.Email.value.includes("@")) {
+            event.target.Username.value = event.target.Email.value;
+            event.target.Email.value = "";
+        }
+        else {
+            event.target.Username.value = "";
+        }
+
+
         return await new Promise(resolve => {
             fetch('/' +process.env.REACT_APP_API + 'login', {
                 method: 'POST',
@@ -20,6 +31,7 @@ export class Login extends Component {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
+                    Email: event.target.Email.value,
                     Username: event.target.Username.value,
                     Password: event.target.Password.value,
                 })
@@ -45,6 +57,7 @@ export class Login extends Component {
             if (res != null) {
                 if (!res.status) { //if response status is not a bad request send data to login func
                     this.props.login(res);
+                    event.target.Email.value = null;
                     event.target.Username.value = null;
                     event.target.Password.value = null;
                     document.getElementById('login').submit();
@@ -79,12 +92,15 @@ export class Login extends Component {
 
                     <Form id="login" onSubmit={this.loader}>
 
-                        <Form.Group controlid="Username">
-                            <Form.Label>Username</Form.Label>
-                            <Form.Control type="text" name="Username" required
-                            >
+                        <Form.Group controlid="Email">
+                                <Form.Label>Username Or Email</Form.Label>
+                                <Form.Control type="text" name="Email" required>
                             </Form.Control>
-                        </Form.Group>
+                            </Form.Group>
+                            <Form.Group controlid="Email">
+                                <Form.Control type="text" name="Username" hidden>
+                                </Form.Control>
+                            </Form.Group>
                         <Form.Group controlid="Password">
                             <Form.Label>Password</Form.Label>
                             <Form.Control type="password" name="Password" required

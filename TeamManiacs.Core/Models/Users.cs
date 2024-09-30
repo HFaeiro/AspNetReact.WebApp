@@ -30,10 +30,22 @@ public partial class Users
     {
 
     }
-    public Users (string username, byte[] password)
+    public Users (string email, byte[] password, string username = " ")
     {
         this.Password= password;
-        this.Username= username;
+
+        if(string.IsNullOrEmpty(username))
+        {
+            if (!string.IsNullOrEmpty(email))
+            {
+                this.Username = email;
+            }
+        }
+        else 
+        {
+            this.Username = username;
+        }
+        this.Email = email;
     }
 
         
@@ -45,6 +57,9 @@ public partial class Users
     [StringLength(200)]
     [Unicode(false)]
     public string Username { get; set; }
+    [StringLength(200)]
+    [Unicode(false)]
+    public string Email { get; set; }
 
     [StringLength(200)]
     [Unicode(false)]

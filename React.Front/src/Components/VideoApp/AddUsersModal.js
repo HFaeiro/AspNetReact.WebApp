@@ -26,10 +26,11 @@ export class AddUsersModal extends Component {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
+                 body: JSON.stringify({
+
+                    Email: event.target.Email.value,
                     Username: event.target.Username.value,
-                    Password: event.target.Password.value,
-                    Privileges: event.target.Privileges.value
+                    Password: event.target.Password.value
                 })
 
 
@@ -47,13 +48,14 @@ export class AddUsersModal extends Component {
         const res = await this.handleSubmit(event);
         if (res) {
             if (res.status === 400)
-                alert('Please Pick a Different Username!');
+                alert('Please Pick a Different Username or Email!');
             else {
 
-                alert('Username Created Successfully');
+                alert('User Created Successfully');
+
+                event.target.Email.value = null;
                 event.target.Username.value = null;
                 event.target.Password.value = null;
-                event.target.Privileges.value = null;
                 document.getElementById('addUsers').submit();
             }
         }
@@ -92,6 +94,12 @@ export class AddUsersModal extends Component {
                         <Row>
                             <Col sm={6}>
                                 <Form id="addUsers" onSubmit={this.loader}>
+                                    <Form.Group controlid="Email">
+                                        <Form.Label>Email</Form.Label>
+                                        <Form.Control type="text" name="Email" required
+                                            placeholder="Email">
+                                        </Form.Control>
+                                    </Form.Group>
                                     <Form.Group controlid="Username">
                                         <Form.Label>Username</Form.Label>
                                         <Form.Control type="text" name="Username" required
@@ -103,19 +111,9 @@ export class AddUsersModal extends Component {
                                         <Form.Control type="password" name="Password" required
                                             placeholder="Password">
                                         </Form.Control>
-                                    </Form.Group>
-                                    
+                                    </Form.Group>                                   
 
-                                    <Form.Group >
-                                        <Form.Label>Privileges</Form.Label>
-                                        <Form.Select type="text" name="Privileges" required
-                                        >
-                                            <option>None</option>
-                                            <option>Team</option>
-                                            <option>Mod</option>
-                                            <option>Admin</option>
-                                        </Form.Select>
-                                    </Form.Group>
+                                   
                                     <Form.Group>
                                         <Button variant="primary" type="submit">
                                             Add User

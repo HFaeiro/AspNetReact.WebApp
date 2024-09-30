@@ -84,7 +84,7 @@ namespace ASP.Back.Controllers
 
             var currentUser = _context.UserModels.
                                 FirstOrDefault(x => 
-                                x.Username.ToLower() == login.Username.ToLower()
+                                x.Username.ToLower() == login.Username.ToLower() || x.Email.ToLower() == login.Email.ToLower()
                              && x.Password == encryptedPassweord);
             return currentUser;
 
