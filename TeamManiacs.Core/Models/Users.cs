@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 using Microsoft.EntityFrameworkCore;
-using TeamManiacs.Core;
+using TeamManiacs.Core.Enums;
 
 namespace TeamManiacs.Core.Models;
 
@@ -48,24 +48,32 @@ public partial class Users
         this.Email = email;
     }
 
-        
-        
-     
+
+
+    [Required]
     [Key]
     public int UserId { get; set; }
 
     [StringLength(200)]
     [Unicode(false)]
     public string Username { get; set; }
+
+    [Required]
     [StringLength(200)]
     [Unicode(false)]
     public string Email { get; set; }
 
+    [Required]
     [StringLength(200)]
     [Unicode(false)]
     public byte[] Password { get; set; }
+
     [JsonConverter(typeof(JsonStringEnumMemberConverter))]
     public PrivTypes Privileges { get; set; }
 
+    
+    [JsonConverter(typeof(JsonStringEnumMemberConverter))]
+    public UserStatus Status { get; set; }
+    
     public List<int>? Videos {get; set;}
 }

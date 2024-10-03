@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
+using TeamManiacs.Core.Enums;
 
 namespace TeamManiacs.Core.Models
 {

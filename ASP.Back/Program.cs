@@ -15,6 +15,8 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.ResponseCompression;
 using System.Net.WebSockets;
 using TeamManiacs.Core.Models;
+using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages.Manage;
+using ASP.Back.Libraries;
 
 internal class Program
 {
@@ -53,9 +55,9 @@ internal class Program
                                         .Build();
             //options.UseSqlServer(config.GetConnectionString("ASPBackContext"));
 #if !DEBUG
-                var connectString = config.GetConnectionString("CleverCloudSQL");
+                var connectString = config.GetConnectionString("SQLDB");
 #else
-            var connectString = config.GetConnectionString("DEVSQL1");
+            var connectString = config.GetConnectionString("DEVSQLDB");
 #endif
             options.UseMySql(connectString, ServerVersion.AutoDetect(connectString));
 
@@ -128,6 +130,12 @@ internal class Program
                                     Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
                             };
                         });
+        
+        builder.Services.AddSingleton(x =>
+            new Emailer(new ConfigurationBuilder()
+                                        .AddJsonFile(appsettings, optional: false)
+                                        .Build(), builder.Environment));
+
         builder.Logging.AddFilter("Microsoft.EntityFrameworkCore.Database.Command", LogLevel.Warning);
         var app = builder.Build();
         // Configure the HTTP request pipeline.
