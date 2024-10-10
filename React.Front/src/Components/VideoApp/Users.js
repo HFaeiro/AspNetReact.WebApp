@@ -114,15 +114,7 @@ export class Users extends Component {
                                     </> : <></>}
                                 </div>
                             </div>)}
-                    </section>
-
-                <AddUsersModal
-                    token={klass.props.token}
-
-
-                />
-
-
+                    </section>             
 
             </>
 

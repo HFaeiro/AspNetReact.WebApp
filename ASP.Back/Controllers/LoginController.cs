@@ -37,6 +37,10 @@ namespace ASP.Back.Controllers
             var user = Authenticate(login);
             if(user != null)
             {
+                if(user.Status == TeamManiacs.Core.Enums.UserStatus.inactive) {
+
+                    return StatusCode(201, new Users{ UserId = user.UserId});
+                }
                 var token = GenToken(user);
                 Profile profile = new Profile(user.UserId, user.Username, token, user.Privileges, user.Videos);
                 if (profile != null)
@@ -45,7 +49,7 @@ namespace ASP.Back.Controllers
                 }
             }    
 
-            return BadRequest();
+            return BadRequest(login);
         }
         private string GenToken(Users user)
         {
@@ -76,8 +80,8 @@ namespace ASP.Back.Controllers
             {
                 return null;
             }
-            byte[] encryptedPassweord = passwordManagement.EncryptPassword(login.Password);
-            if(encryptedPassweord == null)
+            byte[] encryptedPassword = passwordManagement.EncryptPassword(login.Password);
+            if(encryptedPassword == null)
             {
                 return null;
             }            
@@ -85,7 +89,7 @@ namespace ASP.Back.Controllers
             var currentUser = _context.UserModels.
                                 FirstOrDefault(x => 
                                 x.Username.ToLower() == login.Username.ToLower() || x.Email.ToLower() == login.Email.ToLower()
-                             && x.Password == encryptedPassweord);
+                             && x.Password == encryptedPassword);
             return currentUser;
 
         }

@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Hosting;
 using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
 
@@ -13,10 +14,12 @@ namespace ASP.Back.Controllers
     {
         private readonly TeamManiacsDbContext _context;
         private static PasswordManagement? passwordManagement;
-        public UsersController(TeamManiacsDbContext context, IWebHostEnvironment hostEnvironment)
+        private static Emailer? _emailer;
+        public UsersController(TeamManiacsDbContext context, IWebHostEnvironment hostEnvironment, Emailer emailer)
         {
              _context = context;
             passwordManagement = new PasswordManagement(hostEnvironment);
+            _emailer = emailer;
         }
    
         // GET: api/Users
@@ -120,7 +123,7 @@ namespace ASP.Back.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!UserModelExists(id))
+                if (!await UserModelExists(id))
                 {
                     return NotFound();
                 }
@@ -139,11 +142,14 @@ namespace ASP.Back.Controllers
         [HttpPost]
         public async Task<ActionResult<Users>> PostUserModel(Login newUserModel)
         {
+            if (_emailer == null)
+            {
+                return BadRequest();
+            }
 
             var userModel = _context.UserModels.FirstOrDefault(x =>
                 x.Username == newUserModel.Username || x.Email.ToLower() == newUserModel.Email.ToLower()
            );
-
             if (userModel == null)
             {
                 if (passwordManagement != null)
@@ -152,9 +158,31 @@ namespace ASP.Back.Controllers
                     if (encryptedPassword != null)
                     {
                         Users newUser = new Users(newUserModel.Email, encryptedPassword, newUserModel.Username);
-                        _context.UserModels.Add(newUser);
+
+                        if (newUser == null)
+                        {
+                            return BadRequest();
+                        }
+
+                        newUser.Status = TeamManiacs.Core.Enums.UserStatus.inactive;
+                        newUser = (await _context.UserModels.AddAsync(newUser)).Entity;
+                        _context.SaveChanges();
+
+                        AuthCode authCode = ControllerHelpers.GenerateAuthCode(newUser.UserId);
+
+                        if(authCode == null)
+                        {
+                            return BadRequest();
+                        }
+                        await _context.AuthCodes.AddAsync(authCode);
+
                         await _context.SaveChangesAsync();
                         newUser.Password = null;
+
+                        _emailer.SendTwoFactorEmail(newUser.Email, authCode.Code);
+
+
+
                         return Ok(newUser);
                     }
                 }
@@ -182,9 +210,9 @@ namespace ASP.Back.Controllers
             return Ok($"Deleted User With Id of: " + id);
         }
 
-        private bool UserModelExists(int id)
-        {
-            return _context.UserModels.Any(e => e.UserId == id);
+        private async Task<bool> UserModelExists(int id)
+        {            
+            return await _context.UserModels.AnyAsync(e => e.UserId == id);
         }
     }
 }

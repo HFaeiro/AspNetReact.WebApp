@@ -13,6 +13,7 @@ namespace TeamManiacs.Core.Models;
 [Keyless]
 public partial class Login
 {
+    [Required]
     [StringLength(200)]
     [Unicode(false)]
     public string Email { get; set; }

@@ -22,6 +22,7 @@ namespace ASP.Back.Controllers
                 "wwwroot", "index.html"),
                 MediaTypeNames.Text.Html);
         }
+        [HttpHead]
         [Route("/play/{id}"), Route("/videoapp/play/{id}")]
         public IActionResult Play(int id)
         {

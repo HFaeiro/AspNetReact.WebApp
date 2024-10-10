@@ -1,26 +1,29 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.CodeAnalysis.Elfie.Diagnostics;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Hosting;
+using System;
 using System.Security.Claims;
 using System.Security.Principal;
 using TeamManiacs.Core.Models;
 using TeamManiacs.Data;
 
-namespace ASP.Back.Controllers
+namespace ASP.Back.Libraries
 {
     internal static class ControllerHelpers
     {
+        private static Random random = new Random();
         static public int? GetUserIdFromToken(IIdentity? identity)
         {
             var claimsIdentity = identity as ClaimsIdentity;
 
-           
+
             string? claimId = null;
             try
             {
                 claimId = claimsIdentity?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
                 Console.WriteLine($"\t\t{nameof(GetUserIdFromToken)} - {claimId}");
                 if (claimId != null)
-                    return Int32.Parse(claimId);
+                    return int.Parse(claimId);
             }
             catch (FormatException)
             {
@@ -32,8 +35,8 @@ namespace ASP.Back.Controllers
         static public DateTime GetExpirationFromToken(IIdentity? identity)
         {
             var claimsIdentity = identity as ClaimsIdentity;
-            
-            
+
+
             //or as DateTime:
             Claim? exp = claimsIdentity?.FindFirst("exp");
             if (exp != null)
@@ -65,7 +68,29 @@ namespace ASP.Back.Controllers
                 + userIdHash.ToString()
                 + Path.GetExtension(fileName);
         }
+        static public string ReplaceKeyInString(string orig, string key, string value)
+        {
+            return orig.Replace("{{"+key+"}}", value);
+        }
+        static public string GenerateRandomString(int length)
+        {
+            const string chars = "AaBbCcDdEeFfGgHhIiJjKkLlMmNnOoPpQqRrSsTtUuVvWwXxYyZz0123456789";
+            return new string(Enumerable.Repeat(chars, length)
+               .Select(s => s[random.Next(s.Length)]).ToArray());
+        }
+
+        static public AuthCode GenerateAuthCode(int uID)
+        {
+            string code = ControllerHelpers.GenerateRandomString(16);
+
+            AuthCode authCode = new AuthCode();
+            authCode.Uid = uID;
+            authCode.Code = code;
+            authCode.CreatedDate = DateTime.Now;
+
+            return authCode;
+        }
     }
-   
+
 
 }

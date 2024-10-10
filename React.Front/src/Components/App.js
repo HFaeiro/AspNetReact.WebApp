@@ -11,45 +11,38 @@ export default class App extends Component {
 
     setStateAsync = async (state) => {
         return await new Promise(resolve => {
-        
+
             this.setState(state, resolve);
         })
     }
 
 
-    
+
     render() {
-        try{
         return (
-            
+
             <section className="App">
-                 <BannerLogo className="bannerLogo"/>
+                <BannerLogo className="bannerLogo" />
                 <Navigation />
 
                 <Routes>
-                <Route path="/" element={<Home/>} />
-                <Route path="/videoapp/*" element={<VideoApp/>} />
-                <Route path="/youtube" element={<></>} />
-                <Route path="/github" element={<></>} />
-                <Route path="/friends" element={<></>} />
+                    <Route path="/" element={<Home />} />
+                    <Route path="/videoapp/*" element={<VideoApp />} />
+                    <Route path="/youtube" element={<></>} />
+                    <Route path="/github" element={<></>} />
+                    <Route path="/friends" element={<></>} />
                 </Routes>
-                
-            </section>
-            
-            
-            
-            
-            
-            
-            
-            
-            );
-            }
-            catch(e)
-            {
-                console.log(e);
-            }
 
+            </section>
+
+
+
+
+
+
+
+
+        );
     }
-   
+
 }
