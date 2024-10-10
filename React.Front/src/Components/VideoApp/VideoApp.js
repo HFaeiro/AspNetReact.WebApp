@@ -3,11 +3,11 @@ import { Home } from './Home';
 import { UserRouter } from './Users';
 import { Login } from './Login';
 import  Navigation  from './Navigation';
-import { Routes, Route , Navigate} from 'react-router';
+import { Routes, Route } from 'react-router';
 import  Logout  from './Logout';
 import {AddUsersModal} from './AddUsersModal'
 import { MyVideos } from './MyVideos'
-import { Videos, VideoRoute } from './Video'
+import { VideoRoute } from './Video'
 import './VideoApp.css'
 export class VideoApp extends Component {
     constructor(props) {
@@ -174,6 +174,7 @@ export class VideoApp extends Component {
         var loggedIn = this.state.loggedIn;     
         //setup routes and send props
         return (
+            //add a title here for an image if hosting this app as a main app inside of a child app. 
             <section className="VideoApp">
                    
                     {profile.username ?

@@ -1,22 +1,33 @@
 import React, { Component } from 'react';
 import { Form, Table } from 'react-bootstrap'
-import {  Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { useRef } from 'react';
 import { MyVideos } from './MyVideos.js'
+
+import { AddUsersModal } from './AddUsersModal'
 import './Home.css'
 export class Home extends Component {
-    state =
+    constructor(props) {
+        super(props);
+        this.onAddUserClose = this.onAddUserClose.bind(this);
+        this.openAddUserModal = this.openAddUserModal.bind(this);
+        this.state =
         {
             defaultUser: [],
-            
+            showAddUserModal: false
 
         }
+    }
     componentDidMount() {
         this.handleSubmit();
     }
 
+    async onAddUserClose() {
 
-   
+    }
+    async openAddUserModal() {
+        this.setState({ showAddUserModal: true });
+    }
 
     async getDummyUserInfo() {
         fetch('/' +process.env.REACT_APP_API + 'users/' + '1', {
@@ -49,7 +60,7 @@ export class Home extends Component {
 
     render() {
 
-
+        
         //let contents = username if it exists.
         let contents = this.props.profile.username ?
             <>
@@ -61,24 +72,15 @@ export class Home extends Component {
                     resetPollCount={this.props.resetPollCount}
                 />*/}
             </>
-            :<> <div className="homePage" >
-                <div><span>
-                    You can either create a user or you can login using the default!
-                </span>
-                </div>
-                <span>
-                    Try this Username : {this.state.defaultUser.username}
-                </span>
-                <div> <span>
-                    And this Password! : {this.state.defaultUser.password}
-                </span>
-                </div>
-                <div> <span>
-                    Might see the password change right here if you edit it
-                </span>
-                </div>
+            : <> <div className="homePage" >
 
-            </div><div className="loginButton">
+            <div className="createAccountButton">
+                    <AddUsersModal
+                        showModal={false}
+                        dontShowButton={false}
+                    /> </div>
+               </div>
+                <div className="loginButton">
            <Link to="login" className="btn btn-primary" >
                     Login!
                     </Link></div></>

@@ -123,7 +123,7 @@ namespace ASP.Back.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!UserModelExists(id))
+                if (!await UserModelExists(id))
                 {
                     return NotFound();
                 }
@@ -165,7 +165,7 @@ namespace ASP.Back.Controllers
                         }
 
                         newUser.Status = TeamManiacs.Core.Enums.UserStatus.inactive;
-                        newUser = _context.UserModels.Add(newUser).Entity;
+                        newUser = (await _context.UserModels.AddAsync(newUser)).Entity;
                         _context.SaveChanges();
 
                         AuthCode authCode = ControllerHelpers.GenerateAuthCode(newUser.UserId);
@@ -174,7 +174,7 @@ namespace ASP.Back.Controllers
                         {
                             return BadRequest();
                         }
-                        _context.AuthCodes.Add(authCode);
+                        await _context.AuthCodes.AddAsync(authCode);
 
                         await _context.SaveChangesAsync();
                         newUser.Password = null;
@@ -210,9 +210,9 @@ namespace ASP.Back.Controllers
             return Ok($"Deleted User With Id of: " + id);
         }
 
-        private bool UserModelExists(int id)
-        {
-            return _context.UserModels.Any(e => e.UserId == id);
+        private async Task<bool> UserModelExists(int id)
+        {            
+            return await _context.UserModels.AnyAsync(e => e.UserId == id);
         }
     }
 }

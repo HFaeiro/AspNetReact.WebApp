@@ -7,15 +7,18 @@ using TeamManiacs.Data;
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace ASP.Back.Controllers
-{
+{   
+    
     [Route("api/[controller]")]
     [ApiController]
     public class AuthCodeController : ControllerBase
     {
         private readonly TeamManiacsDbContext _context;
-        public AuthCodeController(TeamManiacsDbContext context, IWebHostEnvironment hostEnvironment)
+        private static Emailer? _emailer;
+        public AuthCodeController(TeamManiacsDbContext context, IWebHostEnvironment hostEnvironment , Emailer emailer)
         {
             _context = context;
+            _emailer = emailer;
         }
 
 
@@ -49,7 +52,7 @@ namespace ASP.Back.Controllers
             {
                 return BadRequest();
             }
-            Delete(ourCode);
+            await Delete(ourCode);
 
             Users? users = await _context.UserModels.FindAsync(usersCode.Uid);
 
@@ -71,6 +74,11 @@ namespace ASP.Back.Controllers
         [HttpPut]
         public async Task<IActionResult> Put([FromBody] AuthCode usersCode)
         {
+            //I should make sure we have an email also submitted here to prevent spamming. 
+            if (_emailer == null)
+            {
+                return BadRequest();
+            }
             //Generate a new code, if user is not inactive, code will not be generated. 
             Users? user = await _context.UserModels.FindAsync(usersCode.Uid);
 
@@ -95,19 +103,20 @@ namespace ASP.Back.Controllers
                 return BadRequest();
             }
             
-            _context.AuthCodes.Add(authCode);
+            await _context.AuthCodes.AddAsync(authCode);
 
             await _context.SaveChangesAsync();
+            _emailer.SendTwoFactorEmail(user.Email, authCode.Code);
 
 
             return Ok();
         }
 
-        private async void Delete(AuthCode usersCode)
+        private async Task<int> Delete(AuthCode usersCode)
         {    
             _context.AuthCodes.Remove(usersCode);
 
-            await _context.SaveChangesAsync();
+            return await _context.SaveChangesAsync();
         }
     }
 }

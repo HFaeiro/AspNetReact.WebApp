@@ -49,8 +49,7 @@ internal class Program
 #endif
         builder.Services.AddDbContext<TeamManiacsDbContext>(options =>
         {
-           
-            IConfiguration config = new ConfigurationBuilder()
+             IConfiguration config = new ConfigurationBuilder()
                                         .AddJsonFile(appsettings, optional: false)
                                         .Build();
             //options.UseSqlServer(config.GetConnectionString("ASPBackContext"));
@@ -61,7 +60,7 @@ internal class Program
 #endif
             options.UseMySql(connectString, ServerVersion.AutoDetect(connectString));
 
-        });
+        }, ServiceLifetime.Transient);
         builder.Services.AddControllers();
         // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
         

@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import { Modal, Button, Row, Col, Form } from 'react-bootstrap'
+import {ValidateCodeModal }  from './ValidateCodeModal'
 
 export class AddUsersModal extends Component {
     constructor(props) {
@@ -7,15 +8,18 @@ export class AddUsersModal extends Component {
         this.handleSubmit = this.handleSubmit.bind(this);
         this.state = {
             showModal: props.showModal,
-            token: this.props.token
+            token: this.props.token,
+            showCodeValidation: false,
+            uId : undefined,
         };
 
     }
     openModal = () => this.setState({ showModal: true });
     closeModal = () => {
         this.setState({ showModal: false });
-        if (this.props.dontShowButton)
+        if (this.props.dontShowButton) {
             window.location = './login';
+        }        
     }
     handleSubmit = async (event) => {
          const ret = await new Promise(resolve => {
@@ -45,23 +49,37 @@ export class AddUsersModal extends Component {
     }
 
     loader = async (event) => {
+
+        event.preventDefault();
+        if (event.target.Password.value !== event.target.Password2.value) {
+            alert('Passwords dont match!');
+            return;
+        }
+
         const res = await this.handleSubmit(event);
         if (res) {
             if (res.status === 400)
                 alert('Please Pick a Different Username or Email!');
             else {
-
+                this.userInfo = res;
                 alert('User Created Successfully');
 
                 event.target.Email.value = null;
                 event.target.Username.value = null;
                 event.target.Password.value = null;
-                document.getElementById('addUsers').submit();
+                //document.getElementById('addUsers').submit();
+                this.setState(
+                    {
+                        showCodeValidation: true,
+                        uId: this.userInfo.userId,
+                    }
+                )
             }
         }
         else {
            console.log('Undefined Behavior');
         }
+
     }
 
     render() {
@@ -71,14 +89,16 @@ export class AddUsersModal extends Component {
                 <div className="addUsersModal">
                 {!this.props.dontShowButton ?  
                     <Button variant="primary" onClick={this.openModal}>
-                        Create User
+                        Sign Up!
                     </Button>:
                     <></>
-                    }
-                
+                    }                
 
                 </div>
-
+                {this.state.showCodeValidation && this.state.uId
+                    ? <ValidateCodeModal
+                        uId={this.state.uId}
+                /> :
                 <Modal show={this.state.showModal}
                     onHide={this.closeModal}
                     size="lg"
@@ -87,7 +107,7 @@ export class AddUsersModal extends Component {
 
                     <Modal.Header closeButton>
                         <Modal.Title id="contained-modal-title-vcenter">
-                            Add User
+                           Welcome! Please fill out the form below to sign up!
                         </Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
@@ -111,9 +131,15 @@ export class AddUsersModal extends Component {
                                         <Form.Control type="password" name="Password" required
                                             placeholder="Password">
                                         </Form.Control>
-                                    </Form.Group>                                   
+                                    </Form.Group>
 
-                                   
+                                     <Form.Group controlid="Password2">
+                                        <Form.Label>Password</Form.Label>
+                                            <Form.Control type="Password" name="Password2" required
+                                        placeholder="Password">
+                                        </Form.Control>
+                                     </Form.Group>
+
                                     <Form.Group>
                                         <Button variant="primary" type="submit">
                                             Add User
@@ -129,9 +155,10 @@ export class AddUsersModal extends Component {
                         <Button variant="danger" onClick={this.closeModal}>
                             Close
                         </Button>
-
+                        
                     </Modal.Footer>
                 </Modal>
+                }
             </>
         )
     }
